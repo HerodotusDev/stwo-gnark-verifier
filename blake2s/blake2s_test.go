@@ -93,7 +93,7 @@ func (c *blake2sCircuit) Define(api frontend.API) error {
 	return nil
 }
 
-func TestKeccakf(t *testing.T) {
+func TestBlake2sCompression(t *testing.T) {
 	witness := blake2sCircuit{
 		StateH:    testStateH,
 		StateT:    testStateT,
