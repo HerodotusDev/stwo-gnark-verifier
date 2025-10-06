@@ -1,10 +1,16 @@
 package blake2s
 
 import (
+	"math/big"
+
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
+
+var BLAKE2S_BLOCKBYTES = uints.NewU32(64)
+var absDiffUpp = big.NewInt(1<<32 - 1)
 
 var blake2sIV = [8]uints.U32{
 	uints.NewU32(0x6A09E667),
@@ -30,6 +36,28 @@ var blake2sSigma = [10][16]int{
 	{10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0},
 }
 
+// Blake2s initial state (outlen = 32 bytes)
+var blake2sInitialState = Blake2sState{
+	H: [8]uints.U32{
+		uints.NewU32(0x6b08e647), // blake2sIV[0] ^ PARAMS (see specification)
+		blake2sIV[1],
+		blake2sIV[2],
+		blake2sIV[3],
+		blake2sIV[4],
+		blake2sIV[5],
+		blake2sIV[6],
+		blake2sIV[7],
+	},
+	T: [2]uints.U32{
+		uints.NewU32(0),
+		uints.NewU32(0),
+	},
+	F: [2]uints.U32{
+		uints.NewU32(0),
+		uints.NewU32(0),
+	},
+}
+
 type Blake2sChip struct {
 	api frontend.API `gnark:"-"`
 }
@@ -38,6 +66,10 @@ type Blake2sState struct {
 	H [8]uints.U32
 	T [2]uints.U32
 	F [2]uints.U32
+
+	// byte buffer for streaming update (0..64 bytes)
+	Buf    [64]uints.U8
+	BufLen int
 }
 
 func NewBlake2sChip(api frontend.API) *Blake2sChip {
@@ -48,11 +80,84 @@ func NewBlake2sChip(api frontend.API) *Blake2sChip {
 	return &Blake2sChip{api: api}
 }
 
+func (c *Blake2sChip) Blake2s(uapi *uints.BinaryField[uints.U32], msg []uints.U8) Blake2sState {
+	S := blake2sInitialState
+	S = c.Update(uapi, S, msg)
+	S, _ = c.Finalize(uapi, S)
+	return S
+}
+
+func (c *Blake2sChip) Update(uapi *uints.BinaryField[uints.U32], state Blake2sState, msg []uints.U8) Blake2sState {
+	if len(msg) == 0 {
+		return state
+	}
+
+	// Comparator for carry on 32-bit counter increment
+	// |state.T[0] - BLAKE2S_BLOCKBYTES| <= 2^32-1
+	less := cmp.NewBoundedComparator(c.api, absDiffUpp, false)
+
+	// Increment t by 64 bytes with carry into t[1]
+	incCounter := func() {
+		newT0 := uapi.Add(state.T[0], BLAKE2S_BLOCKBYTES)
+		carry := less.IsLess(uapi.ToValue(newT0), uapi.ToValue(state.T[0]))
+		state.T[0] = newT0
+		state.T[1] = uapi.Add(state.T[1], uapi.ValueOf(carry))
+	}
+
+	// Fill existing buffer to 64 bytes if possible
+	if state.BufLen > 0 {
+		fill := 64 - state.BufLen
+		if len(msg) > fill {
+			// Copy fill bytes of msg to buffer
+			copy(state.Buf[state.BufLen:], msg[:fill])
+			incCounter()
+			// Pack 64 bytes into 16 u32s
+			var block [16]uints.U32
+			for w := range 16 {
+				base := 4 * w
+				block[w] = uapi.PackLSB(state.Buf[base : base+4]...)
+			}
+			// Compress buffered 64-byte block
+			state = c.Compress(uapi, state, block)
+			// Reset buffer and drop processed bytes from msg
+			state.BufLen = 0
+			msg = msg[fill:]
+		} else {
+			// Buffer msg if it doesn't fill it
+			copy(state.Buf[state.BufLen:state.BufLen+len(msg)], msg)
+			state.BufLen += len(msg)
+			return state
+		}
+	}
+
+	// Process full 64-byte chunks directly
+	i := 0
+	for i+64 <= len(msg) {
+		var block [16]uints.U32
+		for w := range 16 {
+			off := i + 4*w
+			block[w] = uapi.PackLSB(msg[off : off+4]...)
+		}
+		incCounter()
+		state = c.Compress(uapi, state, block)
+		i += 64
+	}
+
+	// Buffer remaining tail bytes
+	if i < len(msg) {
+		rem := len(msg) - i
+		copy(state.Buf[:rem], msg[i:])
+		state.BufLen = rem
+	}
+
+	return state
+}
+
 func (c *Blake2sChip) Compress(uapi *uints.BinaryField[uints.U32], state Blake2sState, in [16]uints.U32) Blake2sState {
 	var v [16]uints.U32
 	var m [16]uints.U32
 
-	// Initialize m
+	// Initialize m to in
 	copy(m[:], in[:])
 
 	// Initialize v
@@ -67,7 +172,7 @@ func (c *Blake2sChip) Compress(uapi *uints.BinaryField[uints.U32], state Blake2s
 	v[15] = uapi.Xor(state.F[1], blake2sIV[7])
 
 	// Rounds
-	for r := 0; r < 10; r++ {
+	for r := range 10 {
 		// G(r,0,v[0],v[4],v[8],v[12])
 		a, b, c0, d := 0, 4, 8, 12
 		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*0+0]])
@@ -158,9 +263,55 @@ func (c *Blake2sChip) Compress(uapi *uints.BinaryField[uints.U32], state Blake2s
 
 	}
 
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		state.H[i] = uapi.Xor(state.H[i], v[i], v[i+8])
 	}
 
 	return state
+}
+
+func (c *Blake2sChip) Finalize(uapi *uints.BinaryField[uints.U32], state Blake2sState) (Blake2sState, [32]uints.U8) {
+	// Increment counter by remaining bytes (BufLen)
+	if state.BufLen > 0 {
+		// Comparator for carry on 32-bit counter increment
+		less := cmp.NewBoundedComparator(c.api, absDiffUpp, false)
+
+		inc := uints.NewU32(uint32(state.BufLen))
+		newT0 := uapi.Add(state.T[0], inc)
+		carry := less.IsLess(uapi.ToValue(newT0), uapi.ToValue(state.T[0]))
+		state.T[0] = newT0
+		state.T[1] = uapi.Add(state.T[1], uapi.ValueOf(carry))
+	}
+
+	// Set last block flag
+	state.F[0] = uints.NewU32(0xFFFFFFFF)
+
+	// Build padded 64-byte block from buffer; ensure zero bytes are proper constants
+	var blockBytes [64]uints.U8
+	copy(blockBytes[:state.BufLen], state.Buf[:state.BufLen])
+	for i := state.BufLen; i < 64; i++ {
+		blockBytes[i] = uints.NewU8(0)
+	}
+
+	// Pack into 16 little-endian u32 words
+	var block [16]uints.U32
+	for w := range 16 {
+		off := 4 * w
+		block[w] = uapi.PackLSB(blockBytes[off : off+4]...)
+	}
+
+	// Compress final block
+	state = c.Compress(uapi, state, block)
+
+	// Produce 32-byte digest from state.H (little-endian words)
+	var out [32]uints.U8
+	for i := range 8 {
+		bs := uapi.UnpackLSB(state.H[i])
+		out[4*i+0] = bs[0]
+		out[4*i+1] = bs[1]
+		out[4*i+2] = bs[2]
+		out[4*i+3] = bs[3]
+	}
+
+	return state, out
 }
