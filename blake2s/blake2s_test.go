@@ -1,6 +1,8 @@
 package blake2s_test
 
 import (
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -9,10 +11,14 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/backend/plonk"
+	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
+	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/consensys/gnark/std/math/uints"
 	"github.com/consensys/gnark/test"
+	"github.com/consensys/gnark/test/unsafekzg"
 )
 
 // Test vectors for Blake2s compression function
@@ -161,8 +167,14 @@ func TestBlake2sHashABC(t *testing.T) {
 // ║       Blake2s Hash Bench         ║
 // ╚══════════════════════════════════╝
 
+type durations struct {
+	compile int64
+	setup   int64
+	prove   int64
+	verify  int64
+}
 type blake2sHashBenchCircuit struct {
-	In [64]uints.U8
+	In [128]uints.U8
 }
 
 func (c *blake2sHashBenchCircuit) Define(api frontend.API) error {
@@ -178,11 +190,24 @@ func (c *blake2sHashBenchCircuit) Define(api frontend.API) error {
 }
 
 func BenchmarkBlake2sHash(b *testing.B) {
+	proofSystem := "plonk"
+
 	// prepare the circuit and witness used in the unit test
 	circuit := &blake2sHashBenchCircuit{}
 
+	var builder frontend.NewBuilder
+	switch proofSystem {
+	case "plonk":
+		builder = scs.NewBuilder
+	case "groth16":
+		builder = r1cs.NewBuilder
+	default:
+		fmt.Println("Please provide a valid proof system to benchmark, we only support plonk and groth16")
+		os.Exit(1)
+	}
+
 	// Create a proper witness with initialized U8 values
-	var in [64]uints.U8
+	var in [128]uints.U8
 	for i := range in {
 		in[i] = uints.NewU8(uint8(i % 256)) // Fill with test data
 	}
@@ -190,49 +215,121 @@ func BenchmarkBlake2sHash(b *testing.B) {
 		In: in,
 	}
 
-	var totalCompile, totalSetup, totalProve int64
+	var durations durations
 	var gates int
 
 	for i := 0; i < b.N; i++ {
 		// compile
 		t0 := time.Now()
-		ccs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, circuit)
+		r1cs, err := frontend.Compile(ecc.BN254.ScalarField(), builder, circuit)
 		if err != nil {
 			b.Fatalf("compile error: %v", err)
 		}
-		totalCompile += time.Since(t0).Nanoseconds()
-		gates = ccs.GetNbConstraints()
+		durations.compile += time.Since(t0).Nanoseconds()
+		gates = r1cs.GetNbConstraints()
 
-		// setup
-		t1 := time.Now()
-		pk, _, err := groth16.Setup(ccs)
-		if err != nil {
-			b.Fatalf("setup error: %v", err)
+		switch proofSystem {
+		case "plonk":
+			plonkProof(r1cs, witness, &durations)
+		case "groth16":
+			groth16Proof(r1cs, witness, &durations)
+		default:
+			panic("Please provide a valid proof system to benchmark, we only support plonk and groth16")
 		}
-		totalSetup += time.Since(t1).Nanoseconds()
-
-		// witness generation (private + public)
-		t2 := time.Now()
-		w, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
-		if err != nil {
-			b.Fatalf("witness error: %v", err)
-		}
-		_, err = w.Public()
-		if err != nil {
-			b.Fatalf("public witness error: %v", err)
-		}
-
-		// proving
-		if _, err := groth16.Prove(ccs, pk, w); err != nil {
-			b.Fatalf("prove error: %v", err)
-		}
-		totalProve += time.Since(t2).Nanoseconds()
 	}
 
 	// pretty print summary
 	n := int64(b.N)
 	avg := func(ns int64) time.Duration { return time.Duration(ns / n) }
-	b.Logf("Blake2s(\"abc\") constraints: %d", gates)
-	b.Logf("Compile: %s | Setup: %s | Prove: %s",
-		avg(totalCompile), avg(totalSetup), avg(totalProve))
+	b.Logf("Proof system: %s", proofSystem)
+	b.Logf("Circuit constraints: %d", gates)
+	b.Logf("Compile: %s | Setup: %s | Prove: %s | Verify: %s",
+		avg(durations.compile), avg(durations.setup), avg(durations.prove), avg(durations.verify))
+}
+
+func plonkProof(r1cs constraint.ConstraintSystem, witness blake2sHashBenchCircuit, durations *durations) {
+	var pk plonk.ProvingKey
+	var vk plonk.VerifyingKey
+
+	// setup
+	t0 := time.Now()
+	srs, srsLagrange, err := unsafekzg.NewSRS(r1cs, unsafekzg.WithFSCache())
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	pk, vk, err = plonk.Setup(r1cs, srs, srsLagrange)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	durations.setup += time.Since(t0).Nanoseconds()
+
+	// witness generation and proof generation
+	t1 := time.Now()
+	w, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	publicWitness, err := w.Public()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	proof, err := plonk.Prove(r1cs, pk, w)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	durations.prove += time.Since(t1).Nanoseconds()
+
+	// verification
+	t2 := time.Now()
+	err = plonk.Verify(proof, vk, publicWitness)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	durations.verify += time.Since(t2).Nanoseconds()
+}
+
+func groth16Proof(r1cs constraint.ConstraintSystem, witness blake2sHashBenchCircuit, durations *durations) {
+	// setup
+	t0 := time.Now()
+	pk, vk, err := groth16.Setup(r1cs)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	durations.setup += time.Since(t0).Nanoseconds()
+
+	// witness generation and proof generatino
+	t1 := time.Now()
+	w, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	publicWitness, err := w.Public()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	proof, err := groth16.Prove(r1cs, pk, w)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	durations.prove += time.Since(t1).Nanoseconds()
+
+	// verification
+	t2 := time.Now()
+	if err := groth16.Verify(proof, vk, publicWitness); err != nil {
+		fmt.Println("Error in verification:", err)
+		os.Exit(1)
+	}
+	durations.verify += time.Since(t2).Nanoseconds()
 }
