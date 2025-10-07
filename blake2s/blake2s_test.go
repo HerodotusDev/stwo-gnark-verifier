@@ -92,14 +92,11 @@ func (c *TestBlake2sCompressCircuit) Define(api frontend.API) error {
 		F: c.StateF,
 	}
 
-	uapi, err := uints.NewBinaryField[uints.U32](api)
-	if err != nil {
-		return err
-	}
-
 	blake2sChip := blake2s.NewBlake2sChip(api)
-	state = blake2sChip.Compress(uapi, state, c.In)
+	state = blake2sChip.Compress(state, c.In)
 
+	// this recreates a uapi solely for the assert
+	uapi, _ := uints.New[uints.U32](api)
 	for i := range state.H {
 		uapi.AssertEq(state.H[i], c.ExpectedH[i])
 	}
@@ -132,14 +129,11 @@ type blake2sHashCircuit struct {
 }
 
 func (c *blake2sHashCircuit) Define(api frontend.API) error {
-	uapi, err := uints.New[uints.U32](api)
-	if err != nil {
-		return err
-	}
-
 	blake2sChip := blake2s.NewBlake2sChip(api)
-	state := blake2sChip.Blake2s(uapi, c.In[:])
+	state := blake2sChip.Blake2s(c.In[:])
 
+	// this recreates a uapi solely for the assert
+	uapi, _ := uints.New[uints.U32](api)
 	for i := range state.H {
 		uapi.AssertEq(state.H[i], c.ExpectedH[i])
 	}
@@ -174,29 +168,27 @@ type durations struct {
 	verify  int64
 }
 type blake2sHashBenchCircuit struct {
-	In [128]uints.U8
+	In [64]uints.U8
+
+	n_hashes int
 }
 
 func (c *blake2sHashBenchCircuit) Define(api frontend.API) error {
-	uapi, err := uints.New[uints.U32](api)
-	if err != nil {
-		return err
-	}
 
 	blake2sChip := blake2s.NewBlake2sChip(api)
-	blake2sChip.Blake2s(uapi, c.In[:])
+	for range c.n_hashes {
+		blake2sChip.Blake2s(c.In[:])
+	}
 
 	return nil
 }
 
 func BenchmarkBlake2sHash(b *testing.B) {
-	proofSystem := "plonk"
+	backend := "groth16"
 
-	// prepare the circuit and witness used in the unit test
-	circuit := &blake2sHashBenchCircuit{}
-
+	// create the builder depending on the proof system
 	var builder frontend.NewBuilder
-	switch proofSystem {
+	switch backend {
 	case "plonk":
 		builder = scs.NewBuilder
 	case "groth16":
@@ -206,42 +198,43 @@ func BenchmarkBlake2sHash(b *testing.B) {
 		os.Exit(1)
 	}
 
-	// Create a proper witness with initialized U8 values
-	var in [128]uints.U8
+	// create a proper witness with initialized U8 values
+	var in [64]uints.U8
 	for i := range in {
-		in[i] = uints.NewU8(uint8(i % 256)) // Fill with test data
+		in[i] = uints.NewU8(uint8(i % 256)) // fill with test data
 	}
 	witness := blake2sHashBenchCircuit{
-		In: in,
+		In:       in,
+		n_hashes: b.N,
 	}
 
 	var durations durations
 	var gates int
 
-	for i := 0; i < b.N; i++ {
-		// compile
-		t0 := time.Now()
-		r1cs, err := frontend.Compile(ecc.BN254.ScalarField(), builder, circuit)
-		if err != nil {
-			b.Fatalf("compile error: %v", err)
-		}
-		durations.compile += time.Since(t0).Nanoseconds()
-		gates = r1cs.GetNbConstraints()
+	// compile
+	t0 := time.Now()
+	r1cs, err := frontend.Compile(ecc.BN254.ScalarField(), builder, &blake2sHashBenchCircuit{n_hashes: b.N})
+	if err != nil {
+		b.Fatalf("compile error: %v", err)
+	}
+	durations.compile += time.Since(t0).Nanoseconds()
+	gates = r1cs.GetNbConstraints()
 
-		switch proofSystem {
-		case "plonk":
-			plonkProof(r1cs, witness, &durations)
-		case "groth16":
-			groth16Proof(r1cs, witness, &durations)
-		default:
-			panic("Please provide a valid proof system to benchmark, we only support plonk and groth16")
-		}
+	// setup and proove depending on the backend
+	switch backend {
+	case "plonk":
+		plonkProof(r1cs, witness, &durations)
+	case "groth16":
+		groth16Proof(r1cs, witness, &durations)
+	default:
+		panic("Please provide a valid proof system to benchmark, we only support plonk and groth16")
 	}
 
-	// pretty print summary
+	// print summary
 	n := int64(b.N)
 	avg := func(ns int64) time.Duration { return time.Duration(ns / n) }
-	b.Logf("Proof system: %s", proofSystem)
+	b.Logf("Proof system (backend): %s", backend)
+	b.Logf("Number of hashes: %d", n)
 	b.Logf("Circuit constraints: %d", gates)
 	b.Logf("Compile: %s | Setup: %s | Prove: %s | Verify: %s",
 		avg(durations.compile), avg(durations.setup), avg(durations.prove), avg(durations.verify))
