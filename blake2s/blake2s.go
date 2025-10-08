@@ -59,7 +59,8 @@ var blake2sInitialState = Blake2sState{
 }
 
 type Blake2sChip struct {
-	api frontend.API `gnark:"-"`
+	api  frontend.API                  `gnark:"-"`
+	uapi *uints.BinaryField[uints.U32] `gnark:"-"`
 }
 
 type Blake2sState struct {
@@ -77,17 +78,19 @@ func NewBlake2sChip(api frontend.API) *Blake2sChip {
 		panic("Gnark compiler not set to BN254 scalar field")
 	}
 
-	return &Blake2sChip{api: api}
+	uapi, _ := uints.New[uints.U32](api)
+
+	return &Blake2sChip{api: api, uapi: uapi}
 }
 
-func (c *Blake2sChip) Blake2s(uapi *uints.BinaryField[uints.U32], msg []uints.U8) Blake2sState {
+func (c *Blake2sChip) Blake2s(msg []uints.U8) Blake2sState {
 	S := blake2sInitialState
-	S = c.Update(uapi, S, msg)
-	S, _ = c.Finalize(uapi, S)
+	S = c.Update(S, msg)
+	S, _ = c.Finalize(S)
 	return S
 }
 
-func (c *Blake2sChip) Update(uapi *uints.BinaryField[uints.U32], state Blake2sState, msg []uints.U8) Blake2sState {
+func (c *Blake2sChip) Update(state Blake2sState, msg []uints.U8) Blake2sState {
 	if len(msg) == 0 {
 		return state
 	}
@@ -98,10 +101,10 @@ func (c *Blake2sChip) Update(uapi *uints.BinaryField[uints.U32], state Blake2sSt
 
 	// Increment t by 64 bytes with carry into t[1]
 	incCounter := func() {
-		newT0 := uapi.Add(state.T[0], BLAKE2S_BLOCKBYTES)
-		carry := less.IsLess(uapi.ToValue(newT0), uapi.ToValue(state.T[0]))
+		newT0 := c.uapi.Add(state.T[0], BLAKE2S_BLOCKBYTES)
+		carry := less.IsLess(c.uapi.ToValue(newT0), c.uapi.ToValue(state.T[0]))
 		state.T[0] = newT0
-		state.T[1] = uapi.Add(state.T[1], uapi.ValueOf(carry))
+		state.T[1] = c.uapi.Add(state.T[1], c.uapi.ValueOf(carry))
 	}
 
 	// Fill existing buffer to 64 bytes if possible
@@ -115,10 +118,10 @@ func (c *Blake2sChip) Update(uapi *uints.BinaryField[uints.U32], state Blake2sSt
 			var block [16]uints.U32
 			for w := range 16 {
 				base := 4 * w
-				block[w] = uapi.PackLSB(state.Buf[base : base+4]...)
+				block[w] = c.uapi.PackLSB(state.Buf[base : base+4]...)
 			}
 			// Compress buffered 64-byte block
-			state = c.Compress(uapi, state, block)
+			state = c.Compress(state, block)
 			// Reset buffer and drop processed bytes from msg
 			state.BufLen = 0
 			msg = msg[fill:]
@@ -136,10 +139,10 @@ func (c *Blake2sChip) Update(uapi *uints.BinaryField[uints.U32], state Blake2sSt
 		var block [16]uints.U32
 		for w := range 16 {
 			off := i + 4*w
-			block[w] = uapi.PackLSB(msg[off : off+4]...)
+			block[w] = c.uapi.PackLSB(msg[off : off+4]...)
 		}
 		incCounter()
-		state = c.Compress(uapi, state, block)
+		state = c.Compress(state, block)
 		i += 64
 	}
 
@@ -153,7 +156,7 @@ func (c *Blake2sChip) Update(uapi *uints.BinaryField[uints.U32], state Blake2sSt
 	return state
 }
 
-func (c *Blake2sChip) Compress(uapi *uints.BinaryField[uints.U32], state Blake2sState, in [16]uints.U32) Blake2sState {
+func (c *Blake2sChip) Compress(state Blake2sState, in [16]uints.U32) Blake2sState {
 	var v [16]uints.U32
 	var m [16]uints.U32
 
@@ -166,121 +169,121 @@ func (c *Blake2sChip) Compress(uapi *uints.BinaryField[uints.U32], state Blake2s
 	v[9] = blake2sIV[1]
 	v[10] = blake2sIV[2]
 	v[11] = blake2sIV[3]
-	v[12] = uapi.Xor(state.T[0], blake2sIV[4])
-	v[13] = uapi.Xor(state.T[1], blake2sIV[5])
-	v[14] = uapi.Xor(state.F[0], blake2sIV[6])
-	v[15] = uapi.Xor(state.F[1], blake2sIV[7])
+	v[12] = c.uapi.Xor(state.T[0], blake2sIV[4])
+	v[13] = c.uapi.Xor(state.T[1], blake2sIV[5])
+	v[14] = c.uapi.Xor(state.F[0], blake2sIV[6])
+	v[15] = c.uapi.Xor(state.F[1], blake2sIV[7])
 
 	// Rounds
 	for r := range 10 {
 		// G(r,0,v[0],v[4],v[8],v[12])
 		a, b, c0, d := 0, 4, 8, 12
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*0+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*0+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*0+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*0+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,1,v[1],v[5],v[9],v[13])
 		a, b, c0, d = 1, 5, 9, 13
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*1+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*1+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*1+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*1+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,2,v[2],v[6],v[10],v[14])
 		a, b, c0, d = 2, 6, 10, 14
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*2+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*2+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*2+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*2+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,3,v[3],v[7],v[11],v[15])
 		a, b, c0, d = 3, 7, 11, 15
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*3+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*3+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*3+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*3+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,4,v[0],v[5],v[10],v[15])
 		a, b, c0, d = 0, 5, 10, 15
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*4+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*4+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*4+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*4+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,5,v[1],v[6],v[11],v[12])
 		a, b, c0, d = 1, 6, 11, 12
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*5+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*5+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*5+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*5+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,6,v[2],v[7],v[8],v[13])
 		a, b, c0, d = 2, 7, 8, 13
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*6+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*6+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*6+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*6+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 		// G(r,7,v[3],v[4],v[9],v[14])
 		a, b, c0, d = 3, 4, 9, 14
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*7+0]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -16)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -12)
-		v[a] = uapi.Add(v[a], v[b], m[blake2sSigma[r][2*7+1]])
-		v[d] = uapi.Lrot(uapi.Xor(v[d], v[a]), -8)
-		v[c0] = uapi.Add(v[c0], v[d])
-		v[b] = uapi.Lrot(uapi.Xor(v[b], v[c0]), -7)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*7+0]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -16)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -12)
+		v[a] = c.uapi.Add(v[a], v[b], m[blake2sSigma[r][2*7+1]])
+		v[d] = c.uapi.Lrot(c.uapi.Xor(v[d], v[a]), -8)
+		v[c0] = c.uapi.Add(v[c0], v[d])
+		v[b] = c.uapi.Lrot(c.uapi.Xor(v[b], v[c0]), -7)
 
 	}
 
 	for i := range 8 {
-		state.H[i] = uapi.Xor(state.H[i], v[i], v[i+8])
+		state.H[i] = c.uapi.Xor(state.H[i], v[i], v[i+8])
 	}
 
 	return state
 }
 
-func (c *Blake2sChip) Finalize(uapi *uints.BinaryField[uints.U32], state Blake2sState) (Blake2sState, [32]uints.U8) {
+func (c *Blake2sChip) Finalize(state Blake2sState) (Blake2sState, [32]uints.U8) {
 	// Increment counter by remaining bytes (BufLen)
 	if state.BufLen > 0 {
 		// Comparator for carry on 32-bit counter increment
 		less := cmp.NewBoundedComparator(c.api, absDiffUpp, false)
 
 		inc := uints.NewU32(uint32(state.BufLen))
-		newT0 := uapi.Add(state.T[0], inc)
-		carry := less.IsLess(uapi.ToValue(newT0), uapi.ToValue(state.T[0]))
+		newT0 := c.uapi.Add(state.T[0], inc)
+		carry := less.IsLess(c.uapi.ToValue(newT0), c.uapi.ToValue(state.T[0]))
 		state.T[0] = newT0
-		state.T[1] = uapi.Add(state.T[1], uapi.ValueOf(carry))
+		state.T[1] = c.uapi.Add(state.T[1], c.uapi.ValueOf(carry))
 	}
 
 	// Set last block flag
@@ -297,16 +300,16 @@ func (c *Blake2sChip) Finalize(uapi *uints.BinaryField[uints.U32], state Blake2s
 	var block [16]uints.U32
 	for w := range 16 {
 		off := 4 * w
-		block[w] = uapi.PackLSB(blockBytes[off : off+4]...)
+		block[w] = c.uapi.PackLSB(blockBytes[off : off+4]...)
 	}
 
 	// Compress final block
-	state = c.Compress(uapi, state, block)
+	state = c.Compress(state, block)
 
 	// Produce 32-byte digest from state.H (little-endian words)
 	var out [32]uints.U8
 	for i := range 8 {
-		bs := uapi.UnpackLSB(state.H[i])
+		bs := c.uapi.UnpackLSB(state.H[i])
 		out[4*i+0] = bs[0]
 		out[4*i+1] = bs[1]
 		out[4*i+2] = bs[2]
