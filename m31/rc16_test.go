@@ -10,6 +10,10 @@ import (
 	"github.com/consensys/gnark/test"
 )
 
+// ╔══════════════════════════════════╗
+// ║          RC16 Tests              ║
+// ╚══════════════════════════════════╝
+// A circuit for testing the RC16 chip
 type RC16Circuit struct {
 	Collected [3]frontend.Variable
 }
@@ -22,6 +26,7 @@ func (c *RC16Circuit) Define(api frontend.API) error {
 	return nil
 }
 
+// Check that values within bounds are accepted
 func TestRC16(t *testing.T) {
 	witness := RC16Circuit{
 		Collected: [3]frontend.Variable{
@@ -36,6 +41,7 @@ func TestRC16(t *testing.T) {
 		test.NoFuzzing())
 }
 
+// Check that values outside of bounds are rejected
 func TestRC16Fails(t *testing.T) {
 	badWitness := RC16Circuit{
 		Collected: [3]frontend.Variable{
