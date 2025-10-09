@@ -99,6 +99,26 @@ func (c *inverseCircuit) Define(api frontend.API) error {
 	return nil
 }
 
+// batchInverseCircuit tests the batch inversion logic.
+type batchInverseCircuit struct {
+	Values [4]frontend.Variable
+}
+
+func (c *batchInverseCircuit) Define(api frontend.API) error {
+	chip := NewM31Chip(api)
+	values := make([]M31, len(c.Values))
+	for i := range c.Values {
+		values[i] = NewM31Unchecked(c.Values[i])
+	}
+
+	inverses := chip.BatchInverse(values)
+	for i := range values {
+		product := chip.Mul(values[i], inverses[i])
+		api.AssertIsEqual(product.x, One().x)
+	}
+	return nil
+}
+
 // smartAccSmallCircuit compares the smart accumulator with a naïve reduction flow.
 type smartAccSmallCircuit struct {
 	Adds  [3]frontend.Variable
@@ -405,6 +425,28 @@ func TestM31Inverse(t *testing.T) {
 			test.NoProverChecks(),
 			test.NoFuzzing())
 	})
+}
+
+func TestBatchInverse(t *testing.T) {
+	assert := test.NewAssert(t)
+	circuit := &batchInverseCircuit{}
+	witness := &batchInverseCircuit{
+		Values: [4]frontend.Variable{3, 5, 11, prime - 3},
+	}
+	assert.ProverSucceeded(circuit, witness,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing())
+
+	badWitness := &batchInverseCircuit{
+		Values: [4]frontend.Variable{3, 0, 11, 13},
+	}
+	assert.ProverFailed(circuit, badWitness,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing())
 }
 
 // ╔══════════════════════════════════╗

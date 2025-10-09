@@ -265,6 +265,40 @@ func InverseHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 }
 
 // ╔══════════════════════════════════╗
+// ║        Batch Inversion logic     ║
+// ╚══════════════════════════════════╝
+
+// BatchInverse returns the component-wise inverse of the provided values.
+// All inputs must be non-zero; otherwise the circuit will be unsatisfied.
+func (p *M31Chip) BatchInverse(values []M31) []M31 {
+	n := len(values)
+	if n == 0 {
+		return nil
+	}
+
+	prefix := make([]M31, n)
+	prefix[0] = values[0]
+	for i := 1; i < n; i++ {
+		prefix[i] = p.Mul(prefix[i-1], values[i])
+	}
+
+	totalInverse, hasInv := p.Inverse(prefix[n-1])
+	p.api.AssertIsEqual(hasInv, frontend.Variable(1))
+
+	inverses := make([]M31, n)
+	inverses[n-1] = totalInverse
+
+	curr := totalInverse
+	for i := n - 1; i >= 1; i-- {
+		inverses[i] = p.Mul(prefix[i-1], curr)
+		curr = p.Mul(curr, values[i])
+	}
+	inverses[0] = curr
+
+	return inverses
+}
+
+// ╔══════════════════════════════════╗
 // ║        M31 Smart Accumulator     ║
 // ╚══════════════════════════════════╝
 
