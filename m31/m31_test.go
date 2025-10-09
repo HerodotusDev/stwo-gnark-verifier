@@ -99,6 +99,68 @@ func (c *inverseCircuit) Define(api frontend.API) error {
 	return nil
 }
 
+// smartAccSmallCircuit compares the smart accumulator with a naïve reduction flow.
+type smartAccSmallCircuit struct {
+	Adds  [3]frontend.Variable
+	MulAs [2]frontend.Variable
+	MulBs [2]frontend.Variable
+}
+
+func (c *smartAccSmallCircuit) Define(api frontend.API) error {
+	chip := NewM31Chip(api)
+	acc := chip.NewSmartAccumulator()
+	naive := Zero()
+
+	for _, add := range c.Adds {
+		term := NewM31Unchecked(add)
+		acc.Add(term)
+		naive = chip.Add(naive, term)
+	}
+
+	for i := range c.MulAs {
+		a := NewM31Unchecked(c.MulAs[i])
+		b := NewM31Unchecked(c.MulBs[i])
+		acc.MulAdd(a, b)
+		product := chip.Mul(a, b)
+		naive = chip.Add(naive, product)
+	}
+
+	accResult := acc.Finalize()
+	api.AssertIsEqual(accResult.x, naive.x)
+	return nil
+}
+
+// smartAccFlushCircuit forces multiple flushes within the smart accumulator.
+type smartAccFlushCircuit struct {
+	Adds  [2]frontend.Variable
+	MulAs [10]frontend.Variable
+	MulBs [10]frontend.Variable
+}
+
+func (c *smartAccFlushCircuit) Define(api frontend.API) error {
+	chip := NewM31Chip(api)
+	acc := chip.NewSmartAccumulator()
+	naive := Zero()
+
+	for _, add := range c.Adds {
+		term := NewM31Unchecked(add)
+		acc.Add(term)
+		naive = chip.Add(naive, term)
+	}
+
+	for i := range c.MulAs {
+		a := NewM31Unchecked(c.MulAs[i])
+		b := NewM31Unchecked(c.MulBs[i])
+		acc.MulAdd(a, b)
+		product := chip.Mul(a, b)
+		naive = chip.Add(naive, product)
+	}
+
+	accResult := acc.Finalize()
+	api.AssertIsEqual(accResult.x, naive.x)
+	return nil
+}
+
 // ╔══════════════════════════════════╗
 // ║        Operation Test Cases      ║
 // ╚══════════════════════════════════╝
@@ -230,6 +292,41 @@ func TestM31MulAdd(t *testing.T) {
 				test.NoFuzzing())
 		})
 	}
+}
+
+func TestSmartAccumulatorSmall(t *testing.T) {
+	assert := test.NewAssert(t)
+	circuit := &smartAccSmallCircuit{}
+	witness := &smartAccSmallCircuit{
+		Adds:  [3]frontend.Variable{3, prime - 5, 42},
+		MulAs: [2]frontend.Variable{7, prime - 9},
+		MulBs: [2]frontend.Variable{11, 17},
+	}
+
+	assert.ProverSucceeded(circuit, witness,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing())
+}
+
+func TestSmartAccumulatorFlush(t *testing.T) {
+	assert := test.NewAssert(t)
+	circuit := &smartAccFlushCircuit{}
+	witness := &smartAccFlushCircuit{
+		Adds: [2]frontend.Variable{prime - 3, 99},
+		MulAs: [10]frontend.Variable{
+			prime - 2, prime - 4, prime - 6, prime - 8, prime - 10,
+			prime - 12, prime - 14, prime - 16, prime - 18, prime - 20,
+		},
+		MulBs: [10]frontend.Variable{2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+	}
+
+	assert.ProverSucceeded(circuit, witness,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing())
 }
 
 // ╔══════════════════════════════════╗
