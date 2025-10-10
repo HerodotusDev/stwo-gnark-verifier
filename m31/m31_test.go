@@ -11,6 +11,10 @@ import (
 
 const prime = uint64(PRIME)
 
+// ╔══════════════════════════════════╗
+// ║          Test Circuits           ║
+// ╚══════════════════════════════════╝
+
 type m31ArithmeticCircuit struct{}
 
 func (c *m31ArithmeticCircuit) Define(api frontend.API) error {
@@ -130,6 +134,10 @@ func (c *batchInverseFailureCircuit) Define(api frontend.API) error {
 	return nil
 }
 
+// ╔══════════════════════════════════╗
+// ║          Test Functions          ║
+// ╚══════════════════════════════════╝
+
 func TestM31Arithmetic(t *testing.T) {
 	assert := test.NewAssert(t)
 	circuit := &m31ArithmeticCircuit{}
@@ -165,6 +173,10 @@ func TestBatchInverseFailure(t *testing.T) {
 		test.NoProverChecks(),
 		test.NoFuzzing())
 }
+
+// ╔══════════════════════════════════╗
+// ║          Helper Functions        ║
+// ╚══════════════════════════════════╝
 
 func assertEqualM31(api frontend.API, got, want M31) {
 	api.AssertIsEqual(got.x, want.x)
