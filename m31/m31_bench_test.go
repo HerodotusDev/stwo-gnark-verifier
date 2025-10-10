@@ -51,12 +51,13 @@ func (c *smartAccumulatorCircuit) Define(api frontend.API) error {
 	acc := chip.NewSmartAccumulator()
 
 	for _, add := range c.Adds {
-		acc.Add(NewM31Unchecked(add))
+		acc.AddExpression(NewM31Unchecked(add), quotientBitsPerAdd)
 	}
 	for i := range c.MulAs {
 		a := NewM31Unchecked(c.MulAs[i])
 		b := NewM31Unchecked(c.MulBs[i])
-		acc.MulAdd(a, b)
+		prod := chip.MulUnchecked(a, b)
+		acc.AddExpression(prod, productBitCost(2))
 	}
 
 	result := acc.Finalize()
