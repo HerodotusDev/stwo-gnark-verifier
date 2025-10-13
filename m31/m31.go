@@ -95,6 +95,11 @@ func (p *M31Chip) Sub(a M31, b M31) M31 {
 	return p.MulAdd(b, NegOne(), a)
 }
 
+// Negates an M31 field element.
+func (p *M31Chip) Neg(a M31) M31 {
+	return p.Sub(Zero(), a)
+}
+
 // Multiplies two M31 field elements without reducing the result.
 func (p *M31Chip) MulUnchecked(a M31, b M31) M31 {
 	return NewM31Unchecked(p.api.Mul(a.x, b.x))
@@ -315,17 +320,17 @@ func SplitLimbsHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 // Returns val % PRIME when val is in the range [0, 2*PRIME)
 // Use to reduce the result of an addition
 func (p *M31Chip) PartialReduce(x M31) M31 {
-	return p.reduceWithMaxBits(x, quotientBitsPerAdd)
+	return p.ReduceWithMaxBits(x, quotientBitsPerAdd)
 }
 
 // Returns val % PRIME when val is in the range [0, PRIME^2)
 // Use to reduce the result of a multiplication
 func (p *M31Chip) FullReduce(x M31) M31 {
-	return p.reduceWithMaxBits(x, 32)
+	return p.ReduceWithMaxBits(x, 32)
 }
 
 // reduceWithMaxBits reduces x modulo the field using a quotient bounded by maxNbBits.
-func (p *M31Chip) reduceWithMaxBits(x M31, maxNbBits uint64) M31 {
+func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 	result, err := p.api.Compiler().NewHint(ReduceHint, 2, x.x)
 	if err != nil {
 		panic(err)
@@ -518,7 +523,7 @@ func (acc *SmartAccumulator) flush() {
 		return
 	}
 	aligned := nextMultipleOf16(acc.usedBits)
-	acc.sum = acc.chip.reduceWithMaxBits(acc.sum, aligned)
+	acc.sum = acc.chip.ReduceWithMaxBits(acc.sum, aligned)
 	acc.usedBits = 0
 }
 
