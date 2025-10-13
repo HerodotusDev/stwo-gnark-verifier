@@ -1,5 +1,7 @@
 package m31
 
+import "errors"
+
 // ╔══════════════════════════════════╗
 // ║        QM31 Field Element        ║
 // ╚══════════════════════════════════╝
@@ -194,4 +196,24 @@ func (q *QM31Chip) BatchInverse(values []QM31) []QM31 {
 	}
 	inverses[0] = curr
 	return inverses
+}
+
+// ╔══════════════════════════════════╗
+// ║             Combine              ║
+// ╚══════════════════════════════════╝
+
+type InteractionElements struct {
+	z           QM31
+	alphaPowers []M31
+}
+
+func (q *QM31Chip) Combine(interactionElements InteractionElements, x []QM31) (QM31, error) {
+	sum := q.Neg(interactionElements.z)
+	for i, alphaPower := range interactionElements.alphaPowers {
+		if i >= len(x) {
+			return QM31{}, errors.New("not enough alpha powers to combine values")
+		}
+		sum = q.Add(sum, q.MulM31(x[i], alphaPower))
+	}
+	return sum, nil
 }
