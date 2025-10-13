@@ -13,7 +13,7 @@ type CM31 struct {
 }
 
 // ╔══════════════════════════════════╗
-// ║          CM31 Chip Logic         ║
+// ║             CM31 Chip            ║
 // ╚══════════════════════════════════╝
 
 // CM31Chip exposes arithmetic over CM31 elements by reusing the base M31 chip.
@@ -45,6 +45,10 @@ func (c *CM31Chip) Zero() CM31 {
 func (c *CM31Chip) One() CM31 {
 	return CM31{A: One(), B: Zero()}
 }
+
+// ╔══════════════════════════════════╗
+// ║          CM31 Arithemtics        ║
+// ╚══════════════════════════════════╝
 
 // Neg returns -x.
 func (c *CM31Chip) Neg(x CM31) CM31 {
@@ -127,6 +131,10 @@ func (c *CM31Chip) MulM31Unchecked(x CM31, m M31) CM31 {
 		B: c.m31.MulUnchecked(x.B, m),
 	}
 }
+
+// ╔══════════════════════════════════╗
+// ║          CM31 Inversion          ║
+// ╚══════════════════════════════════╝
 
 // Inverse computes 1/x (fails if x = 0)
 func (c *CM31Chip) Inverse(x CM31) CM31 {

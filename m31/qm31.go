@@ -14,7 +14,7 @@ type QM31 struct {
 var qm31R = NewCM31(NewM31Unchecked(2), NewM31Unchecked(1))
 
 // ╔══════════════════════════════════╗
-// ║          QM31 Chip Logic         ║
+// ║             QM31 Chip            ║
 // ╚══════════════════════════════════╝
 
 // QM31Chip exposes arithmetic for QM31 elements.
@@ -46,6 +46,10 @@ func (q *QM31Chip) FromCM31(x CM31) QM31 {
 func (q *QM31Chip) FromM31(x M31) QM31 {
 	return q.FromCM31(q.cm31.CM31FromM31(x))
 }
+
+// ╔══════════════════════════════════╗
+// ║          QM31 Arithemtics        ║
+// ╚══════════════════════════════════╝
 
 // Neg returns -x.
 func (q *QM31Chip) Neg(x QM31) QM31 {
@@ -143,6 +147,10 @@ func (q *QM31Chip) MulM31Unchecked(x QM31, m M31) QM31 {
 		B: q.cm31.MulM31Unchecked(x.B, m),
 	}
 }
+
+// ╔══════════════════════════════════╗
+// ║          QM31 Inversion          ║
+// ╚══════════════════════════════════╝
 
 // Inverse computes 1/x.
 func (q *QM31Chip) Inverse(x QM31) QM31 {
