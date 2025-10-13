@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/HerodotusDev/stwo-gnark-verifier/verifier"
 	"github.com/consensys/gnark-crypto/ecc"
 	groth16 "github.com/consensys/gnark/backend/groth16"
@@ -12,11 +13,12 @@ import (
 )
 
 type VerifierCircuit struct {
+	proof variables.StarkProof `gnark:"-"`
 }
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := verifier.NewVerifierChip(api)
-	verifierChip.Verify()
+	verifierChip.Verify(c.proof)
 
 	return nil
 }
