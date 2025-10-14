@@ -50,6 +50,15 @@ var (
 	}
 )
 
+func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
+	return QM31{
+		aReal: NewM31Unchecked(aReal),
+		aImag: NewM31Unchecked(aImag),
+		bReal: NewM31Unchecked(bReal),
+		bImag: NewM31Unchecked(bImag),
+	}
+}
+
 // ╔══════════════════════════════════╗
 // ║             QM31 Chip            ║
 // ╚══════════════════════════════════╝
@@ -98,6 +107,13 @@ func (q *QM31Chip) One() QM31 {
 		bReal: Zero(),
 		bImag: Zero(),
 	}
+}
+
+func (q *QM31Chip) Println(x QM31) {
+	q.m31.api.Println("aReal", x.aReal.x)
+	q.m31.api.Println("aImag", x.aImag.x)
+	q.m31.api.Println("bReal", x.bReal.x)
+	q.m31.api.Println("bImag", x.bImag.x)
 }
 
 // ╔══════════════════════════════════╗
@@ -338,13 +354,13 @@ func DummyInteractionElements(powerCount int) InteractionElements {
 	}
 
 	return InteractionElements{
-		z:           QM31{aReal: Zero(), aImag: Zero(), bReal: Zero(), bImag: Zero()},
+		z:           QM31{aReal: One(), aImag: Zero(), bReal: Zero(), bImag: Zero()},
 		alphaPowers: alphaPowers,
 	}
 }
 
 func (q *QM31Chip) Combine(interactionElements InteractionElements, x []QM31) (QM31, error) {
-	sum := interactionElements.z
+	sum := q.Neg(interactionElements.z)
 	for i, alphaPower := range interactionElements.alphaPowers {
 		if i >= len(x) {
 			return QM31{}, errors.New("not enough alpha powers to combine")

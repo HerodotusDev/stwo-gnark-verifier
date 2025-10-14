@@ -80,56 +80,52 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 
 	// Computation of combined values
 	columnSizeQM31 := c.qm31.FromM31(m31.NewM31Unchecked(c.columnSize))
-	combine_0, err := c.qm31.Combine(c.interactionElements, []m31.QM31{seq, id_0})
+	oneQM31 := c.qm31.FromM31(m31.One())
+
+	addr := c.qm31.Add(seq, oneQM31)
+	combine_0, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_0})
 	if err != nil {
 		panic(err)
 	}
 
-	one := c.qm31.FromM31(m31.NewM31Unchecked(1))
-	addr1 := c.qm31.Add(seq, c.qm31.Mul(columnSizeQM31, one))
-	combine_1, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr1, id_1})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_1, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_1})
 	if err != nil {
 		panic(err)
 	}
 
-	two := c.qm31.FromM31(m31.NewM31Unchecked(2))
-	addr2 := c.qm31.Add(addr1, c.qm31.Mul(columnSizeQM31, two))
-	combine_2, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr2, id_2})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_2, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_2})
 	if err != nil {
 		panic(err)
 	}
 
-	three := c.qm31.FromM31(m31.NewM31Unchecked(3))
-	addr3 := c.qm31.Add(addr2, c.qm31.Mul(columnSizeQM31, three))
-	combine_3, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr3, id_3})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_3, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_3})
 	if err != nil {
 		panic(err)
 	}
 
-	four := c.qm31.FromM31(m31.NewM31Unchecked(4))
-	addr4 := c.qm31.Add(addr3, c.qm31.Mul(columnSizeQM31, four))
-	combine_4, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr4, id_4})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_4, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_4})
 	if err != nil {
 		panic(err)
 	}
 
-	five := c.qm31.FromM31(m31.NewM31Unchecked(5))
-	addr5 := c.qm31.Add(addr4, c.qm31.Mul(columnSizeQM31, five))
-	combine_5, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr5, id_5})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_5, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_5})
 	if err != nil {
 		panic(err)
 	}
 
-	six := c.qm31.FromM31(m31.NewM31Unchecked(6))
-	addr6 := c.qm31.Add(addr5, c.qm31.Mul(columnSizeQM31, six))
-	combine_6, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr6, id_6})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_6, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_6})
 	if err != nil {
 		panic(err)
 	}
 
-	seven := c.qm31.FromM31(m31.NewM31Unchecked(7))
-	addr7 := c.qm31.Add(addr6, c.qm31.Mul(columnSizeQM31, seven))
-	combine_7, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr7, id_7})
+	addr = c.qm31.Add(addr, columnSizeQM31)
+	combine_7, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_7})
 	if err != nil {
 		panic(err)
 	}
@@ -159,10 +155,10 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 	// Constraint 0
 	denom_0 := c.qm31.Mul(combine_0, combine_1)
 	num_0 := c.qm31.Add(
-		c.qm31.Mul(combine_0, mult_1),
 		c.qm31.Mul(combine_1, mult_0),
+		c.qm31.Mul(combine_0, mult_1),
 	)
-	constraint_0 := c.qm31.Sub(c.qm31.Mul(diff_0, denom_0), num_0)
+	constraint_0 := c.qm31.Add(c.qm31.Mul(diff_0, denom_0), num_0)
 	sum = c.qm31.Add(
 		c.qm31.Mul(sum, random_coeff),
 		c.qm31.Mul(constraint_0, c.vanishEvalInv),
@@ -171,10 +167,10 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 	// Constraint 1
 	denom_1 := c.qm31.Mul(combine_2, combine_3)
 	num_1 := c.qm31.Add(
-		c.qm31.Mul(combine_2, mult_3),
 		c.qm31.Mul(combine_3, mult_2),
+		c.qm31.Mul(combine_2, mult_3),
 	)
-	constraint_1 := c.qm31.Sub(c.qm31.Mul(diff_1, denom_1), num_1)
+	constraint_1 := c.qm31.Add(c.qm31.Mul(diff_1, denom_1), num_1)
 	sum = c.qm31.Add(
 		c.qm31.Mul(sum, random_coeff),
 		c.qm31.Mul(constraint_1, c.vanishEvalInv),
@@ -183,10 +179,10 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 	// Constraint 2
 	denom_2 := c.qm31.Mul(combine_4, combine_5)
 	num_2 := c.qm31.Add(
-		c.qm31.Mul(combine_4, mult_5),
 		c.qm31.Mul(combine_5, mult_4),
+		c.qm31.Mul(combine_4, mult_5),
 	)
-	constraint_2 := c.qm31.Sub(c.qm31.Mul(diff_2, denom_2), num_2)
+	constraint_2 := c.qm31.Add(c.qm31.Mul(diff_2, denom_2), num_2)
 	sum = c.qm31.Add(
 		c.qm31.Mul(sum, random_coeff),
 		c.qm31.Mul(constraint_2, c.vanishEvalInv),
@@ -195,10 +191,10 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 	// Constraint 3
 	denom_3 := c.qm31.Mul(combine_6, combine_7)
 	num_3 := c.qm31.Add(
-		c.qm31.Mul(combine_6, mult_7),
 		c.qm31.Mul(combine_7, mult_6),
+		c.qm31.Mul(combine_6, mult_7),
 	)
-	constraint_3 := c.qm31.Sub(c.qm31.Mul(diff_3, denom_3), num_3)
+	constraint_3 := c.qm31.Add(c.qm31.Mul(diff_3, denom_3), num_3)
 	sum = c.qm31.Add(
 		c.qm31.Mul(sum, random_coeff),
 		c.qm31.Mul(constraint_3, c.vanishEvalInv),

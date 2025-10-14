@@ -15,6 +15,33 @@ import (
 
 type componentsEvaluateCircuit struct{}
 
+// Sum value comes from the following cairo1 test:
+//
+//	fn test_memory_address_to_id_constraints_regression() {
+//		let mut sum: QM31 = Zero::zero();
+//		let params = ConstraintParams {
+//			MemoryAddressToId_alpha0: One::one(),
+//			MemoryAddressToId_alpha1: One::one(),
+//			MemoryAddressToId_z: One::one(),
+//			claimed_sum: One::one(),
+//			seq: One::one() + One::one(),
+//			column_size: M31Trait::reduce_u32(16),
+//		};
+//		let random_coeff: QM31 = One::one();
+//		let domain_vanish_at_point_inv: QM31 = One::one();
+//		let mut trace_mask_values = array![ones].span();
+//		let mut interaction_trace_mask_values = array![ones].span();
+//		evaluate_constraints_at_point(
+//			ref sum,
+//			ref trace_mask_values,
+//			ref interaction_trace_mask_values,
+//			params,
+//			random_coeff,
+//			domain_vanish_at_point_inv,
+//		);
+//
+// println!("sum: {}", sum);
+// }
 func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	m31Chip := m31.NewM31Chip(api)
 	qm31Chip := m31.NewQM31Chip(m31Chip)
@@ -26,7 +53,7 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 		MemoryAddressToId: 4,
 	}
 	interactionClaim := variables.CairoInteractionClaim{
-		MemoryAddressToId: qm31Chip.Zero(),
+		MemoryAddressToId: qm31Chip.One(),
 	}
 	oodsPoint := qm31Chip.One()
 
@@ -35,7 +62,9 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	randomCoeff := qm31Chip.One()
 
 	result := component.Evaluate(sampledValues, randomCoeff)
-	qm31Chip.AssertEqual(result, qm31Chip.Zero())
+	expectedResult := m31.NewQM31(1207949407, 2147472319, 2147472319, 2147472319)
+	qm31Chip.Println(result)
+	qm31Chip.AssertEqual(result, expectedResult)
 	return nil
 }
 
@@ -45,17 +74,17 @@ func dummySampledValues(qm31Chip *m31.QM31Chip) [][][]m31.QM31 {
 
 	main := make([][]m31.QM31, 16)
 	interaction := make([][]m31.QM31, 16)
-	zero := qm31Chip.Zero()
+	one := qm31Chip.One()
 
 	for i := range main {
-		main[i] = []m31.QM31{zero}
+		main[i] = []m31.QM31{one}
 	}
 	for i := range interaction {
 		if i >= 12 {
-			interaction[i] = []m31.QM31{zero, zero}
+			interaction[i] = []m31.QM31{one, one}
 			continue
 		}
-		interaction[i] = []m31.QM31{zero}
+		interaction[i] = []m31.QM31{one}
 	}
 
 	sampledValues[variables.MAIN_IDX] = main
