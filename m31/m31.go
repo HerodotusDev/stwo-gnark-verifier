@@ -12,6 +12,7 @@ import (
 
 	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/rangecheck"
 )
 
 const PRIME uint32 = 1<<31 - 1
@@ -63,12 +64,12 @@ func NegOne() M31 {
 // A chip for M31 field operations
 type M31Chip struct {
 	api          frontend.API
-	rangeChecker RC16Chip
+	rangeChecker frontend.Rangechecker
 }
 
 // Creates a new M31 chip
 func NewM31Chip(api frontend.API) *M31Chip {
-	return &M31Chip{api: api, rangeChecker: *NewRC16Chip(api)}
+	return &M31Chip{api: api, rangeChecker: rangecheck.New(api)}
 }
 
 // ╔══════════════════════════════════╗
@@ -282,8 +283,8 @@ func (p *M31Chip) RangeCheck(x M31) {
 		x.x,
 	)
 
-	p.rangeChecker.Check16(lo)
-	p.rangeChecker.Check16(p.api.Mul(hi, 2))
+	p.rangeChecker.Check(lo, 16)
+	p.rangeChecker.Check(p.api.Mul(hi, 2), 16)
 }
 
 // The hint used to split an M31 element into 2 16-bit limbs.
@@ -363,7 +364,7 @@ func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 		for _, limb := range limbs {
 			// Note that the even though the last limb of quotient might be less than 16 bits,
 			// 16-range checking it is sufficient as the quotient MAX_QUOTIENT_BITS is a safe bound.
-			p.rangeChecker.Check16(limb)
+			p.rangeChecker.Check(limb, 16)
 			reconstructed = p.api.Add(reconstructed, p.api.Mul(limb, factor))
 			factor = p.api.Mul(factor, base)
 		}
