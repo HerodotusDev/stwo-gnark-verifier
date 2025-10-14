@@ -29,6 +29,27 @@ type cm31 struct {
 	imag M31
 }
 
+var (
+	coord1 = QM31{
+		aReal: Zero(),
+		aImag: One(),
+		bReal: Zero(),
+		bImag: Zero(),
+	}
+	coord2 = QM31{
+		aReal: Zero(),
+		aImag: Zero(),
+		bReal: One(),
+		bImag: Zero(),
+	}
+	coord3 = QM31{
+		aReal: Zero(),
+		aImag: Zero(),
+		bReal: Zero(),
+		bImag: One(),
+	}
+)
+
 // ╔══════════════════════════════════╗
 // ║             QM31 Chip            ║
 // ╚══════════════════════════════════╝
@@ -50,6 +71,13 @@ func (q *QM31Chip) FromM31(m M31) QM31 {
 		bReal: Zero(),
 		bImag: Zero(),
 	}
+}
+
+func (q *QM31Chip) FromPartialEvals(q0, q1, q2, q3 QM31) QM31 {
+	f1 := q.Mul(q1, coord1)
+	f2 := q.Mul(q2, coord2)
+	f3 := q.Mul(q3, coord3)
+	return q.Add(q.Add(q.Add(q0, f1), f2), f3)
 }
 
 // Zero returns the additive identity.

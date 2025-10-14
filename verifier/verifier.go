@@ -50,9 +50,9 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 	// TODO: Extract CP evaluation from sampled values
 	composition_oods_eval := c.qm31.Zero()
 
-	// TODO: evaluate constraints using sampled values
+	// evaluate constraints using sampled values
 	constraints_oods_eval := components.Evaluate(sampledValues, random_coeff)
 
-	// TODO: Verify OODS
+	// verify OODS
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }
