@@ -4,13 +4,11 @@
 package channel
 
 import (
-	"math/big"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
+	"github.com/consensys/gnark/std/rangecheck"
 )
 
 type Blake2sHash [8]uints.U32
@@ -25,6 +23,8 @@ var blake2sInitialStateWords = [8]uint32{
 	0x1f83d9ab,
 	0x5be0cd19,
 }
+
+const InteractionPowBits = 24
 
 type ChannelTime struct {
 	nChallenges uints.U32
@@ -157,41 +157,22 @@ func (c *Channel) DrawRandomBytes() []uints.U8 {
 // ╚══════════════════════════════════╝
 
 // MixAndCheckPowNonce mixes a nonce and checks the leading zero bits.
-func (c *Channel) MixAndCheckPowNonce(nBits uints.U32, nonce uints.U64) frontend.Variable {
+func (c *Channel) MixAndCheckPowNonce(nonce uints.U64) {
 	c.MixU64(nonce)
-	return checkProofOfWork(c.api, c.uapi, c.digest, nBits)
+	checkProofOfWork(c.api, c.uapi, c.digest)
 }
 
-// checkProofOfWork verifies that the digest has at least nBits leading zeros.
-// It is assumed that nBits is a circuit variable (uints.U32).
-func checkProofOfWork(api frontend.API, uapi *uints.BinaryField[uints.U32], digest Blake2sHash, nBits uints.U32) frontend.Variable {
-	comparator := cmp.NewBoundedComparator(api, big.NewInt(256), false)
+// checkProofOfWork verifies that the digest has the required leading zeros.
+// Is is assumed that InteractionPowBits is a constant less than 32.
+// Runs a 32-InteractionPowBits RC in big endian order.
+func checkProofOfWork(api frontend.API, uapi *uints.BinaryField[uints.U32], digest Blake2sHash) {
+	rc := rangecheck.New(api)
+	msw := digest[len(digest)-1]
+	mswBytes := uapi.UnpackMSB(msw)
+	beWord := uapi.PackLSB(mswBytes[3], mswBytes[2], mswBytes[1], mswBytes[0])
+	value := uapi.ToValue(beWord)
 
-	nValue := uapi.ToValue(nBits)
-	comparator.AssertIsLessEq(frontend.Variable(0), nValue)
-	comparator.AssertIsLessEq(nValue, frontend.Variable(256))
-
-	// Expand digest into a 256-bit MSB-first view.
-	bits := make([]frontend.Variable, 0, 256)
-	for wordIdx := len(digest) - 1; wordIdx >= 0; wordIdx-- {
-		wordVal := uapi.ToValue(digest[wordIdx])
-		wordBits := api.ToBinary(wordVal, 32)
-		for bitIdx := 31; bitIdx >= 0; bitIdx-- {
-			bits = append(bits, wordBits[bitIdx])
-		}
-	}
-
-	if len(bits) != 256 {
-		panic("unexpected digest size")
-	}
-
-	violations := frontend.Variable(0)
-	for idx, bit := range bits {
-		requireZero := comparator.IsLess(frontend.Variable(idx), nValue)
-		violations = api.Add(violations, api.Mul(bit, requireZero))
-	}
-
-	return api.IsZero(violations)
+	rc.Check(value, 32-InteractionPowBits)
 }
 
 // ╔══════════════════════════════════╗

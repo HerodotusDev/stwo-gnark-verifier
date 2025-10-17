@@ -69,15 +69,12 @@ func (c *mixU64Circuit) Define(api frontend.API) error {
 
 // checkPowCircuit runs the proof-of-work predicate on a fixed digest.
 type checkPowCircuit struct {
-	Digest   Blake2sHash `gnark:"-"`
-	NBits    uints.U32
-	Expected frontend.Variable `gnark:"-"`
+	Digest Blake2sHash `gnark:"-"`
 }
 
 func (c *checkPowCircuit) Define(api frontend.API) error {
 	uapi, _ := uints.New[uints.U32](api)
-	res := checkProofOfWork(api, uapi, c.Digest, c.NBits)
-	api.AssertIsEqual(res, c.Expected)
+	checkProofOfWork(api, uapi, c.Digest)
 	return nil
 }
 
@@ -137,6 +134,15 @@ func (c *drawFeltsCircuit) Define(api frontend.API) error {
 func runCircuit(t *testing.T, circuit frontend.Circuit) {
 	assert := test.NewAssert(t)
 	assert.ProverSucceeded(circuit, circuit,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing())
+}
+
+func runCircuitExpectFailure(t *testing.T, circuit frontend.Circuit) {
+	assert := test.NewAssert(t)
+	assert.ProverFailed(circuit, circuit,
 		test.WithCurves(ecc.BN254),
 		test.WithBackends(backend.GROTH16),
 		test.NoProverChecks(),
@@ -298,9 +304,7 @@ func TestDrawFelts(t *testing.T) {
 // TestCheckProofOfWork mirrors the Cairo PoW success case.
 func TestCheckProofOfWork(t *testing.T) {
 	circuit := &checkPowCircuit{
-		Digest:   newHash([8]uint32{0, 0, 0, 0, 0, 0, 0, 0x1FFFFFFF}),
-		NBits:    uints.NewU32(3),
-		Expected: frontend.Variable(1),
+		Digest: newHash([8]uint32{0, 0, 0, 0, 0, 0, 0, 0x00000080}),
 	}
 	runCircuit(t, circuit)
 }
@@ -308,11 +312,9 @@ func TestCheckProofOfWork(t *testing.T) {
 // TestCheckProofOfWorkInvalidBits mirrors the Cairo PoW failure case.
 func TestCheckProofOfWorkInvalidBits(t *testing.T) {
 	circuit := &checkPowCircuit{
-		Digest:   newHash([8]uint32{0, 0, 0, 0, 0, 0, 0, 0x1FFFFFFF}),
-		NBits:    uints.NewU32(4),
-		Expected: frontend.Variable(0),
+		Digest: newHash([8]uint32{0, 0, 0, 0, 0, 0, 0, 0x01000000}),
 	}
-	runCircuit(t, circuit)
+	runCircuitExpectFailure(t, circuit)
 }
 
 // newHash converts a u32 fixture into a Blake2sHash value.
