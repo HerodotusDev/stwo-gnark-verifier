@@ -1,6 +1,7 @@
 package components
 
 import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
@@ -11,7 +12,7 @@ type Components struct {
 	api  frontend.API
 	qm31 *m31.QM31Chip
 
-	memoryAddressToId *MemoryAddressToIdComponent
+	memoryAddressToId *cairo_components.MemoryAddressToIdComponent
 }
 
 // Creates a new OODS chip
@@ -23,7 +24,14 @@ func NewComponents(
 	interactionClaim variables.CairoInteractionClaim,
 	oodsPoint m31.QM31,
 ) *Components {
-	memoryAddressToId := NewMemoryAddressToId(api, qm31Chip, cairoInteractionElements.MemoryAddressToId, claim.MemoryAddressToId, interactionClaim.MemoryAddressToId, oodsPoint)
+	memoryAddressToId := cairo_components.NewMemoryAddressToId(
+		api,
+		qm31Chip,
+		cairoInteractionElements.MemoryAddressToId,
+		claim.MemoryAddressToId,
+		interactionClaim.MemoryAddressToId,
+		oodsPoint,
+	)
 
 	return &Components{
 		api:               api,

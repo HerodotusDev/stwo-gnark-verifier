@@ -59,6 +59,10 @@ func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
 	}
 }
 
+func NewQM31FromArrays(a [][]uint64) QM31 {
+	return NewQM31(a[0][0], a[0][1], a[1][0], a[1][1])
+}
+
 // Components returns the four M31 coordinates of the extension element.
 func (q QM31) Components() [4]M31 {
 	return [4]M31{q.aReal, q.aImag, q.bReal, q.bImag}
