@@ -2,7 +2,9 @@ package verifier
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
+	"github.com/HerodotusDev/stwo-gnark-verifier/components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
 )
 
@@ -25,6 +27,32 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	}
 }
 
-func (c *VerifierChip) Verify() {
+func (c *VerifierChip) Verify(proof variables.StarkProof) {
+	// TODO: Verify commitments
 
+	// TODO: Check Proof-of-Work nonce
+
+	// TODO: Draw interaction elements
+	cairoInteractionElements := variables.CairoInteractionElements{
+		MemoryAddressToId: m31.DummyInteractionElements(2),
+	}
+
+	// TODO: Verify Logup sum
+
+	// Verify OODS
+	oodsPoint := c.qm31.One()
+	random_coeff := c.qm31.One()
+	components := components.NewComponents(c.api, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaims, oodsPoint)
+	c.VerifyOODS(proof.SampledValues, components, random_coeff)
+}
+
+func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, random_coeff m31.QM31) {
+	// TODO: Extract CP evaluation from sampled values
+	composition_oods_eval := c.qm31.Zero()
+
+	// evaluate constraints using sampled values
+	constraints_oods_eval := components.Evaluate(sampledValues, random_coeff)
+
+	// verify OODS
+	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }

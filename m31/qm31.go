@@ -29,6 +29,36 @@ type cm31 struct {
 	imag M31
 }
 
+var (
+	coord1 = QM31{
+		aReal: Zero(),
+		aImag: One(),
+		bReal: Zero(),
+		bImag: Zero(),
+	}
+	coord2 = QM31{
+		aReal: Zero(),
+		aImag: Zero(),
+		bReal: One(),
+		bImag: Zero(),
+	}
+	coord3 = QM31{
+		aReal: Zero(),
+		aImag: Zero(),
+		bReal: Zero(),
+		bImag: One(),
+	}
+)
+
+func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
+	return QM31{
+		aReal: NewM31Unchecked(aReal),
+		aImag: NewM31Unchecked(aImag),
+		bReal: NewM31Unchecked(bReal),
+		bImag: NewM31Unchecked(bImag),
+	}
+}
+
 // ╔══════════════════════════════════╗
 // ║             QM31 Chip            ║
 // ╚══════════════════════════════════╝
@@ -52,6 +82,13 @@ func (q *QM31Chip) FromM31(m M31) QM31 {
 	}
 }
 
+func (q *QM31Chip) FromPartialEvals(q0, q1, q2, q3 QM31) QM31 {
+	f1 := q.Mul(q1, coord1)
+	f2 := q.Mul(q2, coord2)
+	f3 := q.Mul(q3, coord3)
+	return q.Add(q.Add(q.Add(q0, f1), f2), f3)
+}
+
 // Zero returns the additive identity.
 func (q *QM31Chip) Zero() QM31 {
 	return QM31{
@@ -70,6 +107,13 @@ func (q *QM31Chip) One() QM31 {
 		bReal: Zero(),
 		bImag: Zero(),
 	}
+}
+
+func (q *QM31Chip) Println(x QM31) {
+	q.m31.api.Println("aReal", x.aReal.x)
+	q.m31.api.Println("aImag", x.aImag.x)
+	q.m31.api.Println("bReal", x.bReal.x)
+	q.m31.api.Println("bImag", x.bImag.x)
 }
 
 // ╔══════════════════════════════════╗
@@ -181,6 +225,15 @@ func (q *QM31Chip) MulM31Unchecked(x QM31, m M31) QM31 {
 	}
 }
 
+// AssertEqual constrains the circuit so that x == y.
+func (q *QM31Chip) AssertEqual(x, y QM31) {
+	api := q.m31.api
+	api.AssertIsEqual(x.aReal.x, y.aReal.x)
+	api.AssertIsEqual(x.aImag.x, y.aImag.x)
+	api.AssertIsEqual(x.bReal.x, y.bReal.x)
+	api.AssertIsEqual(x.bImag.x, y.bImag.x)
+}
+
 // ╔══════════════════════════════════╗
 // ║          CM31 Arithmetics        ║
 // ╚══════════════════════════════════╝
@@ -290,8 +343,24 @@ type InteractionElements struct {
 	alphaPowers []M31
 }
 
+func DummyInteractionElements(powerCount int) InteractionElements {
+	if powerCount < 0 {
+		panic("powerCount must be non-negative")
+	}
+
+	alphaPowers := make([]M31, powerCount)
+	for i := range alphaPowers {
+		alphaPowers[i] = One()
+	}
+
+	return InteractionElements{
+		z:           QM31{aReal: One(), aImag: Zero(), bReal: Zero(), bImag: Zero()},
+		alphaPowers: alphaPowers,
+	}
+}
+
 func (q *QM31Chip) Combine(interactionElements InteractionElements, x []QM31) (QM31, error) {
-	sum := interactionElements.z
+	sum := q.Neg(interactionElements.z)
 	for i, alphaPower := range interactionElements.alphaPowers {
 		if i >= len(x) {
 			return QM31{}, errors.New("not enough alpha powers to combine")
@@ -299,15 +368,6 @@ func (q *QM31Chip) Combine(interactionElements InteractionElements, x []QM31) (Q
 		sum = q.Add(sum, q.MulM31(x[i], alphaPower))
 	}
 	return sum, nil
-}
-
-// AssertEqual constrains the circuit so that x == y.
-func (q *QM31Chip) AssertEqual(x, y QM31) {
-	api := q.m31.api
-	api.AssertIsEqual(x.aReal.x, y.aReal.x)
-	api.AssertIsEqual(x.aImag.x, y.aImag.x)
-	api.AssertIsEqual(x.bReal.x, y.bReal.x)
-	api.AssertIsEqual(x.bImag.x, y.bImag.x)
 }
 
 func QM31InverseHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
