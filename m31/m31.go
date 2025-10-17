@@ -36,6 +36,11 @@ type M31 struct {
 	x frontend.Variable
 }
 
+// Variable exposes the underlying frontend variable representing the element.
+func (m M31) Variable() frontend.Variable {
+	return m.x
+}
+
 // Creates a new M31 field element from an existing variable. Assumes that the element is
 // already reduced.
 func NewM31Unchecked(x frontend.Variable) M31 {

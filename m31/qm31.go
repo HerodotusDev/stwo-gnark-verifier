@@ -59,6 +59,21 @@ func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
 	}
 }
 
+// Components returns the four M31 coordinates of the extension element.
+func (q QM31) Components() [4]M31 {
+	return [4]M31{q.aReal, q.aImag, q.bReal, q.bImag}
+}
+
+// NewQM31FromComponents builds a QM31 element from its four M31 coordinates.
+func NewQM31FromComponents(aReal, aImag, bReal, bImag M31) QM31 {
+	return QM31{
+		aReal: aReal,
+		aImag: aImag,
+		bReal: bReal,
+		bImag: bImag,
+	}
+}
+
 // ╔══════════════════════════════════╗
 // ║             QM31 Chip            ║
 // ╚══════════════════════════════════╝
