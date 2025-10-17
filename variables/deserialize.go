@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	cairo_components "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/std/math/uints"
 )

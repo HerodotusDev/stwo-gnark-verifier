@@ -1,7 +1,7 @@
 package variables
 
 import (
-	cairo_components "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 )
 
