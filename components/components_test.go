@@ -63,7 +63,6 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 
 	result := component.Evaluate(sampledValues, randomCoeff)
 	expectedResult := m31.NewQM31(1207949407, 2147472319, 2147472319, 2147472319)
-	qm31Chip.Println(result)
 	qm31Chip.AssertEqual(result, expectedResult)
 	return nil
 }
