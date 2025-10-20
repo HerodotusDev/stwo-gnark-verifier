@@ -78,7 +78,10 @@ func NewBlake2sChip(api frontend.API) *Blake2sChip {
 		panic("Gnark compiler not set to BN254 scalar field")
 	}
 
-	uapi, _ := uints.New[uints.U32](api)
+	uapi, err := uints.New[uints.U32](api)
+	if err != nil {
+		panic(err)
+	}
 
 	return &Blake2sChip{api: api, uapi: uapi}
 }
