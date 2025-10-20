@@ -1,12 +1,8 @@
 package variables
 
-import "github.com/HerodotusDev/stwo-gnark-verifier/m31"
-
-const (
-	PREPROCESSED_IDX = 0
-	MAIN_IDX         = 1
-	INTERACTION_IDX  = 2
-	CP_IDX           = 3
+import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 )
 
 type StarkProof struct {
@@ -20,9 +16,9 @@ type CairoInteractionElements struct {
 }
 
 type CairoClaim struct {
-	MemoryAddressToId uint32
+	MemoryAddressToId cairo_components.MemoryAddressToIdClaim
 }
 
 type CairoInteractionClaim struct {
-	MemoryAddressToId m31.QM31
+	MemoryAddressToId cairo_components.MemoryIDToValueInteractionClaim
 }

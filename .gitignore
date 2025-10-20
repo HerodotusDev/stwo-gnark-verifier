@@ -11,6 +11,9 @@
 # Test binary, built with `go test -c`
 *.test
 
+# Test data
+test_data/*
+
 # Code coverage profiles and other test artifacts
 *.out
 coverage.*

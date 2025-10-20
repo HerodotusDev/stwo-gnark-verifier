@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
+	"github.com/consensys/gnark/std/math/uints"
 	"github.com/consensys/gnark/test"
 )
 
@@ -50,10 +52,10 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 		MemoryAddressToId: m31.DummyInteractionElements(2),
 	}
 	claim := variables.CairoClaim{
-		MemoryAddressToId: 4,
+		MemoryAddressToId: cairo_components.MemoryAddressToIdClaim{LogSize: uints.NewU8(4)},
 	}
 	interactionClaim := variables.CairoInteractionClaim{
-		MemoryAddressToId: qm31Chip.One(),
+		MemoryAddressToId: cairo_components.MemoryIDToValueInteractionClaim{ClaimedSum: qm31Chip.One()},
 	}
 	oodsPoint := qm31Chip.One()
 
@@ -69,7 +71,7 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 
 func dummySampledValues(qm31Chip *m31.QM31Chip) [][][]m31.QM31 {
 	// Layout mirrors the slices consumed inside MemoryAddressToIdComponent.Evaluate.
-	sampledValues := make([][][]m31.QM31, variables.CP_IDX+1)
+	sampledValues := make([][][]m31.QM31, cairo_components.CP_IDX+1)
 
 	main := make([][]m31.QM31, 16)
 	interaction := make([][]m31.QM31, 16)
@@ -86,8 +88,8 @@ func dummySampledValues(qm31Chip *m31.QM31Chip) [][][]m31.QM31 {
 		interaction[i] = []m31.QM31{one}
 	}
 
-	sampledValues[variables.MAIN_IDX] = main
-	sampledValues[variables.INTERACTION_IDX] = interaction
+	sampledValues[cairo_components.MAIN_IDX] = main
+	sampledValues[cairo_components.INTERACTION_IDX] = interaction
 	return sampledValues
 }
 
