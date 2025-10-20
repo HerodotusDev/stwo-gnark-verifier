@@ -363,7 +363,19 @@ func (q *QM31Chip) BatchInverse(values []QM31) []QM31 {
 
 type InteractionElements struct {
 	z           QM31
-	alphaPowers []M31
+	alpha       QM31
+	alphaPowers []QM31
+}
+
+func NewInteractionElements(z, alpha QM31, alphaPowers []QM31) InteractionElements {
+	copyAlphaPowers := make([]QM31, len(alphaPowers))
+	copy(copyAlphaPowers, alphaPowers)
+
+	return InteractionElements{
+		z:           z,
+		alpha:       alpha,
+		alphaPowers: copyAlphaPowers,
+	}
 }
 
 func DummyInteractionElements(powerCount int) InteractionElements {
@@ -371,24 +383,23 @@ func DummyInteractionElements(powerCount int) InteractionElements {
 		panic("powerCount must be non-negative")
 	}
 
-	alphaPowers := make([]M31, powerCount)
+	one := QM31{AReal: One(), AImag: Zero(), BReal: Zero(), BImag: Zero()}
+	alphaPowers := make([]QM31, powerCount)
 	for i := range alphaPowers {
-		alphaPowers[i] = One()
+		alphaPowers[i] = one
 	}
 
-	return InteractionElements{
-		z:           QM31{AReal: One(), AImag: Zero(), BReal: Zero(), BImag: Zero()},
-		alphaPowers: alphaPowers,
-	}
+	return NewInteractionElements(one, one, alphaPowers)
 }
 
-func (q *QM31Chip) Combine(interactionElements InteractionElements, x []QM31) (QM31, error) {
+func (q *QM31Chip) Combine(interactionElements InteractionElements, values []QM31) (QM31, error) {
+	if len(values) > len(interactionElements.alphaPowers) {
+		return QM31{}, errors.New("not enough alpha powers to combine")
+	}
+
 	sum := q.Neg(interactionElements.z)
-	for i, alphaPower := range interactionElements.alphaPowers {
-		if i >= len(x) {
-			return QM31{}, errors.New("not enough alpha powers to combine")
-		}
-		sum = q.Add(sum, q.MulM31(x[i], alphaPower))
+	for i, value := range values {
+		sum = q.Add(sum, q.Mul(interactionElements.alphaPowers[i], value))
 	}
 	return sum, nil
 }
