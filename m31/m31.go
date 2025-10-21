@@ -103,7 +103,7 @@ func (p *M31Chip) Sub(a M31, b M31) M31 {
 
 // Negates an M31 field element.
 func (p *M31Chip) Neg(a M31) M31 {
-	return p.Sub(Zero(), a)
+	return p.Mul(a, NegOne())
 }
 
 // Multiplies two M31 field elements without reducing the result.

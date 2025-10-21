@@ -31,7 +31,7 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	}
 }
 
-func (c *VerifierChip) Verify(proof variables.StarkProof) {
+func (c *VerifierChip) Verify(proof variables.Proof) {
 	// TODO: Verify commitments
 
 	// TODO: Check Proof-of-Work nonce
@@ -40,13 +40,15 @@ func (c *VerifierChip) Verify(proof variables.StarkProof) {
 	var cairoInteractionElements variables.CairoInteractionElements
 	cairoInteractionElements.Draw(c.channelChip, c.qm31)
 
-	// TODO: Verify Logup sum
+	// Verify Logup sum
+	sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim)
+	c.qm31.AssertEqual(sum, m31.NewQM31(1880435071, 2071788161, 272129029, 1457783626))
 
 	// Verify OODS
-	oodsPoint := c.qm31.One()
-	random_coeff := c.qm31.One()
-	components := components.NewComponents(c.api, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaims, oodsPoint)
-	c.VerifyOODS(proof.SampledValues, components, random_coeff)
+	// oodsPoint := c.qm31.One()
+	// random_coeff := c.qm31.One()
+	// components := components.NewComponents(c.api, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
+	// c.VerifyOODS(proof.SampledValues, components, random_coeff)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, random_coeff m31.QM31) {

@@ -14,7 +14,7 @@ type ProofRaw struct {
 	Claim            ClaimRaw            `json:"claim"`
 	InteractionPow   uint64              `json:"interaction_pow"`
 	InteractionClaim InteractionClaimRaw `json:"interaction_claim"`
-	StarkProof       json.RawMessage     `json:"stark_proof"`
+	Proof            json.RawMessage     `json:"stark_proof"`
 }
 
 // ╔══════════════════════════════════╗
@@ -192,9 +192,9 @@ type PublicDataRaw struct {
 
 // RegisterStateRaw holds the pc/ap/fp register values.
 type RegisterStateRaw struct {
-	PC uint64 `json:"pc"`
-	AP uint64 `json:"ap"`
-	FP uint64 `json:"fp"`
+	PC uint32 `json:"pc"`
+	AP uint32 `json:"ap"`
+	FP uint32 `json:"fp"`
 }
 
 // PublicMemoryRaw exposes the program, output and auxiliary memory segments.
@@ -213,14 +213,14 @@ type SegmentRangeRaw struct {
 
 // SegmentPointerRaw stores the segment identifier and value.
 type SegmentPointerRaw struct {
-	ID    uint64 `json:"id"`
-	Value uint64 `json:"value"`
+	ID    uint32 `json:"id"`
+	Value uint32 `json:"value"`
 }
 
 // MemoryCellRaw represents a (address, word) pair from the public memory tables.
 type MemoryCellRaw struct {
-	Address uint64
-	Value   []uint64
+	Address uint32
+	Value   []uint32
 }
 
 // UnmarshalJSON decodes the Cairo memory cell format `[addr, [values...]]`.

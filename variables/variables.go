@@ -6,10 +6,15 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 )
 
-type StarkProof struct {
-	Claim             CairoClaim
-	InteractionClaims CairoInteractionClaim
-	SampledValues     [][][]m31.QM31
+const (
+	BitsPerFelt252 = 9
+	NM31InFelt252  = 28
+)
+
+type Proof struct {
+	Claim            CairoClaim
+	InteractionClaim CairoInteractionClaim
+	SampledValues    [][][]m31.QM31
 }
 
 // ╔══════════════════════════════════╗
@@ -130,7 +135,7 @@ func drawInteractionElements(ch *channel.Channel, qm31Chip *m31.QM31Chip, powerC
 		alphaPowers[i] = acc
 	}
 
-	return m31.NewInteractionElements(z, alpha, alphaPowers)
+	return qm31Chip.NewInteractionElements(z, alpha, alphaPowers)
 }
 
 // ╔══════════════════════════════════╗
@@ -138,8 +143,71 @@ func drawInteractionElements(ch *channel.Channel, qm31Chip *m31.QM31Chip, powerC
 // ╚══════════════════════════════════╝
 
 type CairoClaim struct {
+	PublicData        PublicData
 	MemoryAddressToId cairo_components.MemoryAddressToIdClaim
 }
+
+// ╔══════════════════════════════════╗
+// ║            Public Data           ║
+// ╚══════════════════════════════════╝
+
+// The PublicData is emitted and used through lookups and it this makes more sense to store
+// it directly as M31s (instead of u32 in stwo-cairo).
+type PublicData struct {
+	PublicMemory PublicMemory
+	InitialState CasmState
+	FinalState   CasmState
+}
+
+type CasmState struct {
+	PC m31.M31
+	AP m31.M31
+	FP m31.M31
+}
+
+type PublicMemory struct {
+	Program        []PubMemoryValue
+	PublicSegments PublicSegmentRanges
+	Output         []PubMemoryValue
+	SafeCall       []PubMemoryValue
+}
+
+type PubMemoryValue struct {
+	ID    m31.M31
+	Value Felt252Value
+}
+
+type PublicMemoryEntry struct {
+	Address m31.M31
+	ID      m31.M31
+	Value   Felt252Value
+}
+
+type PublicSegmentRanges struct {
+	Output        SegmentRange
+	Pedersen      *SegmentRange
+	RangeCheck128 *SegmentRange
+	Ecdsa         *SegmentRange
+	Bitwise       *SegmentRange
+	EcOp          *SegmentRange
+	Keccak        *SegmentRange
+	Poseidon      *SegmentRange
+	RangeCheck96  *SegmentRange
+	AddMod        *SegmentRange
+	MulMod        *SegmentRange
+}
+
+type SegmentRange struct {
+	StartPtr SegmentPointer
+	StopPtr  SegmentPointer
+}
+
+type SegmentPointer struct {
+	ID    m31.M31
+	Value Felt252Value
+}
+
+type Felt252Value [NM31InFelt252]m31.M31
 
 // ╔══════════════════════════════════╗
 // ║        Interaction Claim         ║

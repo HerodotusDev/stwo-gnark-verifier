@@ -7,13 +7,13 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/HerodotusDev/stwo-gnark-verifier/verifier"
 	"github.com/consensys/gnark-crypto/ecc"
-	groth16 "github.com/consensys/gnark/backend/groth16"
+	"github.com/consensys/gnark/backend/groth16"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 )
 
 type VerifierCircuit struct {
-	proof variables.StarkProof `gnark:"-"`
+	proof variables.Proof `gnark:"-"`
 }
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
@@ -24,7 +24,16 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 }
 
 func main() {
-	circuit := VerifierCircuit{}
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.HdpProofFixture))
+	if err != nil {
+		fmt.Println("Error in reading proof:", err)
+		os.Exit(1)
+	}
+
+	cairoProof := variables.BuildProof(cairoProofRaw)
+	circuit := VerifierCircuit{
+		proof: *cairoProof,
+	}
 
 	// ╔══════════════════════════════════╗
 	// ║        Circuit Compilation       ║
