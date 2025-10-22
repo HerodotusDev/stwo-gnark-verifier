@@ -75,20 +75,15 @@ func (elements *CairoInteractionElements) Draw(ch *channel.Channel, qm31Chip *m3
 	elements.BlakeG = drawInteractionElements(ch, qm31Chip, blakeGRelationSize)
 	elements.BlakeRoundSigma = drawInteractionElements(ch, qm31Chip, blakeRoundSigmaRelationSize)
 	elements.TripleXor32 = drawInteractionElements(ch, qm31Chip, tripleXor32RelationSize)
-	elements.PartialEcMul = drawInteractionElements(ch, qm31Chip, partialEcMulRelationSize)
-	elements.PedersenPointsTable = drawInteractionElements(ch, qm31Chip, pedersenPointsTableRelationSize)
-	elements.PoseidonFullRoundChain = drawInteractionElements(ch, qm31Chip, poseidonFullRoundChainRelationSize)
 	elements.Poseidon3PartialRoundsChain = drawInteractionElements(ch, qm31Chip, poseidon3PartialRoundsChainRelationSize)
+	elements.PoseidonFullRoundChain = drawInteractionElements(ch, qm31Chip, poseidonFullRoundChainRelationSize)
 	elements.Cube252 = drawInteractionElements(ch, qm31Chip, cube252RelationSize)
 	elements.PoseidonRoundKeys = drawInteractionElements(ch, qm31Chip, poseidonRoundKeysRelationSize)
 	elements.RangeCheckFelt252Width27 = drawInteractionElements(ch, qm31Chip, rangeCheckFelt252Width27RelationSize)
+	elements.PartialEcMul = drawInteractionElements(ch, qm31Chip, partialEcMulRelationSize)
+	elements.PedersenPointsTable = drawInteractionElements(ch, qm31Chip, pedersenPointsTableRelationSize)
 	elements.MemoryAddressToId = drawInteractionElements(ch, qm31Chip, memoryAddressToIdRelationSize)
 	elements.MemoryIDToValue = drawInteractionElements(ch, qm31Chip, memoryIdToValueRelationSize)
-	elements.VerifyBitwiseXor4 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor4RelationSize)
-	elements.VerifyBitwiseXor7 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor7RelationSize)
-	elements.VerifyBitwiseXor8 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor8RelationSize)
-	elements.VerifyBitwiseXor9 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor9RelationSize)
-	elements.VerifyBitwiseXor12 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor12RelationSize)
 
 	elements.RangeChecks = RangeChecksInteractionElements{
 		RC6:         drawInteractionElements(ch, qm31Chip, rangeCheck6RelationSize),
@@ -106,6 +101,12 @@ func (elements *CairoInteractionElements) Draw(ch *channel.Channel, qm31Chip *m3
 		RC4_4_4_4:   drawInteractionElements(ch, qm31Chip, rangeCheck4_4_4_4RelationSize),
 		RC3_3_3_3_3: drawInteractionElements(ch, qm31Chip, rangeCheck3_3_3_3_3RelationSize),
 	}
+
+	elements.VerifyBitwiseXor4 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor4RelationSize)
+	elements.VerifyBitwiseXor7 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor7RelationSize)
+	elements.VerifyBitwiseXor8 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor8RelationSize)
+	elements.VerifyBitwiseXor9 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor9RelationSize)
+	elements.VerifyBitwiseXor12 = drawInteractionElements(ch, qm31Chip, verifyBitwiseXor12RelationSize)
 }
 
 func drawInteractionElements(ch *channel.Channel, qm31Chip *m31.QM31Chip, powerCount int) m31.InteractionElements {

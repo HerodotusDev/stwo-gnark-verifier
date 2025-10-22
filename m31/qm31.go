@@ -367,6 +367,20 @@ type InteractionElements struct {
 	alphaPowers []QM31
 }
 
+// For testing purposes
+func (e *InteractionElements) LastAlphaPower() QM31 {
+	return e.alphaPowers[len(e.alphaPowers)-1]
+}
+
+// For debugging purposes
+func (e *InteractionElements) Println(qm31Chip *QM31Chip) {
+	qm31Chip.Println(e.z)
+	qm31Chip.Println(e.alpha)
+	for _, alphaPower := range e.alphaPowers {
+		qm31Chip.Println(alphaPower)
+	}
+}
+
 func NewInteractionElements(z, alpha QM31, alphaPowers []QM31) InteractionElements {
 	copyAlphaPowers := make([]QM31, len(alphaPowers))
 	copy(copyAlphaPowers, alphaPowers)

@@ -30,6 +30,7 @@ go.work.sum
 # Go cache folders
 .gocache/
 .gomodcache/
+.cache/
 
 # env file
 .env
