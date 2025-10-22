@@ -13,6 +13,7 @@ import (
 	"github.com/consensys/gnark/test"
 )
 
+// Test will be replaced by a meaningful test once the full logup sum is implemented
 type dummyLogupSumCircuit struct{}
 
 func (c *dummyLogupSumCircuit) Define(api frontend.API) error {
