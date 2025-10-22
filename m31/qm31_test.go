@@ -24,10 +24,10 @@ func (c *qm31OpsCircuit) Define(api frontend.API) error {
 
 	newQM := func(a0, a1, b0, b1 uint64) QM31 {
 		return QM31{
-			aReal: NewM31Unchecked(a0),
-			aImag: NewM31Unchecked(a1),
-			bReal: NewM31Unchecked(b0),
-			bImag: NewM31Unchecked(b1),
+			AReal: NewM31Unchecked(a0),
+			AImag: NewM31Unchecked(a1),
+			BReal: NewM31Unchecked(b0),
+			BImag: NewM31Unchecked(b1),
 		}
 	}
 
@@ -86,19 +86,19 @@ func (c *qm31InverseCircuit) Define(api frontend.API) error {
 	qmChip := NewQM31Chip(m31Chip)
 
 	value := QM31{
-		aReal: NewM31Unchecked(c.Value[0]),
-		aImag: NewM31Unchecked(c.Value[1]),
-		bReal: NewM31Unchecked(c.Value[2]),
-		bImag: NewM31Unchecked(c.Value[3]),
+		AReal: NewM31Unchecked(c.Value[0]),
+		AImag: NewM31Unchecked(c.Value[1]),
+		BReal: NewM31Unchecked(c.Value[2]),
+		BImag: NewM31Unchecked(c.Value[3]),
 	}
 	inverse := qmChip.Inverse(value)
 
 	product := qmChip.Mul(value, inverse)
 	one := qmChip.One()
-	api.AssertIsEqual(product.aReal.x, one.aReal.x)
-	api.AssertIsEqual(product.aImag.x, one.aImag.x)
-	api.AssertIsEqual(product.bReal.x, one.bReal.x)
-	api.AssertIsEqual(product.bImag.x, one.bImag.x)
+	api.AssertIsEqual(product.AReal.Limb, one.AReal.Limb)
+	api.AssertIsEqual(product.AImag.Limb, one.AImag.Limb)
+	api.AssertIsEqual(product.BReal.Limb, one.BReal.Limb)
+	api.AssertIsEqual(product.BImag.Limb, one.BImag.Limb)
 	return nil
 }
 
@@ -109,10 +109,10 @@ func (c *qm31InverseSimpleCircuit) Define(api frontend.API) error {
 	qmChip := NewQM31Chip(m31Chip)
 
 	qm := QM31{
-		aReal: NewM31Unchecked(1),
-		aImag: NewM31Unchecked(2),
-		bReal: NewM31Unchecked(3),
-		bImag: NewM31Unchecked(4),
+		AReal: NewM31Unchecked(1),
+		AImag: NewM31Unchecked(2),
+		BReal: NewM31Unchecked(3),
+		BImag: NewM31Unchecked(4),
 	}
 	inverse := qmChip.Inverse(qm)
 	product := qmChip.Mul(qm, inverse)
@@ -172,8 +172,8 @@ func TestQM31InverseSimple(t *testing.T) {
 // ╚══════════════════════════════════╝
 
 func assertEqualQM31(api frontend.API, got, want QM31) {
-	api.AssertIsEqual(got.aReal.x, want.aReal.x)
-	api.AssertIsEqual(got.aImag.x, want.aImag.x)
-	api.AssertIsEqual(got.bReal.x, want.bReal.x)
-	api.AssertIsEqual(got.bImag.x, want.bImag.x)
+	api.AssertIsEqual(got.AReal.Limb, want.AReal.Limb)
+	api.AssertIsEqual(got.AImag.Limb, want.AImag.Limb)
+	api.AssertIsEqual(got.BReal.Limb, want.BReal.Limb)
+	api.AssertIsEqual(got.BImag.Limb, want.BImag.Limb)
 }

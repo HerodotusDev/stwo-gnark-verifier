@@ -33,18 +33,18 @@ func init() {
 
 // A type alias used to represent M31 field elements.
 type M31 struct {
-	x frontend.Variable
+	Limb frontend.Variable
 }
 
 // Variable exposes the underlying frontend variable representing the element.
 func (m M31) Variable() frontend.Variable {
-	return m.x
+	return m.Limb
 }
 
 // Creates a new M31 field element from an existing variable. Assumes that the element is
 // already reduced.
 func NewM31Unchecked(x frontend.Variable) M31 {
-	return M31{x}
+	return M31{Limb: x}
 }
 
 // The zero element in the M31 field.
@@ -83,7 +83,7 @@ func NewM31Chip(api frontend.API) *M31Chip {
 
 // Adds two M31 field elements without reducing the result.
 func (p *M31Chip) AddUnchecked(a M31, b M31) M31 {
-	return NewM31Unchecked(p.api.Add(a.x, b.x))
+	return NewM31Unchecked(p.api.Add(a.Limb, b.Limb))
 }
 
 // Adds two M31 field elements and returns a value within the M31 field.
@@ -93,7 +93,7 @@ func (p *M31Chip) Add(a M31, b M31) M31 {
 
 // Subracts two M31 field elements without reducing the result.
 func (p *M31Chip) SubUnchecked(a M31, b M31) M31 {
-	return NewM31Unchecked(p.api.Add(a.x, p.api.Mul(b.x, NegOne().x)))
+	return NewM31Unchecked(p.api.Add(a.Limb, p.api.Mul(b.Limb, NegOne().Limb)))
 }
 
 // Subracts two M31 field elements and returns a value within the M31 field.
@@ -108,7 +108,7 @@ func (p *M31Chip) Neg(a M31) M31 {
 
 // Multiplies two M31 field elements without reducing the result.
 func (p *M31Chip) MulUnchecked(a M31, b M31) M31 {
-	return NewM31Unchecked(p.api.Mul(a.x, b.x))
+	return NewM31Unchecked(p.api.Mul(a.Limb, b.Limb))
 }
 
 // Multiplies two M31 field elements and returns a value within the M31 field.
@@ -118,13 +118,13 @@ func (p *M31Chip) Mul(a M31, b M31) M31 {
 
 // Performs a * b + c and returns a value without reducing the result.
 func (p *M31Chip) MulAddUnchecked(a M31, b M31, c M31) M31 {
-	cLimbCopy := p.api.Mul(c.x, 1)
-	return NewM31Unchecked(p.api.MulAcc(cLimbCopy, a.x, b.x))
+	cLimbCopy := p.api.Mul(c.Limb, 1)
+	return NewM31Unchecked(p.api.MulAcc(cLimbCopy, a.Limb, b.Limb))
 }
 
 // Performs a * b + c and returns a value within the M31 field.
 func (p *M31Chip) MulAdd(a M31, b M31, c M31) M31 {
-	result, err := p.api.Compiler().NewHint(MulAddHint, 2, a.x, b.x, c.x)
+	result, err := p.api.Compiler().NewHint(MulAddHint, 2, a.Limb, b.Limb, c.Limb)
 	if err != nil {
 		panic(err)
 	}
@@ -132,9 +132,9 @@ func (p *M31Chip) MulAdd(a M31, b M31, c M31) M31 {
 	quotient := NewM31Unchecked(result[0])
 	remainder := NewM31Unchecked(result[1])
 
-	cLimbCopy := p.api.Mul(c.x, 1)
-	lhs := p.api.MulAcc(cLimbCopy, a.x, b.x)
-	rhs := p.api.MulAcc(remainder.x, PRIME, quotient.x)
+	cLimbCopy := p.api.Mul(c.Limb, 1)
+	lhs := p.api.MulAcc(cLimbCopy, a.Limb, b.Limb)
+	rhs := p.api.MulAcc(remainder.Limb, PRIME, quotient.Limb)
 	p.api.AssertIsEqual(lhs, rhs)
 
 	p.RangeCheck(quotient)
@@ -221,17 +221,17 @@ func (p *M31Chip) BatchInverse(values []M31) []M31 {
 
 // Computes the inverse of a field element x such that x * x^-1 = 1.
 func (p *M31Chip) Inverse(x M31) (M31, frontend.Variable) {
-	result, err := p.api.Compiler().NewHint(InverseHint, 1, x.x)
+	result, err := p.api.Compiler().NewHint(InverseHint, 1, x.Limb)
 	if err != nil {
 		panic(err)
 	}
 
 	inverse := NewM31Unchecked(result[0])
-	hasInv := p.api.Sub(1, p.api.IsZero(x.x))
+	hasInv := p.api.Sub(1, p.api.IsZero(x.Limb))
 	p.RangeCheck(inverse)
 
 	product := p.Mul(inverse, x)
-	productToCheck := p.api.Select(hasInv, product.x, frontend.Variable(1))
+	productToCheck := p.api.Select(hasInv, product.Limb, frontend.Variable(1))
 	p.api.AssertIsEqual(productToCheck, frontend.Variable(1))
 
 	return inverse, hasInv
@@ -272,7 +272,7 @@ func InverseHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 
 // RangeCheck checks that an M31 element is within the field.
 func (p *M31Chip) RangeCheck(x M31) {
-	result, err := p.api.Compiler().NewHint(SplitLimbsHint, 2, x.x)
+	result, err := p.api.Compiler().NewHint(SplitLimbsHint, 2, x.Limb)
 	if err != nil {
 		panic(err)
 	}
@@ -285,7 +285,7 @@ func (p *M31Chip) RangeCheck(x M31) {
 			p.api.Mul(hi, uint32(1<<16)),
 			lo,
 		),
-		x.x,
+		x.Limb,
 	)
 
 	p.rangeChecker.Check(lo, 16)
@@ -337,7 +337,7 @@ func (p *M31Chip) FullReduce(x M31) M31 {
 
 // reduceWithMaxBits reduces x modulo the field using a quotient bounded by maxNbBits.
 func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
-	result, err := p.api.Compiler().NewHint(ReduceHint, 2, x.x)
+	result, err := p.api.Compiler().NewHint(ReduceHint, 2, x.Limb)
 	if err != nil {
 		panic(err)
 	}
@@ -377,10 +377,10 @@ func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 	}
 
 	p.api.AssertIsEqual(
-		x.x,
+		x.Limb,
 		p.api.Add(
 			p.api.Mul(quotient, PRIME),
-			remainder.x,
+			remainder.Limb,
 		),
 	)
 

@@ -18,44 +18,44 @@ func init() {
 
 // QM31 represents an element of the quadratic extension over CM31: a + u b.
 type QM31 struct {
-	aReal M31
-	aImag M31
-	bReal M31
-	bImag M31
+	AReal M31
+	AImag M31
+	BReal M31
+	BImag M31
 }
 
 type cm31 struct {
-	real M31
-	imag M31
+	Real M31
+	Imag M31
 }
 
 var (
 	coord1 = QM31{
-		aReal: Zero(),
-		aImag: One(),
-		bReal: Zero(),
-		bImag: Zero(),
+		AReal: Zero(),
+		AImag: One(),
+		BReal: Zero(),
+		BImag: Zero(),
 	}
 	coord2 = QM31{
-		aReal: Zero(),
-		aImag: Zero(),
-		bReal: One(),
-		bImag: Zero(),
+		AReal: Zero(),
+		AImag: Zero(),
+		BReal: One(),
+		BImag: Zero(),
 	}
 	coord3 = QM31{
-		aReal: Zero(),
-		aImag: Zero(),
-		bReal: Zero(),
-		bImag: One(),
+		AReal: Zero(),
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: One(),
 	}
 )
 
 func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
 	return QM31{
-		aReal: NewM31Unchecked(aReal),
-		aImag: NewM31Unchecked(aImag),
-		bReal: NewM31Unchecked(bReal),
-		bImag: NewM31Unchecked(bImag),
+		AReal: NewM31Unchecked(aReal),
+		AImag: NewM31Unchecked(aImag),
+		BReal: NewM31Unchecked(bReal),
+		BImag: NewM31Unchecked(bImag),
 	}
 }
 
@@ -65,16 +65,16 @@ func NewQM31FromArrays(a [][]uint64) QM31 {
 
 // Components returns the four M31 coordinates of the extension element.
 func (q QM31) Components() [4]M31 {
-	return [4]M31{q.aReal, q.aImag, q.bReal, q.bImag}
+	return [4]M31{q.AReal, q.AImag, q.BReal, q.BImag}
 }
 
 // NewQM31FromComponents builds a QM31 element from its four M31 coordinates.
 func NewQM31FromComponents(aReal, aImag, bReal, bImag M31) QM31 {
 	return QM31{
-		aReal: aReal,
-		aImag: aImag,
-		bReal: bReal,
-		bImag: bImag,
+		AReal: aReal,
+		AImag: aImag,
+		BReal: bReal,
+		BImag: bImag,
 	}
 }
 
@@ -94,10 +94,10 @@ func NewQM31Chip(m31 *M31Chip) *QM31Chip {
 
 func (q *QM31Chip) FromM31(m M31) QM31 {
 	return QM31{
-		aReal: m,
-		aImag: Zero(),
-		bReal: Zero(),
-		bImag: Zero(),
+		AReal: m,
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: Zero(),
 	}
 }
 
@@ -111,28 +111,28 @@ func (q *QM31Chip) FromPartialEvals(q0, q1, q2, q3 QM31) QM31 {
 // Zero returns the additive identity.
 func (q *QM31Chip) Zero() QM31 {
 	return QM31{
-		aReal: Zero(),
-		aImag: Zero(),
-		bReal: Zero(),
-		bImag: Zero(),
+		AReal: Zero(),
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: Zero(),
 	}
 }
 
 // One returns the multiplicative identity.
 func (q *QM31Chip) One() QM31 {
 	return QM31{
-		aReal: One(),
-		aImag: Zero(),
-		bReal: Zero(),
-		bImag: Zero(),
+		AReal: One(),
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: Zero(),
 	}
 }
 
 func (q *QM31Chip) Println(x QM31) {
-	q.m31.api.Println("aReal", x.aReal.x)
-	q.m31.api.Println("aImag", x.aImag.x)
-	q.m31.api.Println("bReal", x.bReal.x)
-	q.m31.api.Println("bImag", x.bImag.x)
+	q.m31.api.Println("aReal", x.AReal.Limb)
+	q.m31.api.Println("aImag", x.AImag.Limb)
+	q.m31.api.Println("bReal", x.BReal.Limb)
+	q.m31.api.Println("bImag", x.BImag.Limb)
 }
 
 // ╔══════════════════════════════════╗
@@ -142,70 +142,74 @@ func (q *QM31Chip) Println(x QM31) {
 // Add computes x + y.
 func (q *QM31Chip) Add(x, y QM31) QM31 {
 	return QM31{
-		aReal: q.m31.Add(x.aReal, y.aReal),
-		aImag: q.m31.Add(x.aImag, y.aImag),
-		bReal: q.m31.Add(x.bReal, y.bReal),
-		bImag: q.m31.Add(x.bImag, y.bImag),
+		AReal: q.m31.Add(x.AReal, y.AReal),
+		AImag: q.m31.Add(x.AImag, y.AImag),
+		BReal: q.m31.Add(x.BReal, y.BReal),
+		BImag: q.m31.Add(x.BImag, y.BImag),
 	}
 }
 
 // AddUnchecked computes x + y without reducing the result.
 func (q *QM31Chip) AddUnchecked(x, y QM31) QM31 {
 	return QM31{
-		aReal: q.m31.AddUnchecked(x.aReal, y.aReal),
-		aImag: q.m31.AddUnchecked(x.aImag, y.aImag),
-		bReal: q.m31.AddUnchecked(x.bReal, y.bReal),
-		bImag: q.m31.AddUnchecked(x.bImag, y.bImag),
+		AReal: q.m31.AddUnchecked(x.AReal, y.AReal),
+		AImag: q.m31.AddUnchecked(x.AImag, y.AImag),
+		BReal: q.m31.AddUnchecked(x.BReal, y.BReal),
+		BImag: q.m31.AddUnchecked(x.BImag, y.BImag),
 	}
 }
 
 // Sub computes x - y.
 func (q *QM31Chip) Sub(x, y QM31) QM31 {
 	return QM31{
-		aReal: q.m31.Sub(x.aReal, y.aReal),
-		aImag: q.m31.Sub(x.aImag, y.aImag),
-		bReal: q.m31.Sub(x.bReal, y.bReal),
-		bImag: q.m31.Sub(x.bImag, y.bImag),
+		AReal: q.m31.Sub(x.AReal, y.AReal),
+		AImag: q.m31.Sub(x.AImag, y.AImag),
+		BReal: q.m31.Sub(x.BReal, y.BReal),
+		BImag: q.m31.Sub(x.BImag, y.BImag),
 	}
 }
 
 // SubUnchecked computes x - y without reducing.
 func (q *QM31Chip) SubUnchecked(x, y QM31) QM31 {
 	return QM31{
-		aReal: q.m31.SubUnchecked(x.aReal, y.aReal),
-		aImag: q.m31.SubUnchecked(x.aImag, y.aImag),
-		bReal: q.m31.SubUnchecked(x.bReal, y.bReal),
-		bImag: q.m31.SubUnchecked(x.bImag, y.bImag),
+		AReal: q.m31.SubUnchecked(x.AReal, y.AReal),
+		AImag: q.m31.SubUnchecked(x.AImag, y.AImag),
+		BReal: q.m31.SubUnchecked(x.BReal, y.BReal),
+		BImag: q.m31.SubUnchecked(x.BImag, y.BImag),
 	}
 }
 
 // Neg returns -x.
 func (q *QM31Chip) Neg(x QM31) QM31 {
 	return QM31{
-		aReal: q.m31.Neg(x.aReal),
-		aImag: q.m31.Neg(x.aImag),
-		bReal: q.m31.Neg(x.bReal),
-		bImag: q.m31.Neg(x.bImag),
+		AReal: q.m31.Neg(x.AReal),
+		AImag: q.m31.Neg(x.AImag),
+		BReal: q.m31.Neg(x.BReal),
+		BImag: q.m31.Neg(x.BImag),
 	}
 }
 
 // Mul computes (a + u b)(c + u d) with u^2 = 2 + i.
 func (q *QM31Chip) Mul(lhs, rhs QM31) QM31 {
 	resultUnreduced := q.MulUnchecked(lhs, rhs)
+	// cmMulUnchecked yields a CM31 with coefficients of at most 97 bits.
+	// rbd has coefficients of at most 161 bits (cm mul of 97 bit coefficients and 31 bit coefficients).
+	// A and B are thus of at most 162 bits (carry bit).
+	// 16 * ceil((162-31)/16) = 144 bits.
 	return QM31{
-		aReal: q.m31.ReduceWithMaxBits(resultUnreduced.aReal, 64),
-		aImag: q.m31.ReduceWithMaxBits(resultUnreduced.aImag, 64),
-		bReal: q.m31.ReduceWithMaxBits(resultUnreduced.bReal, 64),
-		bImag: q.m31.ReduceWithMaxBits(resultUnreduced.bImag, 64),
+		AReal: q.m31.ReduceWithMaxBits(resultUnreduced.AReal, 144),
+		AImag: q.m31.ReduceWithMaxBits(resultUnreduced.AImag, 144),
+		BReal: q.m31.ReduceWithMaxBits(resultUnreduced.BReal, 144),
+		BImag: q.m31.ReduceWithMaxBits(resultUnreduced.BImag, 144),
 	}
 }
 
 // MulUnchecked multiplies without reducing intermediate terms.
 func (q *QM31Chip) MulUnchecked(lhs, rhs QM31) QM31 {
-	a := cm31{lhs.aReal, lhs.aImag}
-	b := cm31{lhs.bReal, lhs.bImag}
-	c := cm31{rhs.aReal, rhs.aImag}
-	d := cm31{rhs.bReal, rhs.bImag}
+	a := cm31{lhs.AReal, lhs.AImag}
+	b := cm31{lhs.BReal, lhs.BImag}
+	c := cm31{rhs.AReal, rhs.AImag}
+	d := cm31{rhs.BReal, rhs.BImag}
 
 	ac := q.cmMulUnchecked(a, c)
 	bd := q.cmMulUnchecked(b, d)
@@ -217,40 +221,40 @@ func (q *QM31Chip) MulUnchecked(lhs, rhs QM31) QM31 {
 	B := q.cmAddUnchecked(ad, bc)
 
 	return QM31{
-		aReal: A.real,
-		aImag: A.imag,
-		bReal: B.real,
-		bImag: B.imag,
+		AReal: A.Real,
+		AImag: A.Imag,
+		BReal: B.Real,
+		BImag: B.Imag,
 	}
 }
 
 // MulM31 multiplies by a base M31 element.
 func (q *QM31Chip) MulM31(x QM31, m M31) QM31 {
 	return QM31{
-		aReal: q.m31.Mul(x.aReal, m),
-		aImag: q.m31.Mul(x.aImag, m),
-		bReal: q.m31.Mul(x.bReal, m),
-		bImag: q.m31.Mul(x.bImag, m),
+		AReal: q.m31.Mul(x.AReal, m),
+		AImag: q.m31.Mul(x.AImag, m),
+		BReal: q.m31.Mul(x.BReal, m),
+		BImag: q.m31.Mul(x.BImag, m),
 	}
 }
 
 // MulM31Unchecked multiplies by an M31 element without reducing.
 func (q *QM31Chip) MulM31Unchecked(x QM31, m M31) QM31 {
 	return QM31{
-		aReal: q.m31.MulUnchecked(x.aReal, m),
-		aImag: q.m31.MulUnchecked(x.aImag, m),
-		bReal: q.m31.MulUnchecked(x.bReal, m),
-		bImag: q.m31.MulUnchecked(x.bImag, m),
+		AReal: q.m31.MulUnchecked(x.AReal, m),
+		AImag: q.m31.MulUnchecked(x.AImag, m),
+		BReal: q.m31.MulUnchecked(x.BReal, m),
+		BImag: q.m31.MulUnchecked(x.BImag, m),
 	}
 }
 
 // AssertEqual constrains the circuit so that x == y.
 func (q *QM31Chip) AssertEqual(x, y QM31) {
 	api := q.m31.api
-	api.AssertIsEqual(x.aReal.x, y.aReal.x)
-	api.AssertIsEqual(x.aImag.x, y.aImag.x)
-	api.AssertIsEqual(x.bReal.x, y.bReal.x)
-	api.AssertIsEqual(x.bImag.x, y.bImag.x)
+	api.AssertIsEqual(x.AReal.Limb, y.AReal.Limb)
+	api.AssertIsEqual(x.AImag.Limb, y.AImag.Limb)
+	api.AssertIsEqual(x.BReal.Limb, y.BReal.Limb)
+	api.AssertIsEqual(x.BImag.Limb, y.BImag.Limb)
 }
 
 // ╔══════════════════════════════════╗
@@ -259,30 +263,30 @@ func (q *QM31Chip) AssertEqual(x, y QM31) {
 
 func (q *QM31Chip) cmAddUnchecked(x, y cm31) cm31 {
 	return cm31{
-		real: q.m31.AddUnchecked(x.real, y.real),
-		imag: q.m31.AddUnchecked(x.imag, y.imag),
+		Real: q.m31.AddUnchecked(x.Real, y.Real),
+		Imag: q.m31.AddUnchecked(x.Imag, y.Imag),
 	}
 }
 
 func (q *QM31Chip) cmMulUnchecked(x, y cm31) cm31 {
-	ar := q.m31.MulUnchecked(x.real, y.real)
-	bi := q.m31.MulUnchecked(x.imag, y.imag)
+	ar := q.m31.MulUnchecked(x.Real, y.Real)
+	bi := q.m31.MulUnchecked(x.Imag, y.Imag)
 	r := q.m31.SubUnchecked(ar, bi)
 
-	ai := q.m31.MulUnchecked(x.real, y.imag)
-	br := q.m31.MulUnchecked(x.imag, y.real)
+	ai := q.m31.MulUnchecked(x.Real, y.Imag)
+	br := q.m31.MulUnchecked(x.Imag, y.Real)
 	i := q.m31.AddUnchecked(ai, br)
 
-	return cm31{real: r, imag: i}
+	return cm31{Real: r, Imag: i}
 }
 
 func (q *QM31Chip) cmMulByRUnchecked(x cm31) cm31 {
-	twoReal := q.m31.AddUnchecked(x.real, x.real)
-	twoImag := q.m31.AddUnchecked(x.imag, x.imag)
+	twoReal := q.m31.AddUnchecked(x.Real, x.Real)
+	twoImag := q.m31.AddUnchecked(x.Imag, x.Imag)
 
-	real := q.m31.SubUnchecked(twoReal, x.imag)
-	imag := q.m31.AddUnchecked(twoImag, x.real)
-	return cm31{real: real, imag: imag}
+	real := q.m31.SubUnchecked(twoReal, x.Imag)
+	imag := q.m31.AddUnchecked(twoImag, x.Real)
+	return cm31{Real: real, Imag: imag}
 }
 
 // ╔══════════════════════════════════╗
@@ -292,37 +296,37 @@ func (q *QM31Chip) cmMulByRUnchecked(x cm31) cm31 {
 // Inverse computes 1/x.
 func (q *QM31Chip) Inverse(x QM31) QM31 {
 	api := q.m31.api
-	hintInputs := []frontend.Variable{x.aReal.x, x.aImag.x, x.bReal.x, x.bImag.x}
+	hintInputs := []frontend.Variable{x.AReal.Limb, x.AImag.Limb, x.BReal.Limb, x.BImag.Limb}
 	hintOutputs, err := api.Compiler().NewHint(QM31InverseHint, 4, hintInputs...)
 	if err != nil {
 		panic(err)
 	}
 
 	inv := QM31{
-		aReal: NewM31Unchecked(hintOutputs[0]),
-		aImag: NewM31Unchecked(hintOutputs[1]),
-		bReal: NewM31Unchecked(hintOutputs[2]),
-		bImag: NewM31Unchecked(hintOutputs[3]),
+		AReal: NewM31Unchecked(hintOutputs[0]),
+		AImag: NewM31Unchecked(hintOutputs[1]),
+		BReal: NewM31Unchecked(hintOutputs[2]),
+		BImag: NewM31Unchecked(hintOutputs[3]),
 	}
 
-	q.m31.RangeCheck(inv.aReal)
-	q.m31.RangeCheck(inv.aImag)
-	q.m31.RangeCheck(inv.bReal)
-	q.m31.RangeCheck(inv.bImag)
+	q.m31.RangeCheck(inv.AReal)
+	q.m31.RangeCheck(inv.AImag)
+	q.m31.RangeCheck(inv.BReal)
+	q.m31.RangeCheck(inv.BImag)
 
-	isZero := api.IsZero(x.aReal.x)
-	isZero = api.Mul(isZero, api.IsZero(x.aImag.x))
-	isZero = api.Mul(isZero, api.IsZero(x.bReal.x))
-	isZero = api.Mul(isZero, api.IsZero(x.bImag.x))
+	isZero := api.IsZero(x.AReal.Limb)
+	isZero = api.Mul(isZero, api.IsZero(x.AImag.Limb))
+	isZero = api.Mul(isZero, api.IsZero(x.BReal.Limb))
+	isZero = api.Mul(isZero, api.IsZero(x.BImag.Limb))
 	hasInv := api.Sub(1, isZero)
 
 	product := q.Mul(x, inv)
 	one := q.One()
 
-	api.AssertIsEqual(api.Select(hasInv, product.aReal.x, one.aReal.x), one.aReal.x)
-	api.AssertIsEqual(api.Select(hasInv, product.aImag.x, one.aImag.x), one.aImag.x)
-	api.AssertIsEqual(api.Select(hasInv, product.bReal.x, one.bReal.x), one.bReal.x)
-	api.AssertIsEqual(api.Select(hasInv, product.bImag.x, one.bImag.x), one.bImag.x)
+	api.AssertIsEqual(api.Select(hasInv, product.AReal.Limb, one.AReal.Limb), one.AReal.Limb)
+	api.AssertIsEqual(api.Select(hasInv, product.AImag.Limb, one.AImag.Limb), one.AImag.Limb)
+	api.AssertIsEqual(api.Select(hasInv, product.BReal.Limb, one.BReal.Limb), one.BReal.Limb)
+	api.AssertIsEqual(api.Select(hasInv, product.BImag.Limb, one.BImag.Limb), one.BImag.Limb)
 
 	return inv
 }
@@ -373,7 +377,7 @@ func DummyInteractionElements(powerCount int) InteractionElements {
 	}
 
 	return InteractionElements{
-		z:           QM31{aReal: One(), aImag: Zero(), bReal: Zero(), bImag: Zero()},
+		z:           QM31{AReal: One(), AImag: Zero(), BReal: Zero(), BImag: Zero()},
 		alphaPowers: alphaPowers,
 	}
 }

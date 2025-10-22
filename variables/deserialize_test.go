@@ -12,7 +12,7 @@ func proofFixturePath(name string) string {
 }
 
 const (
-	hdpProofFixture           = "hdp_prood.json"
+	hdpProofFixture           = "hdp_proof.json"
 	allComponentsProofFixture = "all_components_proof.json"
 )
 
