@@ -99,7 +99,7 @@ func (c *m31SmartAccumulatorCircuit) Define(api frontend.API) error {
 		expected = chip.Add(expected, expr2Reduced)
 
 		accResult := acc.Finalize()
-		api.AssertIsEqual(accResult.x, expected.x)
+		api.AssertIsEqual(accResult.Limb, expected.Limb)
 	}
 
 	{
@@ -119,7 +119,7 @@ func (c *m31SmartAccumulatorCircuit) Define(api frontend.API) error {
 		expected = chip.Mul(expected, NewM31Unchecked(19))
 
 		accResult := acc.Finalize()
-		api.AssertIsEqual(accResult.x, expected.x)
+		api.AssertIsEqual(accResult.Limb, expected.Limb)
 	}
 
 	return nil
@@ -179,7 +179,7 @@ func TestBatchInverseFailure(t *testing.T) {
 // ╚══════════════════════════════════╝
 
 func assertEqualM31(api frontend.API, got, want M31) {
-	api.AssertIsEqual(got.x, want.x)
+	api.AssertIsEqual(got.Limb, want.Limb)
 }
 
 func productBitCost(factors int) uint64 {

@@ -35,7 +35,7 @@ func (c *naiveAccumulatorCircuit) Define(api frontend.API) error {
 	}
 
 	// Keep the compiler from dropping the result.
-	api.AssertIsEqual(acc.x, acc.x)
+	api.AssertIsEqual(acc.Limb, acc.Limb)
 	return nil
 }
 
@@ -61,7 +61,7 @@ func (c *smartAccumulatorCircuit) Define(api frontend.API) error {
 	}
 
 	result := acc.Finalize()
-	api.AssertIsEqual(result.x, result.x)
+	api.AssertIsEqual(result.Limb, result.Limb)
 	return nil
 }
 
