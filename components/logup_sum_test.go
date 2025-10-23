@@ -6,7 +6,6 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/test"
@@ -14,8 +13,8 @@ import (
 
 var (
 	testPublicData        = buildTestPublicData()
-	testPublicDataSumQM31 = m31.NewQM31(971792689, 636659210, 1237675822, 245392094)
-	testLogupSumQM31      = m31.NewQM31(1114783544, 427659254, 2083455222, 465542323)
+	testPublicDataSumQM31 = m31.NewQM31Unchecked(971792689, 636659210, 1237675822, 245392094)
+	testLogupSumQM31      = m31.NewQM31Unchecked(1114783544, 427659254, 2083455222, 465542323)
 )
 
 // ╔══════════════════════════════════╗
@@ -44,11 +43,10 @@ func TestPublicDataLogupSum(t *testing.T) {
 		t.Fatalf("compile circuit: %v", err)
 	}
 
-	assert.ProverSucceeded(circuit, witness,
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(witness),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
+	)
 }
 
 // Builds the public data deserialized from:
@@ -112,53 +110,43 @@ func buildTestPublicData() variables.PublicData {
 // Creates dummy interaction elements for the logup sum circuit following dummy values in:
 // https://github.com/starkware-libs/stwo-cairo/blob/62c3c4a94546b274d20123cc5f22044bcbe7104e/stwo_cairo_verifier/crates/cairo_air/src/lib.cairo#L6135
 func dummyInteractionLookupElements(qm31Chip *m31.QM31Chip) variables.CairoInteractionElements {
-	dummy := func(count int) m31.InteractionElements {
-		z := m31.NewQM31(1, 2, 3, 4)
-		alpha := m31.NewQM31(1, 0, 0, 0)
-		powers := make([]m31.QM31, count)
-		for i := range powers {
-			powers[i] = alpha
-		}
-		return qm31Chip.NewInteractionElements(z, alpha, powers)
-	}
-
 	return variables.CairoInteractionElements{
-		Opcodes:                     dummy(3),
-		VerifyInstruction:           dummy(7),
-		BlakeRound:                  dummy(35),
-		BlakeG:                      dummy(20),
-		BlakeRoundSigma:             dummy(17),
-		TripleXor32:                 dummy(8),
-		PartialEcMul:                dummy(73),
-		PedersenPointsTable:         dummy(57),
-		PoseidonFullRoundChain:      dummy(32),
-		Poseidon3PartialRoundsChain: dummy(42),
-		Cube252:                     dummy(20),
-		PoseidonRoundKeys:           dummy(31),
-		RangeCheckFelt252Width27:    dummy(10),
-		MemoryAddressToId:           dummy(2),
-		MemoryIDToValue:             dummy(29),
+		Opcodes:                     qm31Chip.DummyInteractionElements(3),
+		VerifyInstruction:           qm31Chip.DummyInteractionElements(7),
+		BlakeRound:                  qm31Chip.DummyInteractionElements(35),
+		BlakeG:                      qm31Chip.DummyInteractionElements(20),
+		BlakeRoundSigma:             qm31Chip.DummyInteractionElements(17),
+		TripleXor32:                 qm31Chip.DummyInteractionElements(8),
+		PartialEcMul:                qm31Chip.DummyInteractionElements(73),
+		PedersenPointsTable:         qm31Chip.DummyInteractionElements(57),
+		PoseidonFullRoundChain:      qm31Chip.DummyInteractionElements(32),
+		Poseidon3PartialRoundsChain: qm31Chip.DummyInteractionElements(42),
+		Cube252:                     qm31Chip.DummyInteractionElements(20),
+		PoseidonRoundKeys:           qm31Chip.DummyInteractionElements(31),
+		RangeCheckFelt252Width27:    qm31Chip.DummyInteractionElements(10),
+		MemoryAddressToId:           qm31Chip.DummyInteractionElements(2),
+		MemoryIDToValue:             qm31Chip.DummyInteractionElements(29),
 		RangeChecks: variables.RangeChecksInteractionElements{
-			RC6:         dummy(1),
-			RC8:         dummy(1),
-			RC1_1:       dummy(1),
-			RC1_2:       dummy(1),
-			RC1_8:       dummy(1),
-			RC1_9:       dummy(1),
-			RC4_3:       dummy(2),
-			RC4_4:       dummy(2),
-			RC5_4:       dummy(2),
-			RC9_9:       dummy(2),
-			RC7_2_5:     dummy(3),
-			RC3_6_6_3:   dummy(4),
-			RC4_4_4_4:   dummy(4),
-			RC3_3_3_3_3: dummy(5),
+			RC6:         qm31Chip.DummyInteractionElements(1),
+			RC8:         qm31Chip.DummyInteractionElements(1),
+			RC1_1:       qm31Chip.DummyInteractionElements(1),
+			RC1_2:       qm31Chip.DummyInteractionElements(1),
+			RC1_8:       qm31Chip.DummyInteractionElements(1),
+			RC1_9:       qm31Chip.DummyInteractionElements(1),
+			RC4_3:       qm31Chip.DummyInteractionElements(2),
+			RC4_4:       qm31Chip.DummyInteractionElements(2),
+			RC5_4:       qm31Chip.DummyInteractionElements(2),
+			RC9_9:       qm31Chip.DummyInteractionElements(2),
+			RC7_2_5:     qm31Chip.DummyInteractionElements(3),
+			RC3_6_6_3:   qm31Chip.DummyInteractionElements(4),
+			RC4_4_4_4:   qm31Chip.DummyInteractionElements(4),
+			RC3_3_3_3_3: qm31Chip.DummyInteractionElements(5),
 		},
-		VerifyBitwiseXor4:  dummy(3),
-		VerifyBitwiseXor7:  dummy(3),
-		VerifyBitwiseXor8:  dummy(3),
-		VerifyBitwiseXor9:  dummy(3),
-		VerifyBitwiseXor12: dummy(3),
+		VerifyBitwiseXor4:  qm31Chip.DummyInteractionElements(3),
+		VerifyBitwiseXor7:  qm31Chip.DummyInteractionElements(3),
+		VerifyBitwiseXor8:  qm31Chip.DummyInteractionElements(3),
+		VerifyBitwiseXor9:  qm31Chip.DummyInteractionElements(3),
+		VerifyBitwiseXor12: qm31Chip.DummyInteractionElements(3),
 	}
 }
 
@@ -181,7 +169,7 @@ func (c *logupSumCircuit) Define(api frontend.API) error {
 }
 
 func TestLogupSum(t *testing.T) {
-
+	assert := test.NewAssert(t)
 	raw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
@@ -198,8 +186,8 @@ func TestLogupSum(t *testing.T) {
 		InteractionClaim: proof.InteractionClaim,
 	}
 
-	err = test.IsSolved(circuit, witness, ecc.BN254.ScalarField())
-	if err != nil {
-		t.Fatalf("test is solved: %v", err)
-	}
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(witness),
+		test.WithCurves(ecc.BN254),
+	)
 }

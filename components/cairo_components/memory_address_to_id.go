@@ -117,8 +117,8 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 	interaction_column_15_neg1 := sampledValues[INTERACTION_IDX][15][1]
 
 	// Computation of combined values
-	columnSizeQM31 := c.qm31.FromM31(m31.NewM31Unchecked(c.columnSize))
-	oneQM31 := c.qm31.FromM31(m31.One())
+	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(c.columnSize))
+	oneQM31 := m31.NewQM31FromM31(m31.One())
 
 	addr := c.qm31.Add(seq, oneQM31)
 	combine_0, err := c.qm31.Combine(c.interactionElements, []m31.QM31{addr, id_0})
@@ -186,7 +186,7 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 			),
 			c.qm31.FromPartialEvals(interaction_column_8, interaction_column_9, interaction_column_10, interaction_column_11),
 		),
-		c.qm31.Mul(c.claimedSum, c.qm31.Inverse(c.qm31.FromM31(m31.NewM31Unchecked(c.columnSize)))),
+		c.qm31.Mul(c.claimedSum, c.qm31.Inverse(m31.NewQM31FromM31(m31.NewM31Unchecked(c.columnSize)))),
 	)
 
 	// Evaluation (diff * denom - num = 0)

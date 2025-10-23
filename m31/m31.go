@@ -16,8 +16,9 @@ import (
 )
 
 const PRIME uint32 = 1<<31 - 1
+const PRIME_U64 = uint64(PRIME)
 
-var primeBigInt = new(big.Int).SetUint64(uint64(PRIME))
+var primeBigInt = new(big.Int).SetUint64(PRIME_U64)
 
 func init() {
 	solver.RegisterHint(MulAddHint)
@@ -41,12 +42,6 @@ func (m M31) Variable() frontend.Variable {
 	return m.Limb
 }
 
-// Creates a new M31 field element from an existing variable. Assumes that the element is
-// already reduced.
-func NewM31Unchecked(x frontend.Variable) M31 {
-	return M31{Limb: x}
-}
-
 // The zero element in the M31 field.
 func Zero() M31 {
 	return NewM31Unchecked(0)
@@ -60,6 +55,16 @@ func One() M31 {
 // The negative one element in the M31 field.
 func NegOne() M31 {
 	return NewM31Unchecked(PRIME - 1)
+}
+
+// ╔══════════════════════════════════╗
+// ║         M31 Constructors         ║
+// ╚══════════════════════════════════╝
+
+// Creates a new M31 field element from an existing variable. Assumes that the element is
+// already reduced.
+func NewM31Unchecked(x frontend.Variable) M31 {
+	return M31{Limb: x}
 }
 
 // ╔══════════════════════════════════╗
@@ -101,9 +106,14 @@ func (p *M31Chip) Sub(a M31, b M31) M31 {
 	return p.MulAdd(b, NegOne(), a)
 }
 
-// Negates an M31 field element.
+// Negates an M31 field element and returns a value within the M31 field.
 func (p *M31Chip) Neg(a M31) M31 {
 	return p.Mul(a, NegOne())
+}
+
+// Negates an M31 field element without reducing the result.
+func (p *M31Chip) NegUnchecked(a M31) M31 {
+	return p.MulUnchecked(a, NegOne())
 }
 
 // Multiplies two M31 field elements without reducing the result.
@@ -168,7 +178,7 @@ func MulAddHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	}
 	sum := product + c
 
-	primeUint := uint64(PRIME)
+	primeUint := PRIME_U64
 	quotient := sum / primeUint
 	remainder := sum % primeUint
 
@@ -534,9 +544,22 @@ func (acc *SmartAccumulator) flush() {
 }
 
 // ╔══════════════════════════════════╗
-// ║       M31 Helper functions       ║
+// ║          M31 Utilities           ║
 // ╚══════════════════════════════════╝
 
+// AssertEqual constrains the circuit so that x == y.
+func (q *M31Chip) AssertEqual(x, y M31) {
+	q.api.AssertIsEqual(x.Limb, y.Limb)
+}
+
+func (q *M31Chip) Println(x M31) {
+	q.api.Println("x", x.Limb)
+}
+
+// ╔══════════════════════════════════╗
+// ║       M31 Helper functions       ║
+// ╚══════════════════════════════════╝
+// pow2147483645M31 computes v^147483645 mod PRIME for uint64s.
 func pow2147483645M31(v uint64) uint64 {
 	t0 := mulModM31(squareNM31(v, 2), v)
 	t1 := mulModM31(squareNM31(t0, 1), t0)
@@ -547,6 +570,7 @@ func pow2147483645M31(v uint64) uint64 {
 	return mulModM31(squareNM31(t5, 7), t2)
 }
 
+// squareNM31 computes x^n mod PRIME for uint64s.
 func squareNM31(x uint64, n int) uint64 {
 	for i := 0; i < n; i++ {
 		x = mulModM31(x, x)
@@ -554,8 +578,9 @@ func squareNM31(x uint64, n int) uint64 {
 	return x
 }
 
+// mulModM31 computes a * b mod PRIME for uint64s.
 func mulModM31(a, b uint64) uint64 {
-	return (a * b) % uint64(PRIME)
+	return (a * b) % PRIME_U64
 }
 
 // Returns the next multiple of 16 greater than or equal to bits.
@@ -564,4 +589,12 @@ func nextMultipleOf16(bits uint64) uint64 {
 		return 0
 	}
 	return ((bits + 15) / 16) * 16
+}
+
+// productBitCost computes the bit cost of a product of factors.
+func productBitCost(factors int) uint64 {
+	if factors <= 1 {
+		return quotientBitsPerAdd
+	}
+	return validateBudget(uint64(factors-1)*31 + quotientBitsPerAdd)
 }

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
 )
@@ -16,107 +15,72 @@ import (
 // ║          Test Circuits           ║
 // ╚══════════════════════════════════╝
 
+// Circuit for QM31 operations tests
 type qm31OpsCircuit struct{}
 
 func (c *qm31OpsCircuit) Define(api frontend.API) error {
 	m31Chip := NewM31Chip(api)
 	qmChip := NewQM31Chip(m31Chip)
 
-	newQM := func(a0, a1, b0, b1 uint64) QM31 {
-		return QM31{
-			AReal: NewM31Unchecked(a0),
-			AImag: NewM31Unchecked(a1),
-			BReal: NewM31Unchecked(b0),
-			BImag: NewM31Unchecked(b1),
-		}
-	}
-
-	const prime = uint64(PRIME)
-
-	qm0 := newQM(1, 2, 3, 4)
-	qm1 := newQM(4, 5, 6, 7)
+	qm0 := NewQM31Unchecked(1, 2, 3, 4)
+	qm1 := NewQM31Unchecked(4, 5, 6, 7)
 	m := NewM31Unchecked(8)
 	qm := NewQM31FromM31(m)
-	qm0xqm1 := newQM(prime-71, 93, prime-16, 50)
+	qm0xqm1 := NewQM31Unchecked(PRIME_U64-71, 93, PRIME_U64-16, 50)
 
 	sum := qmChip.Add(qm0, qm1)
-	assertEqualQM31(api, sum, newQM(5, 7, 9, 11))
+	qmChip.AssertEqual(sum, NewQM31Unchecked(5, 7, 9, 11))
 
 	sumWithM31 := qmChip.Add(qm1, NewQM31FromM31(m))
 	sumWithQM := qmChip.Add(qm1, qm)
-	assertEqualQM31(api, sumWithM31, sumWithQM)
+	qmChip.AssertEqual(sumWithM31, sumWithQM)
 
 	product := qmChip.Mul(qm0, qm1)
-	assertEqualQM31(api, product, qm0xqm1)
+	qmChip.AssertEqual(product, qm0xqm1)
 
 	prodWithM := qmChip.MulM31(qm1, m)
 	prodWithQM := qmChip.Mul(qm1, qm)
-	assertEqualQM31(api, prodWithM, prodWithQM)
+	qmChip.AssertEqual(prodWithM, prodWithQM)
 
 	neg := qmChip.Neg(qm0)
-	assertEqualQM31(api, neg, newQM(prime-1, prime-2, prime-3, prime-4))
+	qmChip.AssertEqual(neg, NewQM31Unchecked(PRIME_U64-1, PRIME_U64-2, PRIME_U64-3, PRIME_U64-4))
 
 	diff := qmChip.Sub(qm0, qm1)
-	assertEqualQM31(api, diff, newQM(prime-3, prime-3, prime-3, prime-3))
+	qmChip.AssertEqual(diff, NewQM31Unchecked(PRIME_U64-3, PRIME_U64-3, PRIME_U64-3, PRIME_U64-3))
 
 	diffWithM31 := qmChip.Sub(qm1, NewQM31FromM31(m))
 	diffWithQM := qmChip.Sub(qm1, qm)
-	assertEqualQM31(api, diffWithM31, diffWithQM)
+	qmChip.AssertEqual(diffWithM31, diffWithQM)
 
 	qm1Inverse := qmChip.Inverse(qm1)
 	quotient := qmChip.Mul(qm0xqm1, qm1Inverse)
-	assertEqualQM31(api, quotient, qm0)
+	qmChip.AssertEqual(quotient, qm0)
 
 	mInverse, hasMinv := m31Chip.Inverse(m)
 	api.AssertIsEqual(hasMinv, frontend.Variable(1))
 	quotientWithM := qmChip.MulM31(qm1, mInverse)
 	qmInverse := qmChip.Inverse(qm)
 	quotientWithQM := qmChip.Mul(qm1, qmInverse)
-	assertEqualQM31(api, quotientWithM, quotientWithQM)
+	qmChip.AssertEqual(quotientWithM, quotientWithQM)
 
 	return nil
 }
 
+// Circuit for QM31 inversion tests
 type qm31InverseCircuit struct {
-	Value [4]frontend.Variable
+	Value [4]M31
 }
 
 func (c *qm31InverseCircuit) Define(api frontend.API) error {
 	m31Chip := NewM31Chip(api)
 	qmChip := NewQM31Chip(m31Chip)
 
-	value := QM31{
-		AReal: NewM31Unchecked(c.Value[0]),
-		AImag: NewM31Unchecked(c.Value[1]),
-		BReal: NewM31Unchecked(c.Value[2]),
-		BImag: NewM31Unchecked(c.Value[3]),
-	}
+	value := NewQM31FromComponents(c.Value[0], c.Value[1], c.Value[2], c.Value[3])
+	qmChip.Println(value)
 	inverse := qmChip.Inverse(value)
 
 	product := qmChip.Mul(value, inverse)
-	one := qmChip.One()
-	api.AssertIsEqual(product.AReal.Limb, one.AReal.Limb)
-	api.AssertIsEqual(product.AImag.Limb, one.AImag.Limb)
-	api.AssertIsEqual(product.BReal.Limb, one.BReal.Limb)
-	api.AssertIsEqual(product.BImag.Limb, one.BImag.Limb)
-	return nil
-}
-
-type qm31InverseSimpleCircuit struct{}
-
-func (c *qm31InverseSimpleCircuit) Define(api frontend.API) error {
-	m31Chip := NewM31Chip(api)
-	qmChip := NewQM31Chip(m31Chip)
-
-	qm := QM31{
-		AReal: NewM31Unchecked(1),
-		AImag: NewM31Unchecked(2),
-		BReal: NewM31Unchecked(3),
-		BImag: NewM31Unchecked(4),
-	}
-	inverse := qmChip.Inverse(qm)
-	product := qmChip.Mul(qm, inverse)
-	assertEqualQM31(api, product, qmChip.One())
+	qmChip.AssertEqual(product, qmChip.One())
 	return nil
 }
 
@@ -124,56 +88,32 @@ func (c *qm31InverseSimpleCircuit) Define(api frontend.API) error {
 // ║          Test Functions          ║
 // ╚══════════════════════════════════╝
 
+// Test QM31 operations
 func TestQM31Ops(t *testing.T) {
 	assert := test.NewAssert(t)
 	circuit := &qm31OpsCircuit{}
 	witness := &qm31OpsCircuit{}
 
-	assert.ProverSucceeded(circuit, witness,
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(witness),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
+	)
 }
 
+// Test QM31 inversion
 func TestQM31Inverse(t *testing.T) {
 	assert := test.NewAssert(t)
 	circuit := &qm31InverseCircuit{}
-	witness := &qm31InverseCircuit{Value: [4]frontend.Variable{3, 5, 7, 11}}
+	witness := &qm31InverseCircuit{Value: [4]M31{NewM31Unchecked(3), NewM31Unchecked(5), NewM31Unchecked(7), NewM31Unchecked(11)}}
 
-	assert.ProverSucceeded(circuit, witness,
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(witness),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
+	)
 
-	badWitness := &qm31InverseCircuit{Value: [4]frontend.Variable{0, 0, 0, 0}}
-	assert.ProverFailed(circuit, badWitness,
+	badWitness := &qm31InverseCircuit{Value: [4]M31{NewM31Unchecked(0), NewM31Unchecked(0), NewM31Unchecked(0), NewM31Unchecked(0)}}
+	assert.CheckCircuit(circuit,
+		test.WithInvalidAssignment(badWitness),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
-}
-
-func TestQM31InverseSimple(t *testing.T) {
-	assert := test.NewAssert(t)
-	circuit := &qm31InverseSimpleCircuit{}
-	witness := &qm31InverseSimpleCircuit{}
-
-	assert.ProverSucceeded(circuit, witness,
-		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
-}
-
-// ╔══════════════════════════════════╗
-// ║          Helper Functions        ║
-// ╚══════════════════════════════════╝
-
-func assertEqualQM31(api frontend.API, got, want QM31) {
-	api.AssertIsEqual(got.AReal.Limb, want.AReal.Limb)
-	api.AssertIsEqual(got.AImag.Limb, want.AImag.Limb)
-	api.AssertIsEqual(got.BReal.Limb, want.BReal.Limb)
-	api.AssertIsEqual(got.BImag.Limb, want.BImag.Limb)
+	)
 }

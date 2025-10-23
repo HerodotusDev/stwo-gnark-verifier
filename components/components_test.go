@@ -8,14 +8,11 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/std/math/uints"
 	"github.com/consensys/gnark/test"
 )
-
-type componentsEvaluateCircuit struct{}
 
 // Sum value comes from the following cairo1 test:
 //
@@ -24,7 +21,7 @@ type componentsEvaluateCircuit struct{}
 //		let params = ConstraintParams {
 //			MemoryAddressToId_alpha0: One::one(),
 //			MemoryAddressToId_alpha1: One::one(),
-//			MemoryAddressToId_z: One::one(),
+//			MemoryAddressToId_z: QM31Trait::from_fixed_array([M31Trait::reduce_u32(1), M31Trait::reduce_u32(2), M31Trait::reduce_u32(3), M31Trait::reduce_u32(4)]),
 //			claimed_sum: One::one(),
 //			seq: One::one() + One::one(),
 //			column_size: M31Trait::reduce_u32(16),
@@ -44,6 +41,8 @@ type componentsEvaluateCircuit struct{}
 //
 // println!("sum: {}", sum);
 // }
+type componentsEvaluateCircuit struct{}
+
 func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	m31Chip := m31.NewM31Chip(api)
 	qm31Chip := m31.NewQM31Chip(m31Chip)
@@ -64,7 +63,7 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	randomCoeff := qm31Chip.One()
 
 	result := component.Evaluate(sampledValues, randomCoeff)
-	expectedResult := m31.NewQM31(1207949407, 2147472319, 2147472319, 2147472319)
+	expectedResult := m31.NewQM31Unchecked(2013253660, 1744821975, 1879036222, 536861227)
 	qm31Chip.AssertEqual(result, expectedResult)
 	return nil
 }
@@ -105,9 +104,8 @@ func TestComponentsEvaluateCircuit(t *testing.T) {
 	count := cs.GetNbConstraints()
 	fmt.Printf("TestComponentsEvaluateCircuit constraints: %d\n", count)
 
-	assert.ProverSucceeded(circuit, witness,
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(witness),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
+	)
 }

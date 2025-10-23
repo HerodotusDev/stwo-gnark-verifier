@@ -8,7 +8,6 @@ import (
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 	"github.com/consensys/gnark/test"
@@ -20,17 +19,13 @@ import (
 
 // mixFeltsCircuit runs MixFelts and asserts the digest against a fixture.
 type mixFeltsCircuit struct {
-	Felts    [][4]uint64
+	Felts    []m31.QM31  `gnark:"-"`
 	Expected Blake2sHash `gnark:"-"`
 }
 
 func (c *mixFeltsCircuit) Define(api frontend.API) error {
 	ch := NewChannel(api)
-	felts := make([]m31.QM31, len(c.Felts))
-	for i, comps := range c.Felts {
-		felts[i] = m31.NewQM31(comps[0], comps[1], comps[2], comps[3])
-	}
-	ch.MixFelts(felts)
+	ch.MixFelts(c.Felts)
 	for i := range c.Expected {
 		ch.uapi.AssertEq(ch.digest[i], c.Expected[i])
 	}
@@ -80,7 +75,7 @@ func (c *checkPowCircuit) Define(api frontend.API) error {
 
 // drawRandomBytesCircuit captures the first 32 random bytes.
 type drawRandomBytesCircuit struct {
-	expected [32]uint8
+	expected []uints.U8 `gnark:"-"`
 }
 
 func (c *drawRandomBytesCircuit) Define(api frontend.API) error {
@@ -89,30 +84,33 @@ func (c *drawRandomBytesCircuit) Define(api frontend.API) error {
 	if len(bytes) != len(c.expected) {
 		panic("unexpected number of bytes drawn")
 	}
-	for i, exp := range c.expected {
-		api.AssertIsEqual(bytes[i].Val, uints.NewU8(exp).Val)
+	for i := range c.expected {
+		api.AssertIsEqual(bytes[i].Val, c.expected[i].Val)
 	}
 	return nil
 }
 
 // drawFeltCircuit samples a single QM31 element.
 type drawFeltCircuit struct {
-	expected [4]uint32
+	expected []m31.M31 `gnark:"-"`
 }
 
 func (c *drawFeltCircuit) Define(api frontend.API) error {
 	ch := NewChannel(api)
 	felt := ch.DrawFelt()
 	comps := felt.Components()
-	for i, exp := range c.expected {
-		api.AssertIsEqual(comps[i].Variable(), m31.NewM31Unchecked(exp).Variable())
+	if len(c.expected) != len(comps) {
+		panic("unexpected felt components")
+	}
+	for i := range comps {
+		api.AssertIsEqual(comps[i].Variable(), c.expected[i].Variable())
 	}
 	return nil
 }
 
 // drawFeltsCircuit samples multiple QM31 elements.
 type drawFeltsCircuit struct {
-	expected [8][4]uint32
+	expected []m31.QM31 `gnark:"-"`
 }
 
 func (c *drawFeltsCircuit) Define(api frontend.API) error {
@@ -123,8 +121,9 @@ func (c *drawFeltsCircuit) Define(api frontend.API) error {
 	}
 	for i, expFelt := range c.expected {
 		comps := felts[i].Components()
-		for j, exp := range expFelt {
-			api.AssertIsEqual(comps[j].Variable(), m31.NewM31Unchecked(exp).Variable())
+		expectedComps := expFelt.Components()
+		for j := range comps {
+			api.AssertIsEqual(comps[j].Variable(), expectedComps[j].Variable())
 		}
 	}
 	return nil
@@ -133,20 +132,18 @@ func (c *drawFeltsCircuit) Define(api frontend.API) error {
 // runCircuit compiles and executes a circuit under Groth16 on BN254.
 func runCircuit(t *testing.T, circuit frontend.Circuit) {
 	assert := test.NewAssert(t)
-	assert.ProverSucceeded(circuit, circuit,
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(circuit),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
+	)
 }
 
 func runCircuitExpectFailure(t *testing.T, circuit frontend.Circuit) {
 	assert := test.NewAssert(t)
-	assert.ProverFailed(circuit, circuit,
+	assert.CheckCircuit(circuit,
+		test.WithInvalidAssignment(circuit),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoProverChecks(),
-		test.NoFuzzing())
+	)
 }
 
 // ╔══════════════════════════════════╗
@@ -156,9 +153,9 @@ func runCircuitExpectFailure(t *testing.T, circuit frontend.Circuit) {
 // TestMixFeltsWith1Felt mirrors the Cairo single-felt test vector.
 func TestMixFeltsWith1Felt(t *testing.T) {
 	circuit := &mixFeltsCircuit{
-		Felts: [][4]uint64{
+		Felts: newQM31sFromUint([][4]uint64{
 			{1, 2, 3, 4},
-		},
+		}),
 		Expected: newHash([8]uint32{
 			1586304710, 1167332849, 1688630032, 429142330,
 			4001363212, 2013799503, 180553907, 2044853257,
@@ -170,10 +167,10 @@ func TestMixFeltsWith1Felt(t *testing.T) {
 // TestMixFeltsWith2Felts mirrors the Cairo two-felt test vector.
 func TestMixFeltsWith2Felts(t *testing.T) {
 	circuit := &mixFeltsCircuit{
-		Felts: [][4]uint64{
+		Felts: newQM31sFromUint([][4]uint64{
 			{1, 2, 3, 4},
 			{5, 6, 7, 8},
-		},
+		}),
 		Expected: newHash([8]uint32{
 			1835698174, 2969628929, 1758616107, 158303712,
 			3820231193, 179192886, 4063347398, 3332297509,
@@ -185,11 +182,11 @@ func TestMixFeltsWith2Felts(t *testing.T) {
 // TestMixFeltsWith3Felts mirrors the Cairo three-felt test vector.
 func TestMixFeltsWith3Felts(t *testing.T) {
 	circuit := &mixFeltsCircuit{
-		Felts: [][4]uint64{
+		Felts: newQM31sFromUint([][4]uint64{
 			{1, 2, 3, 4},
 			{5, 6, 7, 8},
 			{9, 10, 11, 12},
-		},
+		}),
 		Expected: newHash([8]uint32{
 			2116479765, 3227507660, 1737697798, 2518684651,
 			1068812914, 1858078313, 1722202885, 2198022752,
@@ -201,12 +198,12 @@ func TestMixFeltsWith3Felts(t *testing.T) {
 // TestMixFeltsWith4Felts mirrors the Cairo four-felt test vector.
 func TestMixFeltsWith4Felts(t *testing.T) {
 	circuit := &mixFeltsCircuit{
-		Felts: [][4]uint64{
+		Felts: newQM31sFromUint([][4]uint64{
 			{1, 2, 3, 4},
 			{5, 6, 7, 8},
 			{9, 10, 11, 12},
 			{13, 14, 15, 16},
-		},
+		}),
 		Expected: newHash([8]uint32{
 			940149128, 1354728945, 2816315586, 1690943110,
 			210254904, 3746481728, 1339132640, 3760408575,
@@ -218,13 +215,13 @@ func TestMixFeltsWith4Felts(t *testing.T) {
 // TestMixFeltsWith5Felts mirrors the Cairo five-felt test vector.
 func TestMixFeltsWith5Felts(t *testing.T) {
 	circuit := &mixFeltsCircuit{
-		Felts: [][4]uint64{
+		Felts: newQM31sFromUint([][4]uint64{
 			{1, 2, 3, 4},
 			{5, 6, 7, 8},
 			{9, 10, 11, 12},
 			{13, 14, 15, 16},
 			{17, 18, 19, 20},
-		},
+		}),
 		Expected: newHash([8]uint32{
 			3425911356, 1462327982, 3241135902, 4212900065,
 			3145879221, 3413011910, 3946733048, 4081152200,
@@ -264,10 +261,10 @@ func TestMixU32s(t *testing.T) {
 // TestDrawRandomBytes mirrors the Cairo random-bytes test vector.
 func TestDrawRandomBytes(t *testing.T) {
 	circuit := &drawRandomBytesCircuit{
-		expected: [32]uint8{
+		expected: newU8s([]uint8{
 			174, 9, 219, 124, 213, 79, 66, 180, 144, 239, 9, 182, 188, 84, 26, 246,
 			136, 228, 149, 155, 184, 197, 63, 53, 154, 111, 86, 227, 138, 180, 84, 163,
-		},
+		}),
 	}
 	runCircuit(t, circuit)
 }
@@ -275,7 +272,7 @@ func TestDrawRandomBytes(t *testing.T) {
 // TestDrawFelt mirrors the Cairo single-felt draw test vector.
 func TestDrawFelt(t *testing.T) {
 	circuit := &drawFeltCircuit{
-		expected: [4]uint32{2094729646, 876761046, 906620817, 1981437117},
+		expected: newM31sFromUint([]uint32{2094729646, 876761046, 906620817, 1981437117}),
 	}
 	runCircuit(t, circuit)
 }
@@ -283,7 +280,7 @@ func TestDrawFelt(t *testing.T) {
 // TestDrawFelts mirrors the Cairo multi-felt draw test vector.
 func TestDrawFelts(t *testing.T) {
 	circuit := &drawFeltsCircuit{
-		expected: [8][4]uint32{
+		expected: newQM31sFromUint([][4]uint32{
 			{2094729646, 876761046, 906620817, 1981437117},
 			{462808201, 893371832, 1666609051, 592753803},
 			{2092874317, 1414799646, 202729759, 1138457893},
@@ -292,7 +289,7 @@ func TestDrawFelts(t *testing.T) {
 			{417708784, 676515713, 1053713500, 313648782},
 			{1896458727, 242850046, 267152034, 827396985},
 			{1959202869, 765813487, 1783334404, 305015811},
-		},
+		}),
 	}
 	runCircuit(t, circuit)
 }
@@ -324,4 +321,30 @@ func newHash(values [8]uint32) Blake2sHash {
 		res[i] = uints.NewU32(v)
 	}
 	return res
+}
+
+// ╔══════════════════════════════════╗
+// ║         Helper Functions         ║
+// ╚══════════════════════════════════╝
+
+// newQM31sFromUint converts a 2x2 uint64 grid into a QM31 if the layout is valid.
+func newQM31sFromUint[T ~uint32 | ~uint64](values [][4]T) []m31.QM31 {
+	felts := make([]m31.QM31, len(values))
+	for i, comps := range values {
+		felts[i] = m31.NewQM31Unchecked(uint64(comps[0]), uint64(comps[1]), uint64(comps[2]), uint64(comps[3]))
+	}
+	return felts
+}
+
+// newM31sFromUint converts a slice of uint32 or uint64 into a slice of M31.
+func newM31sFromUint[T ~uint32 | ~uint64](values []T) []m31.M31 {
+	res := make([]m31.M31, len(values))
+	for i, v := range values {
+		res[i] = m31.NewM31Unchecked(uint64(v))
+	}
+	return res
+}
+
+func newU8s(values []uint8) []uints.U8 {
+	return uints.NewU8Array(values)
 }

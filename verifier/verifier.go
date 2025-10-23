@@ -42,7 +42,7 @@ func (c *VerifierChip) Verify(proof variables.Proof) {
 
 	// Verify Logup sum
 	sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim)
-	c.qm31.AssertEqual(sum, m31.NewQM31(1880435071, 2071788161, 272129029, 1457783626))
+	c.qm31.AssertEqual(sum, m31.NewQM31Unchecked(1880435071, 2071788161, 272129029, 1457783626))
 
 	// Verify OODS
 	// oodsPoint := c.qm31.One()
