@@ -55,7 +55,7 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 		MemoryAddressToId: cairo_components.MemoryAddressToIdClaim{LogSize: uints.NewU8(4)},
 	}
 	interactionClaim := variables.CairoInteractionClaim{
-		MemoryAddressToId: cairo_components.MemoryIDToValueInteractionClaim{ClaimedSum: qm31Chip.One()},
+		MemoryAddressToId: cairo_components.MemoryAddressToIdInteractionClaim{ClaimedSum: qm31Chip.One()},
 	}
 	oodsPoint := qm31Chip.One()
 

@@ -267,11 +267,11 @@ type InteractionClaimRaw struct {
 
 // BlakeContextInteractionClaimRaw bundles the interaction claims for the Blake2s context tables.
 type BlakeContextInteractionClaimRaw struct {
-	Claim *BlakeContextInteractionClaim `json:"claim"`
+	Claim *BlakeInteractionClaimRaw `json:"claim"`
 }
 
 // BlakeContextInteractionClaim captures the claimed sums for each Blake2s sub-table.
-type BlakeContextInteractionClaim struct {
+type BlakeInteractionClaimRaw struct {
 	BlakeG             *ComponentClaimedSumEntry `json:"blake_g"`
 	BlakeRound         *ComponentClaimedSumEntry `json:"blake_round"`
 	BlakeSigma         *ComponentClaimedSumEntry `json:"blake_sigma"`
@@ -281,19 +281,19 @@ type BlakeContextInteractionClaim struct {
 
 // PedersenContextInteractionClaimRaw captures the interaction claims for the pedersen context.
 type PedersenContextInteractionClaimRaw struct {
-	Claim PedersenContextInteractionClaim `json:"claim"`
+	Claim PedersenInteractionClaimRaw `json:"claim"`
 }
 
 // PedersenContextInteractionClaim maps component names to their claimed sums.
-type PedersenContextInteractionClaim map[string]*ComponentClaimedSumEntry
+type PedersenInteractionClaimRaw map[string]*ComponentClaimedSumEntry
 
 // PoseidonContextInteractionClaimRaw collects the interaction claims for Poseidon context tables.
 type PoseidonContextInteractionClaimRaw struct {
-	Claim *PoseidonContextInteractionClaim `json:"claim"`
+	Claim *PoseidonInteractionClaimRaw `json:"claim"`
 }
 
 // PoseidonContextInteractionClaim enumerates the claimed sums for the Poseidon sub-components.
-type PoseidonContextInteractionClaim struct {
+type PoseidonInteractionClaimRaw struct {
 	Poseidon3PartialRoundsChain *ComponentClaimedSumEntry `json:"poseidon_3_partial_rounds_chain"`
 	PoseidonFullRoundChain      *ComponentClaimedSumEntry `json:"poseidon_full_round_chain"`
 	Cube252                     *ComponentClaimedSumEntry `json:"cube_252"`

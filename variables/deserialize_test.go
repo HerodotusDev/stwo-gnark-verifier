@@ -67,25 +67,25 @@ func assertProofBasics(t *testing.T, proof *ProofRaw) {
 }
 
 // ╔══════════════════════════════════╗
-// ║      ConstructProof Assertions   ║
+// ║       BuildProof Assertions      ║
 // ╚══════════════════════════════════╝
 
-func TestConstructProofHDP(t *testing.T) {
+func TestBuildProofHDP(t *testing.T) {
 	raw, err := ReadCairoProof(proofFixturePath(hdpProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	constructed := ConstructProof(raw)
-	if constructed == nil {
-		t.Fatalf("constructed proof is nil")
+	build := BuildProof(raw)
+	if build == nil {
+		t.Fatalf("built proof is nil")
 	}
 
-	if constructed.Claim.MemoryAddressToId.LogSize.Val != uint8(20) {
-		t.Fatalf("unexpected log size: got %v, want %d", constructed.Claim.MemoryAddressToId.LogSize.Val, 20)
+	if build.Claim.MemoryAddressToId.LogSize.Val != uint8(20) {
+		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 20)
 	}
 
-	components := constructed.InteractionClaims.MemoryAddressToId.ClaimedSum.Components()
+	components := build.InteractionClaims.MemoryAddressToId.ClaimedSum.Components()
 	expected := [4]uint64{836386349, 2039445746, 1962189857, 1579868635}
 	for idx, want := range expected {
 		if got := components[idx].Variable(); got != want {
@@ -94,22 +94,22 @@ func TestConstructProofHDP(t *testing.T) {
 	}
 }
 
-func TestConstructProofAllComponents(t *testing.T) {
+func TestBuildProofAllComponents(t *testing.T) {
 	raw, err := ReadCairoProof(proofFixturePath(allComponentsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	constructed := ConstructProof(raw)
-	if constructed == nil {
-		t.Fatalf("constructed proof is nil")
+	build := BuildProof(raw)
+	if build == nil {
+		t.Fatalf("built proof is nil")
 	}
 
-	if constructed.Claim.MemoryAddressToId.LogSize.Val != uint8(9) {
-		t.Fatalf("unexpected log size: got %v, want %d", constructed.Claim.MemoryAddressToId.LogSize.Val, 9)
+	if build.Claim.MemoryAddressToId.LogSize.Val != uint8(9) {
+		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 9)
 	}
 
-	components := constructed.InteractionClaims.MemoryAddressToId.ClaimedSum.Components()
+	components := build.InteractionClaims.MemoryAddressToId.ClaimedSum.Components()
 	expected := [4]uint64{1295835890, 1110824088, 1812637607, 687778173}
 	for idx, want := range expected {
 		if got := components[idx].Variable(); got != want {
@@ -119,7 +119,7 @@ func TestConstructProofAllComponents(t *testing.T) {
 }
 
 func TestConstructProofNil(t *testing.T) {
-	if proof := ConstructProof(nil); proof != nil {
+	if proof := BuildProof(nil); proof != nil {
 		t.Fatalf("expected nil proof from nil input")
 	}
 }

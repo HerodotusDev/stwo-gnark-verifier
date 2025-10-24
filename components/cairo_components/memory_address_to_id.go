@@ -12,8 +12,8 @@ type MemoryAddressToIdClaim struct {
 	LogSize uints.U8
 }
 
-// MemoryIDToValueInteractionClaim carries the interaction claim data.
-type MemoryIDToValueInteractionClaim struct {
+// MemoryAddressToIdInteractionClaim carries the interaction claim data.
+type MemoryAddressToIdInteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
@@ -37,7 +37,7 @@ func NewMemoryAddressToId(
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
 	claim MemoryAddressToIdClaim,
-	interactionClaim MemoryIDToValueInteractionClaim,
+	interactionClaim MemoryAddressToIdInteractionClaim,
 	oodsPoint m31.QM31,
 ) *MemoryAddressToIdComponent {
 	bytesAPI, err := uints.NewBytes(api)

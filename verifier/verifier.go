@@ -36,10 +36,9 @@ func (c *VerifierChip) Verify(proof variables.StarkProof) {
 
 	// TODO: Check Proof-of-Work nonce
 
-	// TODO: Draw interaction elements
-	cairoInteractionElements := variables.CairoInteractionElements{
-		MemoryAddressToId: m31.DummyInteractionElements(2),
-	}
+	// Draw interaction elements
+	var cairoInteractionElements variables.CairoInteractionElements
+	cairoInteractionElements.Draw(c.channelChip, c.qm31)
 
 	// TODO: Verify Logup sum
 
