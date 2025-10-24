@@ -57,7 +57,7 @@ type RangeChecksInteractionElements struct {
 	RC3_3_3_3_3 m31.InteractionElements
 }
 
-// Draw populates CairoInteractionElements with lookup elements sampled from the Fiat-Shamir channel.
+// Draw populates CairoInteractionElements with logup elements sampled from the Fiat-Shamir channel.
 func (elements *CairoInteractionElements) Draw(ch *channel.Channel, qm31Chip *m31.QM31Chip) {
 	if elements == nil {
 		panic("CairoInteractionElements.Draw called on nil receiver")
