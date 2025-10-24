@@ -59,6 +59,15 @@ func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
 	}
 }
 
+func NewQM31FromM31(m M31) QM31 {
+	return QM31{
+		AReal: m,
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: Zero(),
+	}
+}
+
 func NewQM31FromArrays(a [][]uint64) QM31 {
 	return NewQM31(a[0][0], a[0][1], a[1][0], a[1][1])
 }
@@ -101,6 +110,10 @@ func (q *QM31Chip) FromM31(m M31) QM31 {
 	}
 }
 
+func (q *QM31Chip) M31Chip() *M31Chip {
+	return q.m31
+}
+
 func (q *QM31Chip) FromPartialEvals(q0, q1, q2, q3 QM31) QM31 {
 	f1 := q.Mul(q1, coord1)
 	f2 := q.Mul(q2, coord2)
@@ -126,13 +139,6 @@ func (q *QM31Chip) One() QM31 {
 		BReal: Zero(),
 		BImag: Zero(),
 	}
-}
-
-func (q *QM31Chip) Println(x QM31) {
-	q.m31.api.Println("aReal", x.AReal.Limb)
-	q.m31.api.Println("aImag", x.AImag.Limb)
-	q.m31.api.Println("bReal", x.BReal.Limb)
-	q.m31.api.Println("bImag", x.BImag.Limb)
 }
 
 // ╔══════════════════════════════════╗
@@ -248,6 +254,19 @@ func (q *QM31Chip) MulM31Unchecked(x QM31, m M31) QM31 {
 	}
 }
 
+func (q *QM31Chip) ReduceWithMaxBits(x QM31, maxNbBits uint64) QM31 {
+	return QM31{
+		AReal: q.m31.ReduceWithMaxBits(x.AReal, maxNbBits),
+		AImag: q.m31.ReduceWithMaxBits(x.AImag, maxNbBits),
+		BReal: q.m31.ReduceWithMaxBits(x.BReal, maxNbBits),
+		BImag: q.m31.ReduceWithMaxBits(x.BImag, maxNbBits),
+	}
+}
+
+// ╔══════════════════════════════════╗
+// ║          QM31 Utilities          ║
+// ╚══════════════════════════════════╝
+
 // AssertEqual constrains the circuit so that x == y.
 func (q *QM31Chip) AssertEqual(x, y QM31) {
 	api := q.m31.api
@@ -255,6 +274,13 @@ func (q *QM31Chip) AssertEqual(x, y QM31) {
 	api.AssertIsEqual(x.AImag.Limb, y.AImag.Limb)
 	api.AssertIsEqual(x.BReal.Limb, y.BReal.Limb)
 	api.AssertIsEqual(x.BImag.Limb, y.BImag.Limb)
+}
+
+func (q *QM31Chip) Println(x QM31) {
+	q.m31.api.Println("aReal", x.AReal.Limb)
+	q.m31.api.Println("aImag", x.AImag.Limb)
+	q.m31.api.Println("bReal", x.BReal.Limb)
+	q.m31.api.Println("bImag", x.BImag.Limb)
 }
 
 // ╔══════════════════════════════════╗
@@ -362,7 +388,7 @@ func (q *QM31Chip) BatchInverse(values []QM31) []QM31 {
 // ╚══════════════════════════════════╝
 
 type InteractionElements struct {
-	z           QM31
+	negZ           QM31
 	alpha       QM31
 	alphaPowers []QM31
 }
@@ -374,25 +400,25 @@ func (e *InteractionElements) LastAlphaPower() QM31 {
 
 // For debugging purposes
 func (e *InteractionElements) Println(qm31Chip *QM31Chip) {
-	qm31Chip.Println(e.z)
+	qm31Chip.Println(e.negZ)
 	qm31Chip.Println(e.alpha)
 	for _, alphaPower := range e.alphaPowers {
 		qm31Chip.Println(alphaPower)
 	}
 }
 
-func NewInteractionElements(z, alpha QM31, alphaPowers []QM31) InteractionElements {
+func (q *QM31Chip) NewInteractionElements(z, alpha QM31, alphaPowers []QM31) InteractionElements {
 	copyAlphaPowers := make([]QM31, len(alphaPowers))
 	copy(copyAlphaPowers, alphaPowers)
 
 	return InteractionElements{
-		z:           z,
+		negZ:           q.Neg(z),
 		alpha:       alpha,
 		alphaPowers: copyAlphaPowers,
 	}
 }
 
-func DummyInteractionElements(powerCount int) InteractionElements {
+func (q *QM31Chip) DummyInteractionElements(powerCount int) InteractionElements {
 	if powerCount < 0 {
 		panic("powerCount must be non-negative")
 	}
@@ -403,7 +429,7 @@ func DummyInteractionElements(powerCount int) InteractionElements {
 		alphaPowers[i] = one
 	}
 
-	return NewInteractionElements(one, one, alphaPowers)
+	return q.NewInteractionElements(one, one, alphaPowers)
 }
 
 func (q *QM31Chip) Combine(interactionElements InteractionElements, values []QM31) (QM31, error) {
@@ -411,10 +437,18 @@ func (q *QM31Chip) Combine(interactionElements InteractionElements, values []QM3
 		return QM31{}, errors.New("not enough alpha powers to combine")
 	}
 
-	sum := q.Neg(interactionElements.z)
-	for i, value := range values {
-		sum = q.Add(sum, q.Mul(interactionElements.alphaPowers[i], value))
+	// Each multiplication of value by alpha^i has at most 162 bits per coefficient (see comments in q.Mul).
+	// Each addition has at most 1 carry bit. There can be at most 254-162 = 92 additions before overflowing 254 bits.
+	// This means the reduction quotient should be less than 254 - 31 = 223 bits.
+	sum := interactionElements.negZ
+	if len(interactionElements.alphaPowers) <= 91 {
+		for i, value := range values {
+			sum = q.AddUnchecked(sum, q.MulUnchecked(interactionElements.alphaPowers[i], value))
+		}
+	} else { // Shouldn't happen with stwo-cairo 62c3c4a9
+		panic("alphaPowers length is greater than 91")
 	}
+	sum = q.ReduceWithMaxBits(sum, 223)
 	return sum, nil
 }
 

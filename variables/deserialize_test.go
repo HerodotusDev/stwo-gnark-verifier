@@ -1,19 +1,7 @@
 package variables
 
 import (
-	"path/filepath"
-	"runtime"
 	"testing"
-)
-
-func proofFixturePath(name string) string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "..", "test_data", name)
-}
-
-const (
-	hdpProofFixture           = "hdp_proof.json"
-	allComponentsProofFixture = "all_components_proof.json"
 )
 
 // ╔══════════════════════════════════╗
@@ -21,7 +9,7 @@ const (
 // ╚══════════════════════════════════╝
 
 func TestReadHDPProof(t *testing.T) {
-	proof, err := ReadCairoProof(proofFixturePath(hdpProofFixture))
+	proof, err := ReadCairoProof(ProofFixturePath(HdpProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
@@ -30,7 +18,7 @@ func TestReadHDPProof(t *testing.T) {
 }
 
 func TestReadAllComponentsProof(t *testing.T) {
-	proof, err := ReadCairoProof(proofFixturePath(allComponentsProofFixture))
+	proof, err := ReadCairoProof(ProofFixturePath(AllComponentsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
@@ -61,7 +49,7 @@ func assertProofBasics(t *testing.T, proof *ProofRaw) {
 		t.Fatalf("opcode interaction claim empty")
 	}
 
-	if len(proof.StarkProof) == 0 {
+	if len(proof.Proof) == 0 {
 		t.Fatalf("stark proof payload missing")
 	}
 }
@@ -71,7 +59,7 @@ func assertProofBasics(t *testing.T, proof *ProofRaw) {
 // ╚══════════════════════════════════╝
 
 func TestBuildProofHDP(t *testing.T) {
-	raw, err := ReadCairoProof(proofFixturePath(hdpProofFixture))
+	raw, err := ReadCairoProof(ProofFixturePath(HdpProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
@@ -85,7 +73,7 @@ func TestBuildProofHDP(t *testing.T) {
 		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 20)
 	}
 
-	components := build.InteractionClaims.MemoryAddressToId.ClaimedSum.Components()
+	components := build.InteractionClaim.MemoryAddressToId.ClaimedSum.Components()
 	expected := [4]uint64{836386349, 2039445746, 1962189857, 1579868635}
 	for idx, want := range expected {
 		if got := components[idx].Variable(); got != want {
@@ -95,7 +83,7 @@ func TestBuildProofHDP(t *testing.T) {
 }
 
 func TestBuildProofAllComponents(t *testing.T) {
-	raw, err := ReadCairoProof(proofFixturePath(allComponentsProofFixture))
+	raw, err := ReadCairoProof(ProofFixturePath(AllComponentsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
@@ -109,7 +97,7 @@ func TestBuildProofAllComponents(t *testing.T) {
 		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 9)
 	}
 
-	components := build.InteractionClaims.MemoryAddressToId.ClaimedSum.Components()
+	components := build.InteractionClaim.MemoryAddressToId.ClaimedSum.Components()
 	expected := [4]uint64{1295835890, 1110824088, 1812637607, 687778173}
 	for idx, want := range expected {
 		if got := components[idx].Variable(); got != want {

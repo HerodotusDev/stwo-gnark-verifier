@@ -3,7 +3,10 @@ package variables
 import (
 	"encoding/json"
 	"io"
+	"math/big"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
@@ -46,21 +49,25 @@ func ReadCairoProofFromReader(r io.Reader) (*ProofRaw, error) {
 // ║           Proof Building         ║
 // ╚══════════════════════════════════╝
 
-// BuildProof builds a StarkProof (used in circuits) from a ProofRaw (from json)
-func BuildProof(proofRaw *ProofRaw) *StarkProof {
+// BuildProof builds a Proof (used in circuits) from a ProofRaw (from json)
+func BuildProof(proofRaw *ProofRaw) *Proof {
 	if proofRaw == nil {
 		return nil
 	}
 
-	var proof StarkProof
+	var proof Proof
 
 	proof.Claim = BuildClaim(&proofRaw.Claim)
-	proof.InteractionClaims = BuildInteractionClaims(&proofRaw.InteractionClaim)
+	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
 
 	// TODO: Build StarkProof from StarkProofRaw
 
 	return &proof
 }
+
+// ╔══════════════════════════════════╗
+// ║         Claim Building           ║
+// ╚══════════════════════════════════╝
 
 // BuildClaim builds a CairoClaim from a ClaimRaw
 func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
@@ -70,13 +77,142 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 
 	var claim CairoClaim
 
+	claim.PublicData = ConstructPublicData(&claimRaw.PublicData)
 	claim.MemoryAddressToId = cairo_components.MemoryAddressToIdClaim{LogSize: uints.NewU8(uint8(claimRaw.MemoryAddressToId.LogSize))}
 
 	return claim
 }
 
-// BuildInteractionClaims builds a CairoInteractionClaim from a InteractionClaimRaw
-func BuildInteractionClaims(interactionClaimRaw *InteractionClaimRaw) CairoInteractionClaim {
+// ╔══════════════════════════════════╗
+// ║     Public Data ClaimBuilding    ║
+// ╚══════════════════════════════════╝
+
+// ConstructPublicData builds a PublicData from its raw representation.
+func ConstructPublicData(publicDataRaw *PublicDataRaw) PublicData {
+	if publicDataRaw == nil {
+		return PublicData{}
+	}
+
+	publicMemory := constructPublicMemory(publicDataRaw.PublicMemory)
+	initialState := constructCasmState(publicDataRaw.InitialState)
+	finalState := constructCasmState(publicDataRaw.FinalState)
+
+	return PublicData{
+		PublicMemory: publicMemory,
+		InitialState: initialState,
+		FinalState:   finalState,
+	}
+}
+
+func constructCasmState(raw RegisterStateRaw) CasmState {
+	return CasmState{
+		PC: m31.NewM31Unchecked(raw.PC),
+		AP: m31.NewM31Unchecked(raw.AP),
+		FP: m31.NewM31Unchecked(raw.FP),
+	}
+}
+
+func constructPublicMemory(raw PublicMemoryRaw) PublicMemory {
+	return PublicMemory{
+		Program:        convertMemorySection(raw.Program),
+		PublicSegments: constructPublicSegmentRanges(raw.PublicSegments),
+		Output:         convertMemorySection(raw.Output),
+		SafeCall:       convertMemorySection(raw.SafeCall),
+	}
+}
+
+func convertMemorySection(cells []MemoryCellRaw) []PubMemoryValue {
+	if len(cells) == 0 {
+		return nil
+	}
+
+	section := make([]PubMemoryValue, 0, len(cells))
+	for _, cell := range cells {
+		section = append(section, PubMemoryValue{
+			ID:    m31.NewM31Unchecked(cell.Address),
+			Value: SplitFeltWords(*(*[8]uint32)(cell.Value)), // values are necessarily 8 limbs of 32 bits
+		})
+	}
+	return section
+}
+
+func constructPublicSegmentRanges(raw map[string]*SegmentRangeRaw) PublicSegmentRanges {
+	if raw == nil {
+		return PublicSegmentRanges{}
+	}
+
+	var ranges PublicSegmentRanges
+
+	ranges.Output = constructSegmentRange(raw["output"])
+
+	if segment := raw["pedersen"]; segment != nil {
+		ranges.Pedersen = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["range_check_128"]; segment != nil {
+		ranges.RangeCheck128 = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["ecdsa"]; segment != nil {
+		ranges.Ecdsa = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["bitwise"]; segment != nil {
+		ranges.Bitwise = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["ec_op"]; segment != nil {
+		ranges.EcOp = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["keccak"]; segment != nil {
+		ranges.Keccak = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["poseidon"]; segment != nil {
+		ranges.Poseidon = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["range_check_96"]; segment != nil {
+		ranges.RangeCheck96 = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["add_mod"]; segment != nil {
+		ranges.AddMod = ptrSegmentRange(constructSegmentRange(segment))
+	}
+	if segment := raw["mul_mod"]; segment != nil {
+		ranges.MulMod = ptrSegmentRange(constructSegmentRange(segment))
+	}
+
+	return ranges
+}
+
+func constructSegmentRange(raw *SegmentRangeRaw) SegmentRange {
+	if raw == nil {
+		return SegmentRange{}
+	}
+
+	return SegmentRange{
+		StartPtr: constructSegmentPointer(raw.StartPtr),
+		StopPtr:  constructSegmentPointer(raw.StopPtr),
+	}
+}
+
+func constructSegmentPointer(raw *SegmentPointerRaw) SegmentPointer {
+	if raw == nil {
+		return SegmentPointer{}
+	}
+	value := [8]uint32{raw.Value, 0, 0, 0, 0, 0, 0, 0}
+	return SegmentPointer{
+		ID:    m31.NewM31Unchecked(raw.ID),
+		Value: SplitFeltWords(value),
+	}
+}
+
+// Creates a copy from which we can take the address
+func ptrSegmentRange(segment SegmentRange) *SegmentRange {
+	seg := segment
+	return &seg
+}
+
+// ╔══════════════════════════════════╗
+// ║    Interaction Claim Building    ║
+// ╚══════════════════════════════════╝
+
+// BuildInteractionClaim builds a CairoInteractionClaim from a InteractionClaimRaw
+func BuildInteractionClaim(interactionClaimRaw *InteractionClaimRaw) CairoInteractionClaim {
 	if interactionClaimRaw == nil {
 		return CairoInteractionClaim{}
 	}
@@ -408,6 +544,31 @@ func buildRangeChecksInteractionClaim(raw RangeChecksInteractionClaimRaw) RangeC
 // ║         Helper functions         ║
 // ╚══════════════════════════════════╝
 
+// SplitFeltWords converts eight 32-bit limbs into NM31InFelt252 M31 limbs with N_BITS_PER_FELT bits each.
+func SplitFeltWords(words [8]uint32) Felt252Value {
+	// Build the big integer from the limbs
+	acc := big.NewInt(0)
+	tmp := new(big.Int)
+	for i := len(words) - 1; i >= 0; i-- {
+		acc.Lsh(acc, 32)
+		tmp.SetUint64(uint64(words[i]))
+		acc.Or(acc, tmp)
+	}
+
+	mask := new(big.Int).Lsh(big.NewInt(1), BitsPerFelt252)
+	mask.Sub(mask, big.NewInt(1))
+
+	// Split the big integer into NM31InFelt252 M31 limbs
+	var result Felt252Value
+	for i := 0; i < NM31InFelt252; i++ {
+		tmp.And(acc, mask)
+		result[i] = m31.NewM31Unchecked(tmp.Uint64())
+		acc.Rsh(acc, BitsPerFelt252)
+	}
+
+	return result
+}
+
 // qm31FromUint64Grid converts a 2x2 uint64 grid into a QM31 if the layout is valid.
 func qm31FromUint64Grid(grid [][]uint64) (m31.QM31, bool) {
 	if len(grid) < 2 {
@@ -456,3 +617,13 @@ func mapOpcodeEntries[T any](entries []OpcodeInteractionEntryRaw, wrap func(m31.
 
 	return result
 }
+
+func ProofFixturePath(name string) string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "..", "test_data", name)
+}
+
+const (
+	HdpProofFixture           = "hdp_proof.json"
+	AllComponentsProofFixture = "all_components_proof.json"
+)

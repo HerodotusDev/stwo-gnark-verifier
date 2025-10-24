@@ -49,7 +49,7 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	qm31Chip := m31.NewQM31Chip(m31Chip)
 
 	interactionElements := variables.CairoInteractionElements{
-		MemoryAddressToId: m31.DummyInteractionElements(2),
+		MemoryAddressToId: qm31Chip.DummyInteractionElements(2),
 	}
 	claim := variables.CairoClaim{
 		MemoryAddressToId: cairo_components.MemoryAddressToIdClaim{LogSize: uints.NewU8(4)},
