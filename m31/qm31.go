@@ -50,77 +50,6 @@ var (
 	}
 )
 
-func NewQM31(aReal, aImag, bReal, bImag uint64) QM31 {
-	return QM31{
-		AReal: NewM31Unchecked(aReal),
-		AImag: NewM31Unchecked(aImag),
-		BReal: NewM31Unchecked(bReal),
-		BImag: NewM31Unchecked(bImag),
-	}
-}
-
-func NewQM31FromM31(m M31) QM31 {
-	return QM31{
-		AReal: m,
-		AImag: Zero(),
-		BReal: Zero(),
-		BImag: Zero(),
-	}
-}
-
-func NewQM31FromArrays(a [][]uint64) QM31 {
-	return NewQM31(a[0][0], a[0][1], a[1][0], a[1][1])
-}
-
-// Components returns the four M31 coordinates of the extension element.
-func (q QM31) Components() [4]M31 {
-	return [4]M31{q.AReal, q.AImag, q.BReal, q.BImag}
-}
-
-// NewQM31FromComponents builds a QM31 element from its four M31 coordinates.
-func NewQM31FromComponents(aReal, aImag, bReal, bImag M31) QM31 {
-	return QM31{
-		AReal: aReal,
-		AImag: aImag,
-		BReal: bReal,
-		BImag: bImag,
-	}
-}
-
-// ╔══════════════════════════════════╗
-// ║             QM31 Chip            ║
-// ╚══════════════════════════════════╝
-
-// QM31Chip exposes arithmetic for QM31 elements.
-type QM31Chip struct {
-	m31 *M31Chip
-}
-
-// NewQM31Chip builds a QM31 chip from the underlying M31 chip.
-func NewQM31Chip(m31 *M31Chip) *QM31Chip {
-	return &QM31Chip{m31: m31}
-}
-
-func (q *QM31Chip) FromM31(m M31) QM31 {
-	return QM31{
-		AReal: m,
-		AImag: Zero(),
-		BReal: Zero(),
-		BImag: Zero(),
-	}
-}
-
-func (q *QM31Chip) M31Chip() *M31Chip {
-	return q.m31
-}
-
-func (q *QM31Chip) FromPartialEvals(q0, q1, q2, q3 QM31) QM31 {
-	f1 := q.Mul(q1, coord1)
-	f2 := q.Mul(q2, coord2)
-	f3 := q.Mul(q3, coord3)
-	return q.Add(q.Add(q.Add(q0, f1), f2), f3)
-}
-
 // Zero returns the additive identity.
 func (q *QM31Chip) Zero() QM31 {
 	return QM31{
@@ -139,6 +68,87 @@ func (q *QM31Chip) One() QM31 {
 		BReal: Zero(),
 		BImag: Zero(),
 	}
+}
+
+// NegOne returns the negative multiplicative identity.
+func (q *QM31Chip) NegOne() QM31 {
+	return QM31{
+		AReal: NegOne(),
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: Zero(),
+	}
+}
+
+// ╔══════════════════════════════════╗
+// ║         QM31 Constructors        ║
+// ╚══════════════════════════════════╝
+
+// NewQM31 creates a new QM31 field element from its four M31 coordinates as uint64s.
+func NewQM31Unchecked(aReal, aImag, bReal, bImag uint64) QM31 {
+	return QM31{
+		AReal: NewM31Unchecked(aReal),
+		AImag: NewM31Unchecked(aImag),
+		BReal: NewM31Unchecked(bReal),
+		BImag: NewM31Unchecked(bImag),
+	}
+}
+
+// NewQM31FromM31 creates a new QM31 field element from an M31 element.
+func NewQM31FromM31(m M31) QM31 {
+	return QM31{
+		AReal: m,
+		AImag: Zero(),
+		BReal: Zero(),
+		BImag: Zero(),
+	}
+}
+
+// NewQM31FromArrays creates a new QM31 field element from a 2x2 array of uint64s.
+func NewQM31FromArrays(a [][]uint64) QM31 {
+	return NewQM31Unchecked(a[0][0], a[0][1], a[1][0], a[1][1])
+}
+
+// NewQM31FromComponents builds a QM31 element from its four M31 coordinates.
+func NewQM31FromComponents(aReal, aImag, bReal, bImag M31) QM31 {
+	return QM31{
+		AReal: aReal,
+		AImag: aImag,
+		BReal: bReal,
+		BImag: bImag,
+	}
+}
+
+// Components returns the four M31 coordinates of the extension element.
+func (q QM31) Components() [4]M31 {
+	return [4]M31{q.AReal, q.AImag, q.BReal, q.BImag}
+}
+
+// FromPartialEvals rebuilds a QM31 element from its four partial evaluations.
+func (q *QM31Chip) FromPartialEvals(q0, q1, q2, q3 QM31) QM31 {
+	f1 := q.Mul(q1, coord1)
+	f2 := q.Mul(q2, coord2)
+	f3 := q.Mul(q3, coord3)
+	return q.Add(q.Add(q.Add(q0, f1), f2), f3)
+}
+
+// ╔══════════════════════════════════╗
+// ║             QM31 Chip            ║
+// ╚══════════════════════════════════╝
+
+// QM31Chip exposes arithmetic for QM31 elements.
+type QM31Chip struct {
+	m31 *M31Chip
+}
+
+// NewQM31Chip builds a QM31 chip from the underlying M31 chip.
+func NewQM31Chip(m31 *M31Chip) *QM31Chip {
+	return &QM31Chip{m31: m31}
+}
+
+// M31Chip returns the underlying M31 chip.
+func (q *QM31Chip) M31Chip() *M31Chip {
+	return q.m31
 }
 
 // ╔══════════════════════════════════╗
@@ -192,6 +202,16 @@ func (q *QM31Chip) Neg(x QM31) QM31 {
 		AImag: q.m31.Neg(x.AImag),
 		BReal: q.m31.Neg(x.BReal),
 		BImag: q.m31.Neg(x.BImag),
+	}
+}
+
+// NegUnchecked returns -x without reducing the result.
+func (q *QM31Chip) NegUnchecked(x QM31) QM31 {
+	return QM31{
+		AReal: q.m31.NegUnchecked(x.AReal),
+		AImag: q.m31.NegUnchecked(x.AImag),
+		BReal: q.m31.NegUnchecked(x.BReal),
+		BImag: q.m31.NegUnchecked(x.BImag),
 	}
 }
 
@@ -264,29 +284,10 @@ func (q *QM31Chip) ReduceWithMaxBits(x QM31, maxNbBits uint64) QM31 {
 }
 
 // ╔══════════════════════════════════╗
-// ║          QM31 Utilities          ║
-// ╚══════════════════════════════════╝
-
-// AssertEqual constrains the circuit so that x == y.
-func (q *QM31Chip) AssertEqual(x, y QM31) {
-	api := q.m31.api
-	api.AssertIsEqual(x.AReal.Limb, y.AReal.Limb)
-	api.AssertIsEqual(x.AImag.Limb, y.AImag.Limb)
-	api.AssertIsEqual(x.BReal.Limb, y.BReal.Limb)
-	api.AssertIsEqual(x.BImag.Limb, y.BImag.Limb)
-}
-
-func (q *QM31Chip) Println(x QM31) {
-	q.m31.api.Println("aReal", x.AReal.Limb)
-	q.m31.api.Println("aImag", x.AImag.Limb)
-	q.m31.api.Println("bReal", x.BReal.Limb)
-	q.m31.api.Println("bImag", x.BImag.Limb)
-}
-
-// ╔══════════════════════════════════╗
 // ║          CM31 Arithmetics        ║
 // ╚══════════════════════════════════╝
 
+// cmAddUnchecked adds two cm31 elements without reducing the result.
 func (q *QM31Chip) cmAddUnchecked(x, y cm31) cm31 {
 	return cm31{
 		Real: q.m31.AddUnchecked(x.Real, y.Real),
@@ -294,6 +295,7 @@ func (q *QM31Chip) cmAddUnchecked(x, y cm31) cm31 {
 	}
 }
 
+// cmMulUnchecked multiplies two cm31 elements without reducing the result.
 func (q *QM31Chip) cmMulUnchecked(x, y cm31) cm31 {
 	ar := q.m31.MulUnchecked(x.Real, y.Real)
 	bi := q.m31.MulUnchecked(x.Imag, y.Imag)
@@ -306,6 +308,7 @@ func (q *QM31Chip) cmMulUnchecked(x, y cm31) cm31 {
 	return cm31{Real: r, Imag: i}
 }
 
+// cmMulByRUnchecked multiplies a cm31 element by R without reducing the result.
 func (q *QM31Chip) cmMulByRUnchecked(x cm31) cm31 {
 	twoReal := q.m31.AddUnchecked(x.Real, x.Real)
 	twoImag := q.m31.AddUnchecked(x.Imag, x.Imag)
@@ -383,75 +386,7 @@ func (q *QM31Chip) BatchInverse(values []QM31) []QM31 {
 	return inverses
 }
 
-// ╔══════════════════════════════════╗
-// ║              Combines            ║
-// ╚══════════════════════════════════╝
-
-type InteractionElements struct {
-	negZ           QM31
-	alpha       QM31
-	alphaPowers []QM31
-}
-
-// For testing purposes
-func (e *InteractionElements) LastAlphaPower() QM31 {
-	return e.alphaPowers[len(e.alphaPowers)-1]
-}
-
-// For debugging purposes
-func (e *InteractionElements) Println(qm31Chip *QM31Chip) {
-	qm31Chip.Println(e.negZ)
-	qm31Chip.Println(e.alpha)
-	for _, alphaPower := range e.alphaPowers {
-		qm31Chip.Println(alphaPower)
-	}
-}
-
-func (q *QM31Chip) NewInteractionElements(z, alpha QM31, alphaPowers []QM31) InteractionElements {
-	copyAlphaPowers := make([]QM31, len(alphaPowers))
-	copy(copyAlphaPowers, alphaPowers)
-
-	return InteractionElements{
-		negZ:           q.Neg(z),
-		alpha:       alpha,
-		alphaPowers: copyAlphaPowers,
-	}
-}
-
-func (q *QM31Chip) DummyInteractionElements(powerCount int) InteractionElements {
-	if powerCount < 0 {
-		panic("powerCount must be non-negative")
-	}
-
-	one := QM31{AReal: One(), AImag: Zero(), BReal: Zero(), BImag: Zero()}
-	alphaPowers := make([]QM31, powerCount)
-	for i := range alphaPowers {
-		alphaPowers[i] = one
-	}
-
-	return q.NewInteractionElements(one, one, alphaPowers)
-}
-
-func (q *QM31Chip) Combine(interactionElements InteractionElements, values []QM31) (QM31, error) {
-	if len(values) > len(interactionElements.alphaPowers) {
-		return QM31{}, errors.New("not enough alpha powers to combine")
-	}
-
-	// Each multiplication of value by alpha^i has at most 162 bits per coefficient (see comments in q.Mul).
-	// Each addition has at most 1 carry bit. There can be at most 254-162 = 92 additions before overflowing 254 bits.
-	// This means the reduction quotient should be less than 254 - 31 = 223 bits.
-	sum := interactionElements.negZ
-	if len(interactionElements.alphaPowers) <= 91 {
-		for i, value := range values {
-			sum = q.AddUnchecked(sum, q.MulUnchecked(interactionElements.alphaPowers[i], value))
-		}
-	} else { // Shouldn't happen with stwo-cairo 62c3c4a9
-		panic("alphaPowers length is greater than 91")
-	}
-	sum = q.ReduceWithMaxBits(sum, 223)
-	return sum, nil
-}
-
+// The hint used to compute Inverse.
 func QM31InverseHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	if len(inputs) != 4 {
 		panic("QM31InverseHint expects 4 inputs")
@@ -536,4 +471,103 @@ func QM31InverseHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	results[2].SetUint64(bInv.r)
 	results[3].SetUint64(bInv.i)
 	return nil
+}
+
+// ╔══════════════════════════════════╗
+// ║              Combines            ║
+// ╚══════════════════════════════════╝
+
+// InteractionElements are used to combine QM31 elements as so:
+// sum = negZ + alpha^0 * value_0 + alpha^1 * value_1 + ... + alpha^n * value_n
+// z is stored as negative to avoid performing the negation at each combine (this is
+// a ~1.5M gate saving for an HDP proof).
+type InteractionElements struct {
+	negZ        QM31
+	alpha       QM31
+	alphaPowers []QM31
+}
+
+// LastAlphaPower returns the last alpha power for testing purposes.
+func (e *InteractionElements) LastAlphaPower() QM31 {
+	return e.alphaPowers[len(e.alphaPowers)-1]
+}
+
+// Println prints the interaction elements for debugging purposes.
+func (e *InteractionElements) Println(qm31Chip *QM31Chip) {
+	qm31Chip.Println(e.negZ)
+	qm31Chip.Println(e.alpha)
+	for _, alphaPower := range e.alphaPowers {
+		qm31Chip.Println(alphaPower)
+	}
+}
+
+// NewInteractionElements creates a new InteractionElements struct.
+// Negates z for reasons mentioned in the InteractionElements struct documentation.
+func (q *QM31Chip) NewInteractionElements(z, alpha QM31, alphaPowers []QM31) InteractionElements {
+	copyAlphaPowers := make([]QM31, len(alphaPowers))
+	copy(copyAlphaPowers, alphaPowers)
+
+	return InteractionElements{
+		negZ:        q.Neg(z),
+		alpha:       alpha,
+		alphaPowers: copyAlphaPowers,
+	}
+}
+
+// DummyInteractionElements creates a new InteractionElements struct with dummy values.
+func (q *QM31Chip) DummyInteractionElements(powerCount int) InteractionElements {
+	if powerCount < 0 {
+		panic("powerCount must be non-negative")
+	}
+
+	z := NewQM31Unchecked(1, 2, 3, 4)
+	alpha := NewQM31Unchecked(1, 0, 0, 0)
+	powers := make([]QM31, powerCount)
+	for i := range powers {
+		powers[i] = alpha
+	}
+	return q.NewInteractionElements(z, alpha, powers)
+}
+
+// Combine combines a list of QM31 values using the interaction elements as so:
+// sum = negZ + alpha^0 * value_0 + alpha^1 * value_1 + ... + alpha^n * value_n
+// Performs a unique reduction of the sum after all multiplications and additions (instead
+// of reducing after each operation) for several millions of gates savings.
+func (q *QM31Chip) Combine(interactionElements InteractionElements, values []QM31) (QM31, error) {
+	if len(values) > len(interactionElements.alphaPowers) {
+		return QM31{}, errors.New("not enough alpha powers to combine")
+	}
+
+	// Each multiplication of value by alpha^i has at most 162 bits per coefficient (see comments in q.Mul).
+	// Each addition has at most 1 carry bit. There can be at most 254-162 = 92 additions before overflowing 254 bits.
+	// This means the reduction quotient should be less than 254 - 31 = 223 bits.
+	sum := interactionElements.negZ
+	if len(interactionElements.alphaPowers) <= 91 {
+		for i, value := range values {
+			sum = q.AddUnchecked(sum, q.MulUnchecked(interactionElements.alphaPowers[i], value))
+		}
+	} else { // Shouldn't happen with stwo-cairo 62c3c4a9
+		panic("alphaPowers length is greater than 91")
+	}
+	sum = q.ReduceWithMaxBits(sum, 223)
+	return sum, nil
+}
+
+// ╔══════════════════════════════════╗
+// ║          QM31 Utilities          ║
+// ╚══════════════════════════════════╝
+
+// AssertEqual constrains the circuit so that x == y.
+func (q *QM31Chip) AssertEqual(x, y QM31) {
+	q.m31.api.AssertIsEqual(x.AReal.Limb, y.AReal.Limb)
+	q.m31.api.AssertIsEqual(x.AImag.Limb, y.AImag.Limb)
+	q.m31.api.AssertIsEqual(x.BReal.Limb, y.BReal.Limb)
+	q.m31.api.AssertIsEqual(x.BImag.Limb, y.BImag.Limb)
+}
+
+func (q *QM31Chip) Println(x QM31) {
+	q.m31.api.Println("aReal", x.AReal.Limb)
+	q.m31.api.Println("aImag", x.AImag.Limb)
+	q.m31.api.Println("bReal", x.BReal.Limb)
+	q.m31.api.Println("bImag", x.BImag.Limb)
 }
