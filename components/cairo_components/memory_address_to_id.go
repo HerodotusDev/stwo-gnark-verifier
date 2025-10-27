@@ -23,6 +23,7 @@ type MemoryAddressToIdComponent struct {
 	qm31 *m31.QM31Chip
 
 	interactionElements m31.InteractionElements
+	logSize             uints.U8
 	columnSize          frontend.Variable
 	claimedSum          m31.QM31
 	vanishEvalInv       m31.QM31
@@ -64,6 +65,7 @@ func NewMemoryAddressToId(
 		api:                   api,
 		qm31:                  qm31,
 		interactionElements:   interactionElements,
+		logSize:               claim.LogSize,
 		columnSize:            columnSize,
 		claimedSum:            interactionClaim.ClaimedSum,
 		vanishEvalInv:         vanishEvalInv,
@@ -73,48 +75,48 @@ func NewMemoryAddressToId(
 }
 
 // Evaluate enforces the component constraints at the sampled point.
-func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]m31.QM31, random_coeff m31.QM31) m31.QM31 {
-	// TODO: Handle preprocessed trace (the +1 is because addresses start at 1)
-	seq := c.qm31.Add(c.qm31.One(), c.qm31.One())
+func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, preprocessedSampledValues PreprocessedSampledValues, traceSampledValues [][]m31.QM31, interactionSampledValues [][]m31.QM31, random_coeff m31.QM31) m31.QM31 {
+	// Addresses start at 1 in the trace, so shift by one after reading the sequence column.
+	seq := preprocessedSampledValues.Get(NewPreprocessedColumnSeq(c.logSize))
 
 	// we assume that the sampled values starts with the memory_address_to_id component (the previous columns were popped)
-	id_0 := sampledValues[MAIN_IDX][0][0]
-	mult_0 := sampledValues[MAIN_IDX][1][0]
-	id_1 := sampledValues[MAIN_IDX][2][0]
-	mult_1 := sampledValues[MAIN_IDX][3][0]
-	id_2 := sampledValues[MAIN_IDX][4][0]
-	mult_2 := sampledValues[MAIN_IDX][5][0]
-	id_3 := sampledValues[MAIN_IDX][6][0]
-	mult_3 := sampledValues[MAIN_IDX][7][0]
-	id_4 := sampledValues[MAIN_IDX][8][0]
-	mult_4 := sampledValues[MAIN_IDX][9][0]
-	id_5 := sampledValues[MAIN_IDX][10][0]
-	mult_5 := sampledValues[MAIN_IDX][11][0]
-	id_6 := sampledValues[MAIN_IDX][12][0]
-	mult_6 := sampledValues[MAIN_IDX][13][0]
-	id_7 := sampledValues[MAIN_IDX][14][0]
-	mult_7 := sampledValues[MAIN_IDX][15][0]
+	id_0 := traceSampledValues[0][0]
+	mult_0 := traceSampledValues[1][0]
+	id_1 := traceSampledValues[2][0]
+	mult_1 := traceSampledValues[3][0]
+	id_2 := traceSampledValues[4][0]
+	mult_2 := traceSampledValues[5][0]
+	id_3 := traceSampledValues[6][0]
+	mult_3 := traceSampledValues[7][0]
+	id_4 := traceSampledValues[8][0]
+	mult_4 := traceSampledValues[9][0]
+	id_5 := traceSampledValues[10][0]
+	mult_5 := traceSampledValues[11][0]
+	id_6 := traceSampledValues[12][0]
+	mult_6 := traceSampledValues[13][0]
+	id_7 := traceSampledValues[14][0]
+	mult_7 := traceSampledValues[15][0]
 
-	interaction_column_0 := sampledValues[INTERACTION_IDX][0][0]
-	interaction_column_1 := sampledValues[INTERACTION_IDX][1][0]
-	interaction_column_2 := sampledValues[INTERACTION_IDX][2][0]
-	interaction_column_3 := sampledValues[INTERACTION_IDX][3][0]
-	interaction_column_4 := sampledValues[INTERACTION_IDX][4][0]
-	interaction_column_5 := sampledValues[INTERACTION_IDX][5][0]
-	interaction_column_6 := sampledValues[INTERACTION_IDX][6][0]
-	interaction_column_7 := sampledValues[INTERACTION_IDX][7][0]
-	interaction_column_8 := sampledValues[INTERACTION_IDX][8][0]
-	interaction_column_9 := sampledValues[INTERACTION_IDX][9][0]
-	interaction_column_10 := sampledValues[INTERACTION_IDX][10][0]
-	interaction_column_11 := sampledValues[INTERACTION_IDX][11][0]
-	interaction_column_12 := sampledValues[INTERACTION_IDX][12][0]
-	interaction_column_12_neg1 := sampledValues[INTERACTION_IDX][12][1]
-	interaction_column_13 := sampledValues[INTERACTION_IDX][13][0]
-	interaction_column_13_neg1 := sampledValues[INTERACTION_IDX][13][1]
-	interaction_column_14 := sampledValues[INTERACTION_IDX][14][0]
-	interaction_column_14_neg1 := sampledValues[INTERACTION_IDX][14][1]
-	interaction_column_15 := sampledValues[INTERACTION_IDX][15][0]
-	interaction_column_15_neg1 := sampledValues[INTERACTION_IDX][15][1]
+	interaction_column_0 := interactionSampledValues[0][0]
+	interaction_column_1 := interactionSampledValues[1][0]
+	interaction_column_2 := interactionSampledValues[2][0]
+	interaction_column_3 := interactionSampledValues[3][0]
+	interaction_column_4 := interactionSampledValues[4][0]
+	interaction_column_5 := interactionSampledValues[5][0]
+	interaction_column_6 := interactionSampledValues[6][0]
+	interaction_column_7 := interactionSampledValues[7][0]
+	interaction_column_8 := interactionSampledValues[8][0]
+	interaction_column_9 := interactionSampledValues[9][0]
+	interaction_column_10 := interactionSampledValues[10][0]
+	interaction_column_11 := interactionSampledValues[11][0]
+	interaction_column_12 := interactionSampledValues[12][0]
+	interaction_column_12_neg1 := interactionSampledValues[12][1]
+	interaction_column_13 := interactionSampledValues[13][0]
+	interaction_column_13_neg1 := interactionSampledValues[13][1]
+	interaction_column_14 := interactionSampledValues[14][0]
+	interaction_column_14_neg1 := interactionSampledValues[14][1]
+	interaction_column_15 := interactionSampledValues[15][0]
+	interaction_column_15_neg1 := interactionSampledValues[15][1]
 
 	// Computation of combined values
 	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(c.columnSize))

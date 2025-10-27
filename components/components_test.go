@@ -58,8 +58,8 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	}
 	oodsPoint := qm31Chip.One()
 
-	component := NewComponents(api, qm31Chip, interactionElements, claim, interactionClaim, oodsPoint)
-	sampledValues := dummySampledValues(qm31Chip)
+	component := NewComponents(api, m31Chip, qm31Chip, interactionElements, claim, interactionClaim, oodsPoint)
+	sampledValues := dummySampledValues(api, qm31Chip)
 	randomCoeff := qm31Chip.One()
 
 	result := component.Evaluate(sampledValues, randomCoeff)
@@ -68,13 +68,15 @@ func (c *componentsEvaluateCircuit) Define(api frontend.API) error {
 	return nil
 }
 
-func dummySampledValues(qm31Chip *m31.QM31Chip) [][][]m31.QM31 {
+func dummySampledValues(api frontend.API, qm31Chip *m31.QM31Chip) [][][]m31.QM31 {
 	// Layout mirrors the slices consumed inside MemoryAddressToIdComponent.Evaluate.
 	sampledValues := make([][][]m31.QM31, cairo_components.CP_IDX+1)
 
+	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
 	main := make([][]m31.QM31, 16)
 	interaction := make([][]m31.QM31, 16)
 	one := qm31Chip.One()
+	two := qm31Chip.Add(one, one)
 
 	for i := range main {
 		main[i] = []m31.QM31{one}
@@ -87,6 +89,20 @@ func dummySampledValues(qm31Chip *m31.QM31Chip) [][][]m31.QM31 {
 		interaction[i] = []m31.QM31{one}
 	}
 
+	seqColumnKey := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4)).Key(api)
+	found := false
+	for i, column := range cairo_components.PreprocessedColumns {
+		if column.Key(api) == seqColumnKey {
+			preprocessed[i] = []m31.QM31{two}
+			found = true
+			break
+		}
+	}
+	if !found {
+		panic("Seq(4) preprocessed column not found in test setup")
+	}
+
+	sampledValues[cairo_components.PREPROCESSED_IDX] = preprocessed
 	sampledValues[cairo_components.MAIN_IDX] = main
 	sampledValues[cairo_components.INTERACTION_IDX] = interaction
 	return sampledValues

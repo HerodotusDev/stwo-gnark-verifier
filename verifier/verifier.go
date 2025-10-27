@@ -47,7 +47,7 @@ func (c *VerifierChip) Verify(proof variables.Proof) {
 	// Verify OODS
 	// oodsPoint := c.qm31.One()
 	// random_coeff := c.qm31.One()
-	// components := components.NewComponents(c.api, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
+	// components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
 	// c.VerifyOODS(proof.SampledValues, components, random_coeff)
 }
 
