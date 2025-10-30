@@ -151,9 +151,7 @@ func (c *Cube252Component) Evaluate(
 	sum = unpackRes.Sum
 
 	var rangeCheck9Sums [70]m31.QM31
-	for i := 0; i < len(unpackRes.RangeCheckSums); i++ {
-		rangeCheck9Sums[i] = unpackRes.RangeCheckSums[i]
-	}
+	copy(rangeCheck9Sums[:], unpackRes.RangeCheckSums[:])
 
 	baseLimbs := make([]m31.QM31, 0, 28)
 	for i := 0; i < 9; i++ {
@@ -176,14 +174,10 @@ func (c *Cube252Component) Evaluate(
 	)
 	sum = mulSquaredRes.Sum
 
-	for i := 0; i < len(mulSquaredRes.ResultRangeSums); i++ {
-		rangeCheck9Sums[14+i] = mulSquaredRes.ResultRangeSums[i]
-	}
+	copy(rangeCheck9Sums[14:], mulSquaredRes.ResultRangeSums[:])
 
 	var rangeCheck19Sums [98]m31.QM31
-	for i := 0; i < len(mulSquaredRes.CarryRangeSums); i++ {
-		rangeCheck19Sums[28+i] = mulSquaredRes.CarryRangeSums[i]
-	}
+	copy(rangeCheck19Sums[28:], mulSquaredRes.CarryRangeSums[:])
 
 	mulCubedRes := sub.Mul252Evaluate(
 		c.qm31,
@@ -200,12 +194,8 @@ func (c *Cube252Component) Evaluate(
 	)
 	sum = mulCubedRes.Sum
 
-	for i := 0; i < len(mulCubedRes.ResultRangeSums); i++ {
-		rangeCheck9Sums[56+i] = mulCubedRes.ResultRangeSums[i]
-	}
-	for i := 0; i < len(mulCubedRes.CarryRangeSums); i++ {
-		rangeCheck19Sums[70+i] = mulCubedRes.CarryRangeSums[i]
-	}
+	copy(rangeCheck9Sums[56:], mulCubedRes.ResultRangeSums[:])
+	copy(rangeCheck19Sums[70:], mulCubedRes.CarryRangeSums[:])
 
 	cubeValues := make([]m31.QM31, 0, 20)
 	cubeValues = append(cubeValues, inputLimbs[:]...)
