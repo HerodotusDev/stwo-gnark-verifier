@@ -14,7 +14,7 @@ type ProofRaw struct {
 	Claim            ClaimRaw            `json:"claim"`
 	InteractionPow   uint64              `json:"interaction_pow"`
 	InteractionClaim InteractionClaimRaw `json:"interaction_claim"`
-	Proof            json.RawMessage     `json:"stark_proof"`
+	StarkProof       StarkProofRaw       `json:"stark_proof"`
 }
 
 // ╔══════════════════════════════════╗
@@ -337,3 +337,21 @@ type VerifyBitwiseXorInteractionClaimRaw struct {
 type ComponentClaimedSumEntry struct {
 	ClaimedSum [][2]uint64 `json:"claimed_sum"`
 }
+
+// ╔══════════════════════════════════╗
+// ║        Stark Proof Structures    ║
+// ╚══════════════════════════════════╝
+
+// StarkProofRaw mirrors the serialized Stark proof payload emitted by the prover.
+type StarkProofRaw struct {
+	Config        json.RawMessage  `json:"config"`
+	Commitments   json.RawMessage  `json:"commitments"`
+	Decommitments json.RawMessage  `json:"decommitments"`
+	FriProof      json.RawMessage  `json:"fri_proof"`
+	ProofOfWork   json.RawMessage  `json:"proof_of_work"`
+	QueriedValues json.RawMessage  `json:"queried_values"`
+	SampledValues SampledValuesRaw `json:"sampled_values"`
+}
+
+// SampledValuesRaw stores the sampled values grouped by table, column and evaluation.
+type SampledValuesRaw [][][][][2]uint64

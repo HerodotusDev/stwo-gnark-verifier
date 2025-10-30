@@ -14,7 +14,11 @@ const (
 type Proof struct {
 	Claim            CairoClaim
 	InteractionClaim CairoInteractionClaim
-	SampledValues    [][][]m31.QM31
+	StarkProof       StarkProof
+}
+
+type StarkProof struct {
+	SampledValues [][][]m31.QM31
 }
 
 // ╔══════════════════════════════════╗

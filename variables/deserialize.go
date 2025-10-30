@@ -59,8 +59,7 @@ func BuildProof(proofRaw *ProofRaw) *Proof {
 
 	proof.Claim = BuildClaim(&proofRaw.Claim)
 	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
-
-	// TODO: Build StarkProof from StarkProofRaw
+	proof.StarkProof = BuildStarkProof(&proofRaw.StarkProof)
 
 	return &proof
 }
@@ -538,6 +537,52 @@ func buildRangeChecksInteractionClaim(raw RangeChecksInteractionClaimRaw) RangeC
 	}
 
 	return claim
+}
+
+// ╔══════════════════════════════════╗
+// ║        StarkProof Building       ║
+// ╚══════════════════════════════════╝
+
+// BuildStarkProof builds a StarkProof from its raw representation.
+func BuildStarkProof(starkProofRaw *StarkProofRaw) StarkProof {
+	if starkProofRaw == nil {
+		return StarkProof{}
+	}
+
+	return StarkProof{
+		SampledValues: buildSampledValues(starkProofRaw.SampledValues),
+	}
+}
+
+func buildSampledValues(raw SampledValuesRaw) [][][]m31.QM31 {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	result := make([][][]m31.QM31, len(raw))
+	for domainIdx, columns := range raw {
+		if len(columns) == 0 {
+			continue
+		}
+
+		domainValues := make([][]m31.QM31, len(columns))
+		for columnIdx, evaluations := range columns {
+			if len(evaluations) == 0 {
+				continue
+			}
+
+			columnValues := make([]m31.QM31, 0, len(evaluations))
+			for _, entry := range evaluations {
+				if value, ok := qm31FromUint64Pairs(entry); ok {
+					columnValues = append(columnValues, value)
+				}
+			}
+			domainValues[columnIdx] = columnValues
+		}
+		result[domainIdx] = domainValues
+	}
+
+	return result
 }
 
 // ╔══════════════════════════════════╗

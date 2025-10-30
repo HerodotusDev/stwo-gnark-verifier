@@ -48,7 +48,7 @@ func (c *VerifierChip) Verify(proof variables.Proof) {
 	oodsPoint := c.qm31.One()
 	random_coeff := c.qm31.One()
 	components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
-	c.VerifyOODS(proof.SampledValues, components, random_coeff)
+	c.VerifyOODS(proof.StarkProof.SampledValues, components, random_coeff)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, random_coeff m31.QM31) {
