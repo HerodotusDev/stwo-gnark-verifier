@@ -40,10 +40,5 @@ func ReadBlakeWordEvaluate(
 		randomCoeff,
 	)
 
-	return ReadBlakeWordResult{
-		Sum:              verifyRes.Sum,
-		RangeCheckSum:    verifyRes.RangeCheckSum,
-		AddressLookupSum: verifyRes.AddressLookupSum,
-		IdToBigLookupSum: verifyRes.IdToBigLookupSum,
-	}
+	return ReadBlakeWordResult(verifyRes)
 }

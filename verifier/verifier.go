@@ -45,10 +45,10 @@ func (c *VerifierChip) Verify(proof variables.Proof) {
 	c.qm31.AssertEqual(sum, m31.NewQM31Unchecked(1880435071, 2071788161, 272129029, 1457783626))
 
 	// Verify OODS
-	// oodsPoint := c.qm31.One()
-	// random_coeff := c.qm31.One()
-	// components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
-	// c.VerifyOODS(proof.SampledValues, components, random_coeff)
+	oodsPoint := c.qm31.One()
+	random_coeff := c.qm31.One()
+	components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
+	c.VerifyOODS(proof.SampledValues, components, random_coeff)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, random_coeff m31.QM31) {
