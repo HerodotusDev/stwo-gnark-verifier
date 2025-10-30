@@ -1641,7 +1641,11 @@ func (f *partialEcMulFixture) SampledValues(ctx componentContext) ([][]m31.QM31,
 
 	interaction := make([][]m31.QM31, 428)
 	for i := range interaction {
-		interaction[i] = []m31.QM31{qm31One.ToQM31()}
+		if i >= 424 {
+			interaction[i] = []m31.QM31{qm31One.ToQM31(), qm31One.ToQM31()}
+		} else {
+			interaction[i] = []m31.QM31{qm31One.ToQM31()}
+		}
 	}
 
 	return preprocessed, trace, interaction
