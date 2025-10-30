@@ -291,8 +291,8 @@ func buildOpcodeInteractionClaim(raw map[string][]OpcodeInteractionEntryRaw) Opc
 	claim.AssertEqDoubleDeref = mapOpcodeEntries(raw["assert_eq_double_deref"], func(sum m31.QM31) cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim {
 		return cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim{ClaimedSum: sum}
 	})
-	claim.Blake = mapOpcodeEntries(raw["blake"], func(sum m31.QM31) cairo_components.BlakeOpcodeInteractionClaim {
-		return cairo_components.BlakeOpcodeInteractionClaim{ClaimedSum: sum}
+	claim.Blake = mapOpcodeEntries(raw["blake"], func(sum m31.QM31) cairo_components.BlakeCompressOpcodeInteractionClaim {
+		return cairo_components.BlakeCompressOpcodeInteractionClaim{ClaimedSum: sum}
 	})
 	claim.Call = mapOpcodeEntries(raw["call"], func(sum m31.QM31) cairo_components.CallOpcodeInteractionClaim {
 		return cairo_components.CallOpcodeInteractionClaim{ClaimedSum: sum}

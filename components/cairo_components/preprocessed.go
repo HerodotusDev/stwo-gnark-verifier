@@ -358,6 +358,7 @@ var PreprocessedColumns = []PreprocessedColumn{
 	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(29)),
 	NewPreprocessedColumnSeq(uints.NewU8(5)),
 	NewPreprocessedColumnSeq(uints.NewU8(4)),
+	NewPreprocessedColumnSeq(uints.NewU8(3)),
 	NewPreprocessedColumnBlakeSigma(uints.NewU8(0)),
 	NewPreprocessedColumnBlakeSigma(uints.NewU8(1)),
 	NewPreprocessedColumnBlakeSigma(uints.NewU8(2)),

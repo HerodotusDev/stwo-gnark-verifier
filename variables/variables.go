@@ -236,7 +236,7 @@ type OpcodeInteractionClaim struct {
 	AssertEq            []cairo_components.AssertEqOpcodeInteractionClaim
 	AssertEqImm         []cairo_components.AssertEqImmOpcodeInteractionClaim
 	AssertEqDoubleDeref []cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim
-	Blake               []cairo_components.BlakeOpcodeInteractionClaim
+	Blake               []cairo_components.BlakeCompressOpcodeInteractionClaim
 	Call                []cairo_components.CallOpcodeInteractionClaim
 	CallRelImm          []cairo_components.CallRelImmOpcodeInteractionClaim
 	Generic             []cairo_components.GenericOpcodeInteractionClaim
