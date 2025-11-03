@@ -57,14 +57,8 @@ func NewCube252(
 	}
 }
 
-func (c *Cube252Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessedSampledValues
+func (c *Cube252Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(141, 200)
 
 	if len(traceSampledValues) != cube252TraceColumns {
 		panic("cube_252 expects 141 trace columns")

@@ -53,13 +53,9 @@ func NewAddSmallOpcode(
 	}
 }
 
-func (c *AddSmallOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *AddSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(33, 20)
+
 	trace := traceSampledValues
 
 	inputPc := trace[0][0]
@@ -98,6 +94,11 @@ func (c *AddSmallOpcodeComponent) Evaluate(
 	op1Limb2 := trace[31][0]
 	enabler := trace[32][0]
 
+	// Enabler bit constraint.
+	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
+	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
+	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
+
 	decoded := sub.DecodeInstructionBC3CDEvaluate(
 		c.qm31,
 		inputPc,
@@ -118,7 +119,7 @@ func (c *AddSmallOpcodeComponent) Evaluate(
 	sum = decoded.Sum
 
 	// Constraint: if imm then offset2 is 1.
-	constraint := c.qm31.Mul(
+	constraint = c.qm31.Mul(
 		op1Imm,
 		c.qm31.Sub(c.qm31.One(), decoded.Offset2MinusBase),
 	)

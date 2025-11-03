@@ -53,14 +53,8 @@ func NewJnzOpcode(
 	}
 }
 
-func (c *JnzOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessedSampledValues
+func (c *JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(37, 12)
 
 	trace := traceSampledValues
 

@@ -71,13 +71,12 @@ func NewPedersenBuiltin(
 	}
 }
 
-func (c *PedersenBuiltinComponent) Evaluate(
-	sum m31.QM31,
-	preprocessed PreprocessedSampledValues,
-	trace [][]m31.QM31,
-	interaction [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
+
+	trace := traceSampledValues
+	interaction := interactionSampledValues
+
 	if len(trace) != pedersenBuiltinTraceColumns {
 		panic("pedersen_builtin expects 351 trace columns")
 	}
@@ -86,7 +85,7 @@ func (c *PedersenBuiltinComponent) Evaluate(
 	}
 
 	seqColumn := NewPreprocessedColumnSeq(uints.NewU8(uint8(c.logSize)))
-	seq := preprocessed.Get(seqColumn)
+	seq := traces.Get(seqColumn)
 
 	cursor := 0
 	nextTrace := func() m31.QM31 {

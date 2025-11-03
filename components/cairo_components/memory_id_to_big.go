@@ -69,14 +69,10 @@ func NewMemoryIdToBigBigComponent(
 	}
 }
 
-func (c *MemoryIdToBigBigComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	seq := preprocessedSampledValues.Get(NewPreprocessedColumnSeq(c.logSizeU))
+func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(29, 32)
+
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSizeU))
 	seqWithOffset := c.qm31.Add(seq, c.seqAddend)
 
 	trace := make([]m31.QM31, memoryIdToBigBigTraceCols)
@@ -227,14 +223,10 @@ func NewMemoryIdToBigSmallComponent(
 	}
 }
 
-func (c *MemoryIdToBigSmallComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	seq := preprocessedSampledValues.Get(NewPreprocessedColumnSeq(c.logSizeU))
+func (c *MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(9, 20)
+
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSizeU))
 
 	trace := make([]m31.QM31, memoryIdToBigSmallTraceCols)
 	for i := 0; i < memoryIdToBigSmallTraceCols; i++ {

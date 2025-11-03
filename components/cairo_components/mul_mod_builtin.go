@@ -81,16 +81,12 @@ func NewMulModBuiltin(
 	}
 }
 
-func (c *MulModBuiltinComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(410, 376)
+
 	trace := traceSampledValues
 
-	seq := preprocessedSampledValues.Get(sequencePreprocessedColumn(c.logSize))
+	seq := traces.Get(sequencePreprocessedColumn(c.logSize))
 
 	get := func(idx int) m31.QM31 {
 		return trace[idx][0]

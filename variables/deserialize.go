@@ -3,6 +3,7 @@ package variables
 import (
 	"encoding/json"
 	"io"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -74,12 +75,347 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 		return CairoClaim{}
 	}
 
-	var claim CairoClaim
+	memAddrLogSize := uint8FromUint64(claimRaw.MemoryAddressToId.LogSize)
+	claim := CairoClaim{
+		PublicData: ConstructPublicData(&claimRaw.PublicData),
+		MemoryAddressToId: cairo_components.MemoryAddressToIdClaim{
+			LogSize: uints.NewU8(memAddrLogSize),
+		},
+	}
 
-	claim.PublicData = ConstructPublicData(&claimRaw.PublicData)
-	claim.MemoryAddressToId = cairo_components.MemoryAddressToIdClaim{LogSize: uints.NewU8(uint8(claimRaw.MemoryAddressToId.LogSize))}
+	claim.Opcodes = buildOpcodeClaims(claimRaw.Opcodes)
+	if verifyInstructionLogSize := claimRaw.VerifyInstruction.LogSize; verifyInstructionLogSize > 0 {
+		claim.VerifyInstruction = &cairo_components.VerifyInstructionClaim{
+			LogSize: uint32FromUint64(verifyInstructionLogSize),
+		}
+	}
+	claim.BlakeContext = buildBlakeContextClaim(claimRaw.BlakeContext)
+	claim.Builtins = buildBuiltinsClaim(claimRaw.Builtins)
+	claim.PedersenContext = buildPedersenContextClaim(claimRaw.PedersenContext)
+	claim.PoseidonContext = buildPoseidonContextClaim(claimRaw.PoseidonContext)
+	claim.MemoryIDToValue = buildMemoryIDToValueClaim(claimRaw.MemoryIDToValue)
+	claim.RangeChecks = buildRangeChecksClaim(claimRaw.RangeChecks)
+	claim.VerifyBitwiseXor4 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor4)
+	claim.VerifyBitwiseXor7 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor7)
+	claim.VerifyBitwiseXor8 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor8)
+	claim.VerifyBitwiseXor9 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor9)
 
 	return claim
+}
+
+func buildOpcodeClaims(raw OpcodeClaimRaw) OpcodeClaims {
+	var claims OpcodeClaims
+
+	claims.Add = mapOpcodeClaimEntries(raw.Add, func(logSize uint32) cairo_components.AddOpcodeClaim {
+		return cairo_components.AddOpcodeClaim{LogSize: logSize}
+	})
+	claims.AddSmall = mapOpcodeClaimEntries(raw.AddSmall, func(logSize uint32) cairo_components.AddSmallOpcodeClaim {
+		return cairo_components.AddSmallOpcodeClaim{LogSize: logSize}
+	})
+	claims.AddAp = mapOpcodeClaimEntries(raw.AddAp, func(logSize uint32) cairo_components.AddApOpcodeClaim {
+		return cairo_components.AddApOpcodeClaim{LogSize: logSize}
+	})
+	claims.AssertEq = mapOpcodeClaimEntries(raw.AssertEq, func(logSize uint32) cairo_components.AssertEqOpcodeClaim {
+		return cairo_components.AssertEqOpcodeClaim{LogSize: logSize}
+	})
+	claims.AssertEqImm = mapOpcodeClaimEntries(raw.AssertEqImm, func(logSize uint32) cairo_components.AssertEqImmOpcodeClaim {
+		return cairo_components.AssertEqImmOpcodeClaim{LogSize: logSize}
+	})
+	claims.AssertEqDoubleDeref = mapOpcodeClaimEntries(raw.AssertEqDoubleDeref, func(logSize uint32) cairo_components.AssertEqDoubleDerefOpcodeClaim {
+		return cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: logSize}
+	})
+	claims.Blake = mapOpcodeClaimEntries(raw.Blake, func(logSize uint32) cairo_components.BlakeCompressOpcodeClaim {
+		return cairo_components.BlakeCompressOpcodeClaim{LogSize: logSize}
+	})
+	claims.Call = mapOpcodeClaimEntries(raw.Call, func(logSize uint32) cairo_components.CallOpcodeClaim {
+		return cairo_components.CallOpcodeClaim{LogSize: logSize}
+	})
+	claims.CallRelImm = mapOpcodeClaimEntries(raw.CallRelImm, func(logSize uint32) cairo_components.CallRelImmOpcodeClaim {
+		return cairo_components.CallRelImmOpcodeClaim{LogSize: logSize}
+	})
+	claims.Generic = mapOpcodeClaimEntries(raw.Generic, func(logSize uint32) cairo_components.GenericOpcodeClaim {
+		return cairo_components.GenericOpcodeClaim{LogSize: logSize}
+	})
+	claims.Jnz = mapOpcodeClaimEntries(raw.Jnz, func(logSize uint32) cairo_components.JnzOpcodeClaim {
+		return cairo_components.JnzOpcodeClaim{LogSize: logSize}
+	})
+	claims.JnzTaken = mapOpcodeClaimEntries(raw.JnzTaken, func(logSize uint32) cairo_components.JnzTakenOpcodeClaim {
+		return cairo_components.JnzTakenOpcodeClaim{LogSize: logSize}
+	})
+	claims.Jump = mapOpcodeClaimEntries(raw.Jump, func(logSize uint32) cairo_components.JumpOpcodeClaim {
+		return cairo_components.JumpOpcodeClaim{LogSize: logSize}
+	})
+	claims.JumpDoubleDeref = mapOpcodeClaimEntries(raw.JumpDoubleDeref, func(logSize uint32) cairo_components.JumpDoubleDerefOpcodeClaim {
+		return cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: logSize}
+	})
+	claims.JumpRel = mapOpcodeClaimEntries(raw.JumpRel, func(logSize uint32) cairo_components.JumpRelOpcodeClaim {
+		return cairo_components.JumpRelOpcodeClaim{LogSize: logSize}
+	})
+	claims.JumpRelImm = mapOpcodeClaimEntries(raw.JumpRelImm, func(logSize uint32) cairo_components.JumpRelImmOpcodeClaim {
+		return cairo_components.JumpRelImmOpcodeClaim{LogSize: logSize}
+	})
+	claims.Mul = mapOpcodeClaimEntries(raw.Mul, func(logSize uint32) cairo_components.MulOpcodeClaim {
+		return cairo_components.MulOpcodeClaim{LogSize: logSize}
+	})
+	claims.MulSmall = mapOpcodeClaimEntries(raw.MulSmall, func(logSize uint32) cairo_components.MulSmallOpcodeClaim {
+		return cairo_components.MulSmallOpcodeClaim{LogSize: logSize}
+	})
+	claims.Qm31 = mapOpcodeClaimEntries(raw.Qm31, func(logSize uint32) cairo_components.Qm31OpcodeClaim {
+		return cairo_components.Qm31OpcodeClaim{LogSize: logSize}
+	})
+	claims.Ret = mapOpcodeClaimEntries(raw.Ret, func(logSize uint32) cairo_components.RetOpcodeClaim {
+		return cairo_components.RetOpcodeClaim{LogSize: logSize}
+	})
+
+	return claims
+}
+
+func buildBlakeContextClaim(raw BlakeContextClaimRawWrapper) BlakeContextClaim {
+	if raw.Claim == nil {
+		return BlakeContextClaim{}
+	}
+
+	var (
+		claim   BlakeClaim
+		hasData bool
+	)
+
+	if entry := raw.Claim.BlakeRound; entry != nil {
+		claim.BlakeRound = &cairo_components.BlakeRoundClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if entry := raw.Claim.BlakeG; entry != nil {
+		claim.BlakeG = &cairo_components.BlakeGClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if raw.Claim.BlakeSigma != nil {
+		claim.BlakeRoundSigma = &cairo_components.BlakeRoundSigmaClaim{}
+		hasData = true
+	}
+	if entry := raw.Claim.TripleXor32; entry != nil {
+		claim.TripleXor32 = &cairo_components.TripleXor32Claim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if entry := raw.Claim.VerifyBitwiseXor12; entry != nil {
+		claim.VerifyBitwiseXor12 = &SimpleLogSizeClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+
+	if !hasData {
+		return BlakeContextClaim{}
+	}
+
+	return BlakeContextClaim{Claim: &claim}
+}
+
+func buildBuiltinsClaim(raw BuiltinsClaimRaw) BuiltinsClaim {
+	var claim BuiltinsClaim
+	if raw == nil {
+		return claim
+	}
+
+	if entry := raw["add_mod_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.AddModBuiltin = &cairo_components.AddModBuiltinClaim{
+			LogSize:                   uint32FromUint64(ptrUint64(entry.LogSize)),
+			AddModBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.AddModBuiltinSegmentStart)),
+		}
+	}
+	if entry := raw["bitwise_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.BitwiseBuiltin = &cairo_components.BitwiseBuiltinClaim{
+			LogSize:                    uint32FromUint64(ptrUint64(entry.LogSize)),
+			BitwiseBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.BitwiseBuiltinSegmentStart)),
+		}
+	}
+	if entry := raw["mul_mod_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.MulModBuiltin = &cairo_components.MulModBuiltinClaim{
+			LogSize:                   uint32FromUint64(ptrUint64(entry.LogSize)),
+			MulModBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.MulModBuiltinSegmentStart)),
+		}
+	}
+	if entry := raw["pedersen_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.PedersenBuiltin = &cairo_components.PedersenBuiltinClaim{
+			LogSize:                     uint32FromUint64(ptrUint64(entry.LogSize)),
+			PedersenBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.PedersenBuiltinSegmentStart)),
+		}
+	}
+	if entry := raw["poseidon_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.PoseidonBuiltin = &cairo_components.PoseidonBuiltinClaim{
+			LogSize:                     uint32FromUint64(ptrUint64(entry.LogSize)),
+			PoseidonBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.PoseidonBuiltinSegmentStart)),
+		}
+	}
+	if entry := raw["range_check_96_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.RangeCheck96 = &cairo_components.RangeCheck96BuiltinClaim{
+			LogSize:                uint32FromUint64(ptrUint64(entry.LogSize)),
+			RangeCheckSegmentStart: uint32FromUint64(ptrUint64(entry.RangeCheckBuiltinSegmentStart)),
+		}
+	}
+	if entry := raw["range_check_128_builtin"]; entry != nil && entry.LogSize != nil {
+		claim.RangeCheck128 = &cairo_components.RangeCheck128BuiltinClaim{
+			LogSize:                uint32FromUint64(ptrUint64(entry.LogSize)),
+			RangeCheckSegmentStart: uint32FromUint64(ptrUint64(entry.RangeCheckBuiltinSegmentStart)),
+		}
+	}
+
+	return claim
+}
+
+func buildPedersenContextClaim(raw PedersenContextClaimRaw) PedersenContextClaim {
+	if raw.Claim == nil {
+		return PedersenContextClaim{}
+	}
+
+	var (
+		claim   PedersenClaim
+		hasData bool
+	)
+
+	if entry := raw.Claim["partial_ec_mul"]; entry != nil {
+		claim.PartialEcMul = &cairo_components.PartialEcMulClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if entry := raw.Claim["pedersen_points_table"]; entry != nil {
+		claim.PedersenPointsTable = &cairo_components.PedersenPointsTableClaim{}
+		hasData = true
+	}
+
+	if !hasData {
+		return PedersenContextClaim{}
+	}
+
+	return PedersenContextClaim{Claim: &claim}
+}
+
+func buildPoseidonContextClaim(raw PoseidonContextClaimRaw) PoseidonContextClaim {
+	if raw.Claim == nil {
+		return PoseidonContextClaim{}
+	}
+
+	var (
+		claim   PoseidonClaim
+		hasData bool
+	)
+
+	if entry := raw.Claim.Poseidon3PartialRoundsChain; entry != nil {
+		claim.Poseidon3PartialRoundsChain = &cairo_components.Poseidon3PartialRoundsChainClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if entry := raw.Claim.PoseidonFullRoundChain; entry != nil {
+		claim.PoseidonFullRoundChain = &cairo_components.PoseidonFullRoundChainClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if entry := raw.Claim.Cube252; entry != nil {
+		claim.Cube252 = &cairo_components.Cube252Claim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+	if raw.Claim.PoseidonRoundKeys != nil {
+		claim.PoseidonRoundKeys = &cairo_components.PoseidonRoundKeysClaim{}
+		hasData = true
+	}
+	if entry := raw.Claim.RangeCheckFelt252Width27; entry != nil {
+		claim.RangeCheckFelt252Width27 = &cairo_components.RangeCheckFelt252Width27Claim{LogSize: uint32FromUint64(entry.LogSize)}
+		hasData = true
+	}
+
+	if !hasData {
+		return PoseidonContextClaim{}
+	}
+
+	return PoseidonContextClaim{Claim: &claim}
+}
+
+func buildMemoryIDToValueClaim(raw MemoryIDToValueClaimRaw) MemoryIDToValueClaim {
+	var claim MemoryIDToValueClaim
+
+	if len(raw.BigLogSizes) > 0 {
+		claim.Big = make([]cairo_components.MemoryIdToBigBigClaim, 0, len(raw.BigLogSizes))
+		for idx, entry := range raw.BigLogSizes {
+			claim.Big = append(claim.Big, cairo_components.MemoryIdToBigBigClaim{
+				LogSize: uint32FromUint64(entry),
+				Offset:  uint32(idx),
+			})
+		}
+	}
+
+	if raw.SmallLogSize > 0 {
+		claim.Small = &cairo_components.MemoryIdToBigSmallClaim{
+			LogSize: uint32FromUint64(raw.SmallLogSize),
+		}
+	}
+
+	return claim
+}
+
+func buildRangeChecksClaim(raw RangeChecksClaimRaw) RangeChecksClaim {
+	var claim RangeChecksClaim
+	if raw == nil {
+		return claim
+	}
+
+	claim.RC6 = simpleLogSizeFromEntry(raw["rc_6"])
+	claim.RC8 = simpleLogSizeFromEntry(raw["rc_8"])
+	claim.RC11 = simpleLogSizeFromEntry(raw["rc_11"])
+	claim.RC12 = simpleLogSizeFromEntry(raw["rc_12"])
+	claim.RC18 = simpleLogSizeFromEntry(raw["rc_18"])
+	claim.RC19 = simpleLogSizeFromEntry(raw["rc_19"])
+	claim.RC4_3 = simpleLogSizeFromEntry(raw["rc_4_3"])
+	claim.RC4_4 = simpleLogSizeFromEntry(raw["rc_4_4"])
+	claim.RC5_4 = simpleLogSizeFromEntry(raw["rc_5_4"])
+	claim.RC9_9 = simpleLogSizeFromEntry(raw["rc_9_9"])
+	claim.RC7_2_5 = simpleLogSizeFromEntry(raw["rc_7_2_5"])
+	claim.RC3_6_6_3 = simpleLogSizeFromEntry(raw["rc_3_6_6_3"])
+	claim.RC4_4_4_4 = simpleLogSizeFromEntry(raw["rc_4_4_4_4"])
+	claim.RC3_3_3_3_3 = simpleLogSizeFromEntry(raw["rc_3_3_3_3_3"])
+
+	return claim
+}
+
+func buildVerifyBitwiseXorClaim(raw VerifyBitwiseXorClaimRaw) *SimpleLogSizeClaim {
+	// Treat zero log size as absence.
+	if raw.LogSize == 0 {
+		return nil
+	}
+	return &SimpleLogSizeClaim{LogSize: uint32FromUint64(raw.LogSize)}
+}
+
+func simpleLogSizeFromEntry(entry *ComponentLogSizeEntry) *SimpleLogSizeClaim {
+	if entry == nil {
+		return nil
+	}
+	return &SimpleLogSizeClaim{LogSize: uint32FromUint64(entry.LogSize)}
+}
+
+func mapOpcodeClaimEntries[T any](entries []OpcodeLogSizeEntryRaw, wrap func(uint32) T) []T {
+	if len(entries) == 0 {
+		return nil
+	}
+
+	result := make([]T, 0, len(entries))
+	for _, entry := range entries {
+		result = append(result, wrap(uint32FromUint64(entry.LogSize)))
+	}
+	return result
+}
+
+func ptrUint64(value *uint64) uint64 {
+	if value == nil {
+		return 0
+	}
+	return *value
+}
+
+func uint32FromUint64(value uint64) uint32 {
+	if value > math.MaxUint32 {
+		panic("log size exceeds uint32 capacity")
+	}
+	return uint32(value)
+}
+
+func uint8FromUint64(value uint64) uint8 {
+	if value > math.MaxUint8 {
+		panic("log size exceeds uint8 capacity")
+	}
+	return uint8(value)
 }
 
 // ╔══════════════════════════════════╗

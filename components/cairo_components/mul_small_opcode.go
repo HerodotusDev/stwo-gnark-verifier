@@ -59,14 +59,8 @@ func NewMulSmallOpcode(
 	}
 }
 
-func (c *MulSmallOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessedSampledValues
+func (c *MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(37, 24)
 
 	if len(traceSampledValues) != 37 {
 		panic("mul_small_opcode expects 37 trace columns")

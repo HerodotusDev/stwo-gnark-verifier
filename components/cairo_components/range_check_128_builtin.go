@@ -59,14 +59,10 @@ func NewRangeCheck128Builtin(
 	}
 }
 
-func (c *RangeCheck128BuiltinComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	seqColumn := preprocessedSampledValues.Get(sequencePreprocessedColumn(c.logSize))
+func (c *RangeCheck128BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(17, 4)
+
+	seqColumn := traces.Get(sequencePreprocessedColumn(c.logSize))
 	input := c.qm31.Add(c.segmentStart, seqColumn)
 
 	trace := traceSampledValues

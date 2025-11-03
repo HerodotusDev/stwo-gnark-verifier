@@ -52,13 +52,9 @@ func NewBlakeRoundSigma(
 	}
 }
 
-func (c *BlakeRoundSigmaComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(1, 4)
+
 	if len(traceSampledValues) != blakeRoundSigmaTraceColumns {
 		panic("blake_round_sigma expects 1 trace column")
 	}
@@ -68,7 +64,7 @@ func (c *BlakeRoundSigmaComponent) Evaluate(
 
 	values := make([]m31.QM31, len(c.preprocessed))
 	for i, column := range c.preprocessed {
-		values[i] = preprocessedSampledValues.Get(column)
+		values[i] = traces.Get(column)
 	}
 
 	lookupSum, err := c.qm31.Combine(c.lookupElements, values)

@@ -76,7 +76,6 @@ func (c *qm31InverseCircuit) Define(api frontend.API) error {
 	qmChip := NewQM31Chip(m31Chip)
 
 	value := NewQM31FromComponents(c.Value[0], c.Value[1], c.Value[2], c.Value[3])
-	qmChip.Println(value)
 	inverse := qmChip.Inverse(value)
 
 	product := qmChip.Mul(value, inverse)

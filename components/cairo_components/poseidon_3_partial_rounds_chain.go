@@ -61,14 +61,8 @@ func NewPoseidon3PartialRoundsChain(
 	}
 }
 
-func (c *Poseidon3PartialRoundsChainComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessedSampledValues
+func (c *Poseidon3PartialRoundsChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(169, 36)
 
 	if len(traceSampledValues) != poseidon3PartialRoundsTraceColumns {
 		panic("poseidon_3_partial_rounds_chain expects 169 trace columns")

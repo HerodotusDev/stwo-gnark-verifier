@@ -76,13 +76,12 @@ func NewPoseidonBuiltin(
 	}
 }
 
-func (c *PoseidonBuiltinComponent) Evaluate(
-	sum m31.QM31,
-	preprocessed PreprocessedSampledValues,
-	trace [][]m31.QM31,
-	interaction [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
+
+	trace := traceSampledValues
+	interaction := interactionSampledValues
+
 	if len(trace) != poseidonBuiltinTraceColumns {
 		panic("poseidon_builtin expects 341 trace columns")
 	}
@@ -91,7 +90,7 @@ func (c *PoseidonBuiltinComponent) Evaluate(
 	}
 
 	seqColumn := NewPreprocessedColumnSeq(uints.NewU8(uint8(c.logSize)))
-	seq := preprocessed.Get(seqColumn)
+	seq := traces.Get(seqColumn)
 
 	cursor := 0
 	nextTrace := func() m31.QM31 {
@@ -299,7 +298,7 @@ func (c *PoseidonBuiltinComponent) Evaluate(
 	)
 
 	var partials [17]m31.QM31
-	for group := 0; group < 17; group++ {
+	for group := 0; group < 16; group++ {
 		idx := group * 4
 		partials[group] = c.qm31.FromPartialEvals(
 			interaction[idx+0][0],
@@ -308,15 +307,21 @@ func (c *PoseidonBuiltinComponent) Evaluate(
 			interaction[idx+3][0],
 		)
 	}
+	partials[16] = c.qm31.FromPartialEvals(
+		interaction[64][1],
+		interaction[65][1],
+		interaction[66][1],
+		interaction[67][1],
+	)
 
 	if len(interaction[64]) < 2 || len(interaction[65]) < 2 || len(interaction[66]) < 2 || len(interaction[67]) < 2 {
 		panic("interaction columns missing neg1 values")
 	}
 	partialNeg1 := c.qm31.FromPartialEvals(
-		interaction[64][1],
-		interaction[65][1],
-		interaction[66][1],
-		interaction[67][1],
+		interaction[64][0],
+		interaction[65][0],
+		interaction[66][0],
+		interaction[67][0],
 	)
 
 	apply := func(constraint m31.QM31) {

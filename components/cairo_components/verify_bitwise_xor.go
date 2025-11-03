@@ -35,20 +35,8 @@ func NewVerifyBitwiseXor4(
 	}
 }
 
-func (c *VerifyBitwiseXor4Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	return c.inner.Evaluate(
-		sum,
-		preprocessedSampledValues,
-		traceSampledValues,
-		interactionSampledValues,
-		randomCoeff,
-	)
+func (c *VerifyBitwiseXor4Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
 // ╔══════════════════════════════════╗
@@ -81,20 +69,8 @@ func NewVerifyBitwiseXor7(
 	}
 }
 
-func (c *VerifyBitwiseXor7Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	return c.inner.Evaluate(
-		sum,
-		preprocessedSampledValues,
-		traceSampledValues,
-		interactionSampledValues,
-		randomCoeff,
-	)
+func (c *VerifyBitwiseXor7Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
 // ╔══════════════════════════════════╗
@@ -127,20 +103,8 @@ func NewVerifyBitwiseXor8(
 	}
 }
 
-func (c *VerifyBitwiseXor8Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	return c.inner.Evaluate(
-		sum,
-		preprocessedSampledValues,
-		traceSampledValues,
-		interactionSampledValues,
-		randomCoeff,
-	)
+func (c *VerifyBitwiseXor8Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
 // ╔══════════════════════════════════╗
@@ -173,20 +137,8 @@ func NewVerifyBitwiseXor9(
 	}
 }
 
-func (c *VerifyBitwiseXor9Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	return c.inner.Evaluate(
-		sum,
-		preprocessedSampledValues,
-		traceSampledValues,
-		interactionSampledValues,
-		randomCoeff,
-	)
+func (c *VerifyBitwiseXor9Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
 // ╔══════════════════════════════════╗
@@ -223,13 +175,9 @@ func NewVerifyBitwiseXor12(
 	}
 }
 
-func (c *VerifyBitwiseXor12Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *VerifyBitwiseXor12Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(16, 32)
+
 	if len(traceSampledValues) != 16 {
 		panic("verify_bitwise_xor_12 expects 16 trace columns")
 	}
@@ -243,9 +191,9 @@ func (c *VerifyBitwiseXor12Component) Evaluate(
 	}
 
 	bitwiseXor := []m31.QM31{
-		preprocessedSampledValues.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(0))),
-		preprocessedSampledValues.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(1))),
-		preprocessedSampledValues.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(2))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(0))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(1))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(2))),
 	}
 
 	inters := computeVerifyBitwiseXor12Intermediates(c.qm31, c.interactionElements, bitwiseXor)

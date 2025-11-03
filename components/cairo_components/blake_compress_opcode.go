@@ -73,13 +73,9 @@ func NewBlakeCompressOpcode(
 	}
 }
 
-func (c *BlakeCompressOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(169, 148)
+
 	if len(traceSampledValues) != blakeCompressTraceColumns {
 		panic("blake_compress_opcode expects 169 trace columns")
 	}
@@ -95,7 +91,7 @@ func (c *BlakeCompressOpcodeComponent) Evaluate(
 		return col[0]
 	}
 
-	seq := preprocessedSampledValues.Get(
+	seq := traces.Get(
 		NewPreprocessedColumnSeq(uints.NewU8(c.logSize)),
 	)
 

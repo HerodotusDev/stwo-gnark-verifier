@@ -60,13 +60,9 @@ func NewAddApOpcode(
 	}
 }
 
-func (c *AddApOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(15, 16)
+
 	inputPc := traceSampledValues[0][0]
 	inputAp := traceSampledValues[1][0]
 	inputFp := traceSampledValues[2][0]
@@ -83,6 +79,11 @@ func (c *AddApOpcodeComponent) Evaluate(
 	nextApBot8Bits := traceSampledValues[13][0]
 	enabler := traceSampledValues[14][0]
 
+	// Enabler bit constraint.
+	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
+	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
+	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
+
 	decoded := sub.DecodeInstructionD2A10Evaluate(
 		c.qm31,
 		inputPc,
@@ -98,7 +99,7 @@ func (c *AddApOpcodeComponent) Evaluate(
 	sum = decoded.Sum
 
 	// Constraint - if imm then offset2 is 1.
-	constraint := c.qm31.Mul(
+	constraint = c.qm31.Mul(
 		op1Imm,
 		c.qm31.Sub(c.qm31.One(), decoded.Offset2MinusBase),
 	)

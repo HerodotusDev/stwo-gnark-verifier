@@ -28,18 +28,6 @@ func NewRangeCheck18(
 	}
 }
 
-func (c *RangeCheck18Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	return c.inner.Evaluate(
-		sum,
-		preprocessedSampledValues,
-		traceSampledValues,
-		interactionSampledValues,
-		randomCoeff,
-	)
+func (c *RangeCheck18Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	return c.inner.Evaluate(sum, traces, randomCoeff)
 }

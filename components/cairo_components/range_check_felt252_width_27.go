@@ -52,13 +52,9 @@ func NewRangeCheckFelt252Width27(
 	}
 }
 
-func (c *RangeCheckFelt252Width27Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(20, 32)
+
 	trace := traceSampledValues
 	inputLimb0 := trace[0][0]
 	inputLimb1 := trace[1][0]

@@ -53,19 +53,15 @@ func NewPoseidonRoundKeys(
 	}
 }
 
-func (c *PoseidonRoundKeysComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	seq := preprocessedSampledValues.Get(c.seqColumn)
+func (c *PoseidonRoundKeysComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(1, 4)
+
+	seq := traces.Get(c.seqColumn)
 
 	values := make([]m31.QM31, 1+len(c.keyColumns))
 	values[0] = seq
 	for i, column := range c.keyColumns {
-		values[i+1] = preprocessedSampledValues.Get(column)
+		values[i+1] = traces.Get(column)
 	}
 
 	lookupSum, err := c.qm31.Combine(c.lookupElements, values)

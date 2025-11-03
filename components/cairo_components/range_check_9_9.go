@@ -40,18 +40,6 @@ func NewRangeCheck9_9(
 	}
 }
 
-func (c *RangeCheck9_9Component) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	return c.inner.Evaluate(
-		sum,
-		preprocessedSampledValues,
-		traceSampledValues,
-		interactionSampledValues,
-		randomCoeff,
-	)
+func (c *RangeCheck9_9Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	return c.inner.Evaluate(sum, traces, randomCoeff)
 }

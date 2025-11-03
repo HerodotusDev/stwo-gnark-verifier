@@ -55,14 +55,8 @@ func NewPoseidonFullRoundChain(
 	}
 }
 
-func (c *PoseidonFullRoundChainComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessedSampledValues
+func (c *PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(126, 24)
 
 	if len(traceSampledValues) != poseidonFullRoundTraceColumns {
 		panic("poseidon_full_round_chain expects 126 trace columns")

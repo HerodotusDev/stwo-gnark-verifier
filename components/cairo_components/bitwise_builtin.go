@@ -59,13 +59,9 @@ func NewBitwiseBuiltin(
 	}
 }
 
-func (c *BitwiseBuiltinComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(89, 76)
+
 	if len(traceSampledValues) != 89 {
 		panic("bitwise_builtin expects 89 trace columns")
 	}
@@ -88,7 +84,7 @@ func (c *BitwiseBuiltinComponent) Evaluate(
 		return limbs
 	}
 
-	seq := preprocessedSampledValues.Get(sequencePreprocessedColumn(c.logSize))
+	seq := traces.Get(sequencePreprocessedColumn(c.logSize))
 	base := c.qm31.Add(c.segmentStart, c.qm31.Mul(seq, qm31Const(5)))
 
 	op0ID := getTrace(0)

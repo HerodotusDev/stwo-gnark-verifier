@@ -39,16 +39,21 @@ func newLookupConstraintComponent(
 	}
 }
 
+const (
+	lookupTraceColumns       = 1
+	lookupInteractionColumns = 4
+)
+
 func (c *lookupConstraintComponent) Evaluate(
 	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
+	traces *Traces,
 	randomCoeff m31.QM31,
 ) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(lookupTraceColumns, lookupInteractionColumns)
+
 	values := make([]m31.QM31, len(c.preprocessed))
 	for i, column := range c.preprocessed {
-		values[i] = preprocessedSampledValues.Get(column)
+		values[i] = traces.Get(column)
 	}
 
 	rangeCheckSum, err := c.qm31.Combine(c.interactionElements, values)

@@ -59,13 +59,9 @@ func NewBlakeG(
 	}
 }
 
-func (c *BlakeGComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *BlakeGComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(53, 36)
+
 	trace := traceSampledValues
 	if len(trace) != 53 {
 		panic("blake_g expects 53 trace columns")

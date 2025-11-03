@@ -1,6 +1,8 @@
 package subroutines
 
-import "github.com/HerodotusDev/stwo-gnark-verifier/m31"
+import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+)
 
 type DecodeInstruction4B8CFResult struct {
 	Offset0MinusBase m31.QM31
@@ -61,7 +63,7 @@ func DecodeInstruction4B8CFEvaluate(
 	constraint = qm31.Mul(constraint, domainVanishInv)
 	sum = accumulateConstraint(qm31, sum, randomCoeff, constraint)
 
-	alpha := qm31Const(8)
+	alpha := qm31.Mul(dstBaseFP, qm31Const(8))
 	alpha = qm31.Add(alpha, qm31.Mul(op0BaseFP, qm31Const(16)))
 	alpha = qm31.Add(alpha, qm31.Mul(op1Imm, qm31Const(32)))
 	alpha = qm31.Add(alpha, qm31.Mul(op1BaseFP, qm31Const(64)))

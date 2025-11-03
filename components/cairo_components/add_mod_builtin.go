@@ -59,16 +59,12 @@ func NewAddModBuiltin(
 	}
 }
 
-func (c *AddModBuiltinComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(251, 108)
+
 	trace := traceSampledValues
 
-	seq := preprocessedSampledValues.Get(sequencePreprocessedColumn(c.logSize))
+	seq := traces.Get(sequencePreprocessedColumn(c.logSize))
 
 	readPoint := func(idIndex int) sub.ModPoint {
 		point := sub.ModPoint{ID: trace[idIndex][0]}

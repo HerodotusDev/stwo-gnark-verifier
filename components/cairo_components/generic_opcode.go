@@ -67,14 +67,8 @@ func NewGenericOpcode(
 	}
 }
 
-func (c *GenericOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessedSampledValues
+func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(236, 132)
 
 	if len(traceSampledValues) != genericOpcodeTraceColumns {
 		panic(fmt.Sprintf("generic opcode expects %d trace columns, got %d", genericOpcodeTraceColumns, len(traceSampledValues)))
@@ -266,10 +260,6 @@ func (c *GenericOpcodeComponent) Evaluate(
 		panic(err)
 	}
 
-	fmt.Println("go_debug sum_before_lookup", sum)
-	fmt.Println("go_debug verify_instruction_sum", verifyInstructionSum)
-	fmt.Println("go_debug memory_address_sums", evalRes.MemoryAddressSums)
-
 	sum = c.lookupConstraints(
 		sum,
 		c.vanishEvalInv,
@@ -286,8 +276,6 @@ func (c *GenericOpcodeComponent) Evaluate(
 		opcodesSum64,
 		interactionSampledValues,
 	)
-
-	fmt.Println("go_debug final_sum", sum)
 
 	return sum
 }
@@ -308,7 +296,6 @@ func (c *GenericOpcodeComponent) lookupConstraints(
 	opcodesSum64 m31.QM31,
 	interactionValues [][]m31.QM31,
 ) m31.QM31 {
-	c.qm31.Println(sum)
 	if len(interactionValues) != genericOpcodeInteractionColumns {
 		panic(fmt.Sprintf("generic opcode expects %d interaction columns, got %d", genericOpcodeInteractionColumns, len(interactionValues)))
 	}

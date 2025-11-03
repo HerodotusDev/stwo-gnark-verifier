@@ -67,13 +67,9 @@ func NewBlakeRound(
 	}
 }
 
-func (c *BlakeRoundComponent) Evaluate(
-	sum m31.QM31,
-	_ PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(212, 120)
+
 	if len(traceSampledValues) != blakeRoundTraceColumns {
 		panic("blake_round expects 212 trace columns")
 	}

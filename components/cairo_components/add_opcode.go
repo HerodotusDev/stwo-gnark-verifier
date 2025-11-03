@@ -53,13 +53,9 @@ func NewAddOpcode(
 	}
 }
 
-func (c *AddOpcodeComponent) Evaluate(
-	sum m31.QM31,
-	preprocessedSampledValues PreprocessedSampledValues,
-	traceSampledValues [][]m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
+func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(103, 20)
+
 	trace := traceSampledValues
 
 	inputPc := trace[0][0]
@@ -86,6 +82,10 @@ func (c *AddOpcodeComponent) Evaluate(
 	subPBit := trace[101][0]
 	enabler := trace[102][0]
 
+	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
+	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
+	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
+
 	decoded := sub.DecodeInstructionBC3CDEvaluate(
 		c.qm31,
 		inputPc,
@@ -106,7 +106,7 @@ func (c *AddOpcodeComponent) Evaluate(
 	sum = decoded.Sum
 
 	// Constraint - if imm then offset2 is 1.
-	constraint := c.qm31.Mul(
+	constraint = c.qm31.Mul(
 		op1Imm,
 		c.qm31.Sub(c.qm31.One(), decoded.Offset2MinusBase),
 	)
@@ -281,7 +281,6 @@ func (c *AddOpcodeComponent) Evaluate(
 	constraint = c.qm31.Add(c.qm31.Mul(diff4, opcodesSum1), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
-
 	return sum
 }
 

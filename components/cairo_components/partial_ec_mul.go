@@ -190,14 +190,11 @@ func NewPartialEcMul(
 	}
 }
 
-func (c *PartialEcMulComponent) Evaluate(
-	sum m31.QM31,
-	preprocessed PreprocessedSampledValues,
-	trace [][]m31.QM31,
-	interaction [][]m31.QM31,
-	randomCoeff m31.QM31,
-) m31.QM31 {
-	_ = preprocessed
+func (c *PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(partialEcMulTraceColumns, partialEcMulInteractionColumns)
+
+	trace := traceSampledValues
+	interaction := interactionSampledValues
 
 	if len(trace) != partialEcMulTraceColumns {
 		panic("partial_ec_mul expects 472 trace columns")

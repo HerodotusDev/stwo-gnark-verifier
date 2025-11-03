@@ -28,8 +28,8 @@ type MemoryAddressToIdComponent struct {
 	claimedSum          m31.QM31
 	vanishEvalInv       m31.QM31
 
-	N_COLUMNS             uint32
-	N_INTERACTION_COLUMNS uint32
+	N_COLUMNS             int
+	N_INTERACTION_COLUMNS int
 }
 
 // NewMemoryAddressToId wires the component constraints into the circuit.
@@ -75,9 +75,11 @@ func NewMemoryAddressToId(
 }
 
 // Evaluate enforces the component constraints at the sampled point.
-func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, preprocessedSampledValues PreprocessedSampledValues, traceSampledValues [][]m31.QM31, interactionSampledValues [][]m31.QM31, random_coeff m31.QM31) m31.QM31 {
+func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(c.N_COLUMNS, c.N_INTERACTION_COLUMNS)
+
 	// Addresses start at 1 in the trace, so shift by one after reading the sequence column.
-	seq := preprocessedSampledValues.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
 	// we assume that the sampled values starts with the memory_address_to_id component (the previous columns were popped)
 	id_0 := traceSampledValues[0][0]
@@ -109,14 +111,14 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, preprocessedSampledV
 	interaction_column_9 := interactionSampledValues[9][0]
 	interaction_column_10 := interactionSampledValues[10][0]
 	interaction_column_11 := interactionSampledValues[11][0]
-	interaction_column_12 := interactionSampledValues[12][0]
-	interaction_column_12_neg1 := interactionSampledValues[12][1]
-	interaction_column_13 := interactionSampledValues[13][0]
-	interaction_column_13_neg1 := interactionSampledValues[13][1]
-	interaction_column_14 := interactionSampledValues[14][0]
-	interaction_column_14_neg1 := interactionSampledValues[14][1]
-	interaction_column_15 := interactionSampledValues[15][0]
-	interaction_column_15_neg1 := interactionSampledValues[15][1]
+	interaction_column_12_neg1 := interactionSampledValues[12][0]
+	interaction_column_12 := interactionSampledValues[12][1]
+	interaction_column_13_neg1 := interactionSampledValues[13][0]
+	interaction_column_13 := interactionSampledValues[13][1]
+	interaction_column_14_neg1 := interactionSampledValues[14][0]
+	interaction_column_14 := interactionSampledValues[14][1]
+	interaction_column_15_neg1 := interactionSampledValues[15][0]
+	interaction_column_15 := interactionSampledValues[15][1]
 
 	// Computation of combined values
 	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(c.columnSize))
