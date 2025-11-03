@@ -2,13 +2,16 @@ package cairo_components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	memoryIdToBigSeqShift       = uint64(1073741824) // 2^30
-	memoryIdToBigBigTraceCols   = 29
-	memoryIdToBigSmallTraceCols = 9
+	memoryIdToBigSeqShift                = uint64(1073741824) // 2^30
+	memoryIdToBigBigTraceCols            = 29
+	memoryIdToBigSmallTraceCols          = 9
+	memoryIdToBigBigInteractionColumns   = 32
+	memoryIdToBigSmallInteractionColumns = 20
 )
 
 // ╔══════════════════════════════════╗
@@ -16,7 +19,7 @@ const (
 // ╚══════════════════════════════════╝
 
 type MemoryIdToBigBigClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 	Offset  uint32
 }
 
@@ -34,24 +37,20 @@ type MemoryIdToBigBigComponent struct {
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
 
-	logSize   uint32
-	logSizeU  uints.U8
+	logSize   uints.U8
 	seqAddend m31.QM31
 }
 
 func NewMemoryIdToBigBigComponent(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
 	rangeCheckElements m31.InteractionElements,
 	claim MemoryIdToBigBigClaim,
 	interactionClaim MemoryIdToBigBigInteractionClaim,
 ) *MemoryIdToBigBigComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	offsetQM := m31.NewQM31FromM31(m31.NewM31Unchecked(claim.Offset))
 	seqAddend := qm31.Add(qm31Const(memoryIdToBigSeqShift), offsetQM)
@@ -64,25 +63,25 @@ func NewMemoryIdToBigBigComponent(
 		columnSizeInv:      columnSizeInv,
 		vanishEvalInv:      qm31.One(),
 		logSize:            claim.LogSize,
-		logSizeU:           uints.NewU8(uint8(claim.LogSize)),
 		seqAddend:          seqAddend,
 	}
 }
 
 func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(29, 32)
+	traceSampledValues, interactionSampledValues := traces.Take(memoryIdToBigBigTraceCols, memoryIdToBigBigInteractionColumns)
 
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSizeU))
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 	seqWithOffset := c.qm31.Add(seq, c.seqAddend)
 
-	trace := make([]m31.QM31, memoryIdToBigBigTraceCols)
-	for i := 0; i < memoryIdToBigBigTraceCols; i++ {
-		trace[i] = traceSampledValues[i][0]
-	}
-
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
 	// Range-check intermediates come in pairs of limbs.
 	rangeComb := func(first, second int) m31.QM31 {
-		res, err := c.qm31.Combine(c.rangeCheckElements, []m31.QM31{trace[first], trace[second]})
+		res, err := c.qm31.Combine(c.rangeCheckElements, []m31.QM31{traceSampledValues.Get(first), traceSampledValues.Get(second)})
 		if err != nil {
 			panic(err)
 		}
@@ -109,34 +108,31 @@ func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	// Memory lookup combination (alpha linear combination).
 	values := make([]m31.QM31, 1+28)
 	values[0] = seqWithOffset
-	copy(values[1:], trace[:28])
+	copy(values[1:], traceSampledValues.Slice(0, 28))
 
 	lookupCombination, err := c.qm31.Combine(c.lookupElements, values)
 	if err != nil {
 		panic(err)
 	}
 
-	// Partial evaluations from interaction columns.
-	partial := func(start int, offset int) m31.QM31 {
-		return c.qm31.FromPartialEvals(
-			interactionSampledValues[start][offset],
-			interactionSampledValues[start+1][offset],
-			interactionSampledValues[start+2][offset],
-			interactionSampledValues[start+3][offset],
-		)
-	}
-
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
 	partials := []m31.QM31{
-		partial(0, 0),
-		partial(4, 0),
-		partial(8, 0),
-		partial(12, 0),
-		partial(16, 0),
-		partial(20, 0),
-		partial(24, 0),
+		interactionSampledValues.Partial(c.qm31, 0, 0),
+		interactionSampledValues.Partial(c.qm31, 4, 0),
+		interactionSampledValues.Partial(c.qm31, 8, 0),
+		interactionSampledValues.Partial(c.qm31, 12, 0),
+		interactionSampledValues.Partial(c.qm31, 16, 0),
+		interactionSampledValues.Partial(c.qm31, 20, 0),
+		interactionSampledValues.Partial(c.qm31, 24, 0),
 	}
-	partialCurrent := partial(28, 1)
-	partialPrevious := partial(28, 0)
+	partialCurrent := interactionSampledValues.Partial(c.qm31, 28, 1)
+	partialPrevious := interactionSampledValues.Partial(c.qm31, 28, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	// Constraint 0
 	term := c.qm31.Mul(rangeIntermediates[0], rangeIntermediates[1])
@@ -164,7 +160,7 @@ func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	diff = c.qm31.Add(diff, c.qm31.Mul(c.claimedSum, c.columnSizeInv))
 
 	constraint = c.qm31.Mul(diff, lookupCombination)
-	constraint = c.qm31.Add(constraint, trace[28])
+	constraint = c.qm31.Add(constraint, traceSampledValues.Get(28))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
@@ -176,7 +172,7 @@ func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 // ╚══════════════════════════════════╝
 
 type MemoryIdToBigSmallClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type MemoryIdToBigSmallInteractionClaim struct {
@@ -193,23 +189,19 @@ type MemoryIdToBigSmallComponent struct {
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
 
-	logSize  uint32
-	logSizeU uints.U8
+	logSize uints.U8
 }
 
 func NewMemoryIdToBigSmallComponent(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
 	rangeCheckElements m31.InteractionElements,
 	claim MemoryIdToBigSmallClaim,
 	interactionClaim MemoryIdToBigSmallInteractionClaim,
 ) *MemoryIdToBigSmallComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	return &MemoryIdToBigSmallComponent{
 		qm31:               qm31,
@@ -219,22 +211,24 @@ func NewMemoryIdToBigSmallComponent(
 		columnSizeInv:      columnSizeInv,
 		vanishEvalInv:      qm31.One(),
 		logSize:            claim.LogSize,
-		logSizeU:           uints.NewU8(uint8(claim.LogSize)),
 	}
 }
 
 func (c *MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(9, 20)
+	traceSampledValues, interactionSampledValues := traces.Take(memoryIdToBigSmallTraceCols, memoryIdToBigSmallInteractionColumns)
 
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSizeU))
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
-	trace := make([]m31.QM31, memoryIdToBigSmallTraceCols)
-	for i := 0; i < memoryIdToBigSmallTraceCols; i++ {
-		trace[i] = traceSampledValues[i][0]
-	}
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	one := c.qm31.One()
 
 	rangeComb := func(first, second int) m31.QM31 {
-		res, err := c.qm31.Combine(c.rangeCheckElements, []m31.QM31{trace[first], trace[second]})
+		res, err := c.qm31.Combine(c.rangeCheckElements, []m31.QM31{traceSampledValues.Get(first), traceSampledValues.Get(second)})
 		if err != nil {
 			panic(err)
 		}
@@ -250,29 +244,25 @@ func (c *MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 
 	values := make([]m31.QM31, 9)
 	values[0] = seq
-	copy(values[1:], trace[:8])
+	copy(values[1:], traceSampledValues.Slice(0, 8))
 	lookupCombination, err := c.qm31.Combine(c.lookupElements, values)
 	if err != nil {
 		panic(err)
 	}
 
-	partial := func(start int, offset int) m31.QM31 {
-		return c.qm31.FromPartialEvals(
-			interactionSampledValues[start][offset],
-			interactionSampledValues[start+1][offset],
-			interactionSampledValues[start+2][offset],
-			interactionSampledValues[start+3][offset],
-		)
-	}
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 0)
+	part3 := interactionSampledValues.Partial(c.qm31, 12, 0)
+	part4 := interactionSampledValues.Partial(c.qm31, 16, 1)
+	part4Prev := interactionSampledValues.Partial(c.qm31, 16, 0)
 
-	part0 := partial(0, 0)
-	part1 := partial(4, 0)
-	part2 := partial(8, 0)
-	part3 := partial(12, 0)
-	part4 := partial(16, 1)
-	part4Prev := partial(16, 0)
-
-	one := c.qm31.One()
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	// Constraint 0
 	constraint := c.qm31.Mul(part0, rangeIntermediates[0])
@@ -307,7 +297,7 @@ func (c *MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 	diff = c.qm31.Add(diff, c.qm31.Mul(c.claimedSum, c.columnSizeInv))
 
 	constraint = c.qm31.Mul(diff, lookupCombination)
-	constraint = c.qm31.Add(constraint, trace[8])
+	constraint = c.qm31.Add(constraint, traceSampledValues.Get(8))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 

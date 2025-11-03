@@ -3,6 +3,8 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -16,7 +18,7 @@ var (
 )
 
 type Cube252Claim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type Cube252InteractionClaim struct {
@@ -36,6 +38,7 @@ type Cube252Component struct {
 }
 
 func NewCube252(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	rangeCheck9Elements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
@@ -43,8 +46,7 @@ func NewCube252(
 	claim Cube252Claim,
 	interactionClaim Cube252InteractionClaim,
 ) *Cube252Component {
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &Cube252Component{
 		qm31:                 qm31,
@@ -52,77 +54,58 @@ func NewCube252(
 		rangeCheck19Elements: rangeCheck19Elements,
 		cube252Elements:      cube252Elements,
 		claimedSum:           interactionClaim.ClaimedSum,
-		columnSizeInv:        qm31.Inverse(columnSizeQM),
+		columnSizeInv:        qm31.Inverse(columnSize),
 		vanishEvalInv:        qm31.One(),
 	}
 }
 
 func (c *Cube252Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(141, 200)
+	traceSampledValues, interactionSampledValues := traces.Take(cube252TraceColumns, cube252InteractionColumns)
 
-	if len(traceSampledValues) != cube252TraceColumns {
-		panic("cube_252 expects 141 trace columns")
-	}
-	if len(interactionSampledValues) != cube252InteractionColumns {
-		panic("cube_252 expects 200 interaction columns")
-	}
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	traceVal := func(index int) m31.QM31 {
-		col := traceSampledValues[index]
-		if len(col) == 0 {
-			panic("missing trace sample")
-		}
-		return col[0]
-	}
-
-	gatherTraceRange := func(start, count int) []m31.QM31 {
-		values := make([]m31.QM31, count)
-		for i := 0; i < count; i++ {
-			values[i] = traceVal(start + i)
-		}
-		return values
-	}
-
-	getInteractionCurr := func(index int) m31.QM31 {
-		col := interactionSampledValues[index]
-		if len(col) == 0 {
-			panic("missing interaction sample")
-		}
-		return col[len(col)-1]
-	}
-
-	getInteractionPrev := func(index int) m31.QM31 {
-		col := interactionSampledValues[index]
-		if len(col) == 0 {
-			panic("missing interaction sample")
-		}
-		if len(col) < 2 {
-			return c.qm31.Zero()
-		}
-		return col[0]
-	}
-
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
 	var inputLimbs [10]m31.QM31
 	for i := 0; i < 10; i++ {
-		inputLimbs[i] = traceVal(i)
+		inputLimbs[i] = traceSampledValues.Get(i)
 	}
 
 	var lowLimbs [9]m31.QM31
 	var highLimbs [9]m31.QM31
 	for i := 0; i < 9; i++ {
-		lowLimbs[i] = traceVal(10 + 2*i)
-		highLimbs[i] = traceVal(11 + 2*i)
+		lowLimbs[i] = traceSampledValues.Get(10 + 2*i)
+		highLimbs[i] = traceSampledValues.Get(11 + 2*i)
 	}
 
-	mulResSquared := gatherTraceRange(28, 28)
-	kSquared := traceVal(56)
-	carriesSquared := gatherTraceRange(57, 27)
+	mulResSquared := traceSampledValues.Slice(28, 28)
+	kSquared := traceSampledValues.Get(56)
+	carriesSquared := traceSampledValues.Slice(57, 27)
 
-	mulResCubed := gatherTraceRange(84, 28)
-	kCubed := traceVal(112)
-	carriesCubed := gatherTraceRange(113, 27)
+	mulResCubed := traceSampledValues.Slice(84, 28)
+	kCubed := traceSampledValues.Get(112)
+	carriesCubed := traceSampledValues.Slice(113, 27)
 
-	enabler := traceVal(140)
+	enabler := traceSampledValues.Get(140)
+
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	partials := make([]m31.QM31, 50)
+	for block := 0; block < 49; block++ {
+		partials[block] = interactionSampledValues.Partial(c.qm31, block*4, 0)
+	}
+	// Last block (start=196) has previous/current samples.
+	partials[49] = interactionSampledValues.Partial(c.qm31, 196, 1)
+	prevNeg := interactionSampledValues.Partial(c.qm31, 196, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	enablerConstraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	enablerConstraint = c.qm31.Mul(enablerConstraint, c.vanishEvalInv)
@@ -206,24 +189,6 @@ func (c *Cube252Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m3
 	if err != nil {
 		panic(err)
 	}
-
-	partials := make([]m31.QM31, 50)
-	for block := 0; block < 50; block++ {
-		base := block * 4
-		partials[block] = c.qm31.FromPartialEvals(
-			getInteractionCurr(base),
-			getInteractionCurr(base+1),
-			getInteractionCurr(base+2),
-			getInteractionCurr(base+3),
-		)
-	}
-
-	prevNeg := c.qm31.FromPartialEvals(
-		getInteractionPrev(196),
-		getInteractionPrev(197),
-		getInteractionPrev(198),
-		getInteractionPrev(199),
-	)
 
 	applyConstraint := func(total, sumA, sumB m31.QM31) {
 		constraint := c.qm31.Mul(total, c.qm31.Mul(sumA, sumB))

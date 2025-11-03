@@ -3,10 +3,12 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 type MulOpcodeClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type MulOpcodeInteractionClaim struct {
@@ -28,6 +30,7 @@ type MulOpcodeComponent struct {
 }
 
 func NewMulOpcode(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
@@ -37,12 +40,7 @@ func NewMulOpcode(
 	claim MulOpcodeClaim,
 	interactionClaim MulOpcodeInteractionClaim,
 ) *MulOpcodeComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(columnSize)))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &MulOpcodeComponent{
 		qm31:                      qm31,
@@ -52,7 +50,7 @@ func NewMulOpcode(
 		rangeCheck19Elements:      rangeCheck19Elements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		columnSizeInv:             qm31.Inverse(columnSizeQM),
+		columnSizeInv:             qm31.Inverse(columnSize),
 		vanishEvalInv:             qm31.One(),
 	}
 }
@@ -60,50 +58,53 @@ func NewMulOpcode(
 func (c *MulOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(130, 76)
 
-	if len(traceSampledValues) != 130 {
-		panic("mul_opcode expects 130 trace columns")
-	}
-	if len(interactionSampledValues) != 76 {
-		panic("mul_opcode expects 76 interaction columns")
-	}
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	getTrace := func(index int) m31.QM31 {
-		column := traceSampledValues[index]
-		if len(column) == 0 {
-			panic("missing trace sample")
-		}
-		return column[0]
-	}
-
-	inputPC := getTrace(0)
-	inputAP := getTrace(1)
-	inputFP := getTrace(2)
-	offset0 := getTrace(3)
-	offset1 := getTrace(4)
-	offset2 := getTrace(5)
-	dstBaseFP := getTrace(6)
-	op0BaseFP := getTrace(7)
-	op1Imm := getTrace(8)
-	op1BaseFP := getTrace(9)
-	apUpdateAdd1 := getTrace(10)
-	memDstBase := getTrace(11)
-	mem0Base := getTrace(12)
-	mem1Base := getTrace(13)
-	dstID := getTrace(14)
-
-	dstLimbs := gatherTraceLimbs(getTrace, 15, 28)
-
-	op0ID := getTrace(43)
-	op0Limbs := gatherTraceLimbs(getTrace, 44, 28)
-
-	op1ID := getTrace(72)
-	op1Limbs := gatherTraceLimbs(getTrace, 73, 28)
-
-	k := getTrace(101)
-	carries := gatherTraceLimbs(getTrace, 102, 27)
-	enabler := getTrace(129)
-
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
 	one := c.qm31.One()
+
+	inputPC := traceSampledValues.Get(0)
+	inputAP := traceSampledValues.Get(1)
+	inputFP := traceSampledValues.Get(2)
+	offset0 := traceSampledValues.Get(3)
+	offset1 := traceSampledValues.Get(4)
+	offset2 := traceSampledValues.Get(5)
+	dstBaseFP := traceSampledValues.Get(6)
+	op0BaseFP := traceSampledValues.Get(7)
+	op1Imm := traceSampledValues.Get(8)
+	op1BaseFP := traceSampledValues.Get(9)
+	apUpdateAdd1 := traceSampledValues.Get(10)
+	memDstBase := traceSampledValues.Get(11)
+	mem0Base := traceSampledValues.Get(12)
+	mem1Base := traceSampledValues.Get(13)
+	dstID := traceSampledValues.Get(14)
+	dstLimbs := traceSampledValues.Slice(15, 28)
+	op0ID := traceSampledValues.Get(43)
+	op0Limbs := traceSampledValues.Slice(44, 28)
+	op1ID := traceSampledValues.Get(72)
+	op1Limbs := traceSampledValues.Slice(73, 28)
+	k := traceSampledValues.Get(101)
+	carries := traceSampledValues.Slice(102, 27)
+	enabler := traceSampledValues.Get(129)
+
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	partials := make([]m31.QM31, 19)
+	for i := 0; i < 18; i++ {
+		partials[i] = interactionSampledValues.Partial(c.qm31, 4*i, 0)
+	}
+	prevRowPartial := interactionSampledValues.Partial(c.qm31, 72, 0)
+	partials[18] = interactionSampledValues.Partial(c.qm31, 72, 1)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
@@ -229,33 +230,6 @@ func (c *MulOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	if err != nil {
 		panic(err)
 	}
-
-	for i := 0; i < 72; i++ {
-		if len(interactionSampledValues[i]) != 1 {
-			panic("mul_opcode interaction column missing value")
-		}
-	}
-	for i := 72; i < 76; i++ {
-		if len(interactionSampledValues[i]) != 2 {
-			panic("mul_opcode tail interaction columns must have two values")
-		}
-	}
-
-	partial := func(start, valueIdx int) m31.QM31 {
-		return c.qm31.FromPartialEvals(
-			interactionSampledValues[start][valueIdx],
-			interactionSampledValues[start+1][valueIdx],
-			interactionSampledValues[start+2][valueIdx],
-			interactionSampledValues[start+3][valueIdx],
-		)
-	}
-
-	partials := make([]m31.QM31, 19)
-	for i := 0; i < 18; i++ {
-		partials[i] = partial(4*i, 0)
-	}
-	prevRowPartial := partial(72, 0)
-	partials[18] = partial(72, 1)
 
 	constraint = c.qm31.Mul(partials[0], c.qm31.Mul(verifySum, memAddrSum1))
 	constraint = c.qm31.Sub(constraint, verifySum)

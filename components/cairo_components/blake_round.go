@@ -3,6 +3,8 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -11,7 +13,7 @@ const (
 )
 
 type BlakeRoundClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type BlakeRoundInteractionClaim struct {
@@ -31,10 +33,11 @@ type BlakeRoundComponent struct {
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uint8
+	logSize       uints.U8
 }
 
 func NewBlakeRound(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	blakeRoundSigma m31.InteractionElements,
 	rangeCheck725 m31.InteractionElements,
@@ -45,12 +48,8 @@ func NewBlakeRound(
 	claim BlakeRoundClaim,
 	interactionClaim BlakeRoundInteractionClaim,
 ) *BlakeRoundComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	return &BlakeRoundComponent{
 		qm31:                    qm31,
@@ -63,20 +62,22 @@ func NewBlakeRound(
 		claimedSum:              interactionClaim.ClaimedSum,
 		columnSizeInv:           columnSizeInv,
 		vanishEvalInv:           qm31.One(), // TODO: wire real vanishing evaluation.
-		logSize:                 uint8(claim.LogSize),
+		logSize:                 claim.LogSize,
 	}
 }
 
-func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(212, 120)
+func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+	traceSampledValues, interactionSampledValues := traces.Take(blakeRoundTraceColumns, blakeRoundInteractionColumns)
 
-	if len(traceSampledValues) != blakeRoundTraceColumns {
-		panic("blake_round expects 212 trace columns")
-	}
-	if len(interactionSampledValues) != blakeRoundInteractionColumns {
-		panic("blake_round expects 120 interaction columns")
-	}
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	// Main Trace helpers
 	getTrace := func(idx int) m31.QM31 {
 		col := traceSampledValues[idx]
 		if len(col) == 0 {
@@ -131,22 +132,19 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 
 	enabler := getTrace(211)
 
-	interactionCurr := make([]m31.QM31, blakeRoundInteractionColumns)
-	interactionPrev := make([]m31.QM31, blakeRoundInteractionColumns)
-	for i, col := range interactionSampledValues {
-		switch len(col) {
-		case 0:
-			panic("interaction column empty")
-		case 1:
-			interactionCurr[i] = col[0]
-		case 2:
-			interactionPrev[i] = col[0]
-			interactionCurr[i] = col[1]
-		default:
-			panic("unexpected interaction column length")
-		}
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	// Use InteractionTrace.Partial to build current/previous partials.
+	partials := make([]m31.QM31, 30)
+	for i := 0; i < 29; i++ {
+		partials[i] = interactionSampledValues.Partial(c.qm31, i*4, 0)
 	}
+	// Last block (start=116) has previous/current samples.
+	partials[29] = interactionSampledValues.Partial(c.qm31, 116, 1)
+	prevPartial := interactionSampledValues.Partial(c.qm31, 116, 0)
 
+	// Constraint Evaluations
 	accumulate := func(constraint m31.QM31) {
 		sum = qm31.Add(qm31.Mul(sum, randomCoeff), qm31.Mul(constraint, domainInv))
 	}
@@ -413,24 +411,6 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 			}
 			return idSums[index]
 		}
-
-		partials := make([]m31.QM31, 30)
-		for i := 0; i < 30; i++ {
-			baseIdx := i * 4
-			partials[i] = qm31.FromPartialEvals(
-				interactionCurr[baseIdx],
-				interactionCurr[baseIdx+1],
-				interactionCurr[baseIdx+2],
-				interactionCurr[baseIdx+3],
-			)
-		}
-
-		prevPartial := qm31.FromPartialEvals(
-			interactionPrev[116],
-			interactionPrev[117],
-			interactionPrev[118],
-			interactionPrev[119],
-		)
 
 		addDiffConstraint := func(currIdx int, sumA, sumB m31.QM31) {
 			diff := qm31.Sub(partials[currIdx], partials[currIdx-1])

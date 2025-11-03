@@ -5,6 +5,8 @@ import (
 
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +15,7 @@ const (
 )
 
 type GenericOpcodeClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type GenericOpcodeInteractionClaim struct {
@@ -36,6 +38,7 @@ type GenericOpcodeComponent struct {
 }
 
 func NewGenericOpcode(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
@@ -46,12 +49,8 @@ func NewGenericOpcode(
 	claim GenericOpcodeClaim,
 	interactionClaim GenericOpcodeInteractionClaim,
 ) *GenericOpcodeComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(columnSize)))
-	columnSizeInv := qm31.Inverse(columnSizeQM)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	return &GenericOpcodeComponent{
 		qm31:                      qm31,
@@ -68,49 +67,37 @@ func NewGenericOpcode(
 }
 
 func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(236, 132)
+	traceSampledValues, interactionSampledValues := traces.Take(genericOpcodeTraceColumns, genericOpcodeInteractionColumns)
 
-	if len(traceSampledValues) != genericOpcodeTraceColumns {
-		panic(fmt.Sprintf("generic opcode expects %d trace columns, got %d", genericOpcodeTraceColumns, len(traceSampledValues)))
-	}
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
-	traceVals := make([]m31.QM31, genericOpcodeTraceColumns)
-	for i := 0; i < genericOpcodeTraceColumns; i++ {
-		if len(traceSampledValues[i]) != 1 {
-			panic(fmt.Sprintf("generic opcode trace column %d expected 1 sample, got %d", i, len(traceSampledValues[i])))
-		}
-		traceVals[i] = traceSampledValues[i][0]
-	}
-
-	if len(interactionSampledValues) != genericOpcodeInteractionColumns {
-		panic(fmt.Sprintf("generic opcode expects %d interaction columns, got %d", genericOpcodeInteractionColumns, len(interactionSampledValues)))
-	}
-
-	enabler := traceVals[235]
+	enabler := traceSampledValues.Get(235)
 	enablerConstraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	enablerConstraint = c.qm31.Mul(enablerConstraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, enablerConstraint)
 
-	offsets := [3]m31.QM31{traceVals[3], traceVals[4], traceVals[5]}
+	offsets := [3]m31.QM31{traceSampledValues.Get(3), traceSampledValues.Get(4), traceSampledValues.Get(5)}
 	decode := sub.DecodeGenericInstructionEvaluate(
 		c.qm31,
-		traceVals[0],
+		traceSampledValues.Get(0),
 		offsets,
-		traceVals[6],
-		traceVals[7],
-		traceVals[8],
-		traceVals[9],
-		traceVals[10],
-		traceVals[11],
-		traceVals[12],
-		traceVals[13],
-		traceVals[14],
-		traceVals[15],
-		traceVals[16],
-		traceVals[17],
-		traceVals[18],
-		traceVals[19],
-		traceVals[20],
+		traceSampledValues.Get(6),
+		traceSampledValues.Get(7),
+		traceSampledValues.Get(8),
+		traceSampledValues.Get(9),
+		traceSampledValues.Get(10),
+		traceSampledValues.Get(11),
+		traceSampledValues.Get(12),
+		traceSampledValues.Get(13),
+		traceSampledValues.Get(14),
+		traceSampledValues.Get(15),
+		traceSampledValues.Get(16),
+		traceSampledValues.Get(17),
+		traceSampledValues.Get(18),
+		traceSampledValues.Get(19),
+		traceSampledValues.Get(20),
 		c.verifyInstructionElements,
 		sum,
 		c.vanishEvalInv,
@@ -130,26 +117,26 @@ func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	offset1MinusBase := outputs[6]
 	offset2MinusBase := outputs[7]
 
-	dstLimbs := gatherLimbs(traceSampledValues, 23, 28)
-	op0Limbs := gatherLimbs(traceSampledValues, 53, 28)
-	op1Limbs := gatherLimbs(traceSampledValues, 83, 28)
-	addResLimbs := gatherLimbs(traceSampledValues, 111, 28)
-	mulResLimbs := gatherLimbs(traceSampledValues, 140, 28)
-	carries := gatherLimbs(traceSampledValues, 169, 27)
-	resLimbs := gatherLimbs(traceSampledValues, 196, 28)
+	dstLimbs := traceSampledValues.Slice(23, 28)
+	op0Limbs := traceSampledValues.Slice(53, 28)
+	op1Limbs := traceSampledValues.Slice(83, 28)
+	addResLimbs := traceSampledValues.Slice(111, 28)
+	mulResLimbs := traceSampledValues.Slice(140, 28)
+	carries := traceSampledValues.Slice(169, 27)
+	resLimbs := traceSampledValues.Slice(196, 28)
 
 	evalParams := sub.EvalOperandsParams{
-		InputPC:          traceVals[0],
-		InputAP:          traceVals[1],
-		InputFP:          traceVals[2],
-		DstBaseFP:        traceVals[6],
-		Op0BaseFP:        traceVals[7],
-		Op1Imm:           traceVals[8],
-		Op1BaseFP:        traceVals[9],
-		Op1BaseAP:        traceVals[10],
-		ResAddFlag:       traceVals[11],
-		ResMulFlag:       traceVals[12],
-		PcUpdateJnz:      traceVals[15],
+		InputPC:          traceSampledValues.Get(0),
+		InputAP:          traceSampledValues.Get(1),
+		InputFP:          traceSampledValues.Get(2),
+		DstBaseFP:        traceSampledValues.Get(6),
+		Op0BaseFP:        traceSampledValues.Get(7),
+		Op1Imm:           traceSampledValues.Get(8),
+		Op1BaseFP:        traceSampledValues.Get(9),
+		Op1BaseAP:        traceSampledValues.Get(10),
+		ResAddFlag:       traceSampledValues.Get(11),
+		ResMulFlag:       traceSampledValues.Get(12),
+		PcUpdateJnz:      traceSampledValues.Get(15),
 		Op1SrcIndicator:  op1SrcIndicator,
 		ResLogicFlag:     resLogicFlag,
 		Offset0MinusBase: offset0MinusBase,
@@ -160,19 +147,19 @@ func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	evalRes := sub.EvalOperandsEvaluate(
 		c.qm31,
 		evalParams,
-		traceVals[21],
-		traceVals[22],
+		traceSampledValues.Get(21),
+		traceSampledValues.Get(22),
 		dstLimbs,
-		traceVals[51],
-		traceVals[52],
+		traceSampledValues.Get(51),
+		traceSampledValues.Get(52),
 		op0Limbs,
-		traceVals[81],
-		traceVals[82],
+		traceSampledValues.Get(81),
+		traceSampledValues.Get(82),
 		op1Limbs,
 		addResLimbs,
-		traceVals[139],
+		traceSampledValues.Get(139),
 		mulResLimbs,
-		traceVals[168],
+		traceSampledValues.Get(168),
 		carries,
 		resLimbs,
 		c.memoryAddressToIdElements,
@@ -186,15 +173,15 @@ func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	sum = evalRes.Sum
 
 	handleInputs := sub.HandleOpcodesInputs{
-		InputPC:          traceVals[0],
-		InputFP:          traceVals[2],
-		DstBaseFP:        traceVals[6],
-		Op0BaseFP:        traceVals[7],
-		Op1BaseFP:        traceVals[9],
-		PcUpdateJump:     traceVals[13],
-		OpcodeCall:       traceVals[18],
-		OpcodeRet:        traceVals[19],
-		OpcodeAssertEq:   traceVals[20],
+		InputPC:          traceSampledValues.Get(0),
+		InputFP:          traceSampledValues.Get(2),
+		DstBaseFP:        traceSampledValues.Get(6),
+		Op0BaseFP:        traceSampledValues.Get(7),
+		Op1BaseFP:        traceSampledValues.Get(9),
+		PcUpdateJump:     traceSampledValues.Get(13),
+		OpcodeCall:       traceSampledValues.Get(18),
+		OpcodeRet:        traceSampledValues.Get(19),
+		OpcodeAssertEq:   traceSampledValues.Get(20),
 		ResLogicFlag:     resLogicFlag,
 		Op1ImmPlusOne:    op1ImmPlusOne,
 		Offset0MinusBase: offset0MinusBase,
@@ -214,16 +201,16 @@ func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	)
 
 	updateInputs := sub.UpdateRegistersInputs{
-		InputPC:         traceVals[0],
-		InputAP:         traceVals[1],
-		InputFP:         traceVals[2],
-		PcUpdateJump:    traceVals[13],
-		PcUpdateJumpRel: traceVals[14],
-		PcUpdateJnz:     traceVals[15],
-		ApUpdateAdd:     traceVals[16],
-		ApUpdateAdd1:    traceVals[17],
-		OpcodeCall:      traceVals[18],
-		OpcodeRet:       traceVals[19],
+		InputPC:         traceSampledValues.Get(0),
+		InputAP:         traceSampledValues.Get(1),
+		InputFP:         traceSampledValues.Get(2),
+		PcUpdateJump:    traceSampledValues.Get(13),
+		PcUpdateJumpRel: traceSampledValues.Get(14),
+		PcUpdateJnz:     traceSampledValues.Get(15),
+		ApUpdateAdd:     traceSampledValues.Get(16),
+		ApUpdateAdd1:    traceSampledValues.Get(17),
+		OpcodeCall:      traceSampledValues.Get(18),
+		OpcodeRet:       traceSampledValues.Get(19),
 		PcUpdateFlag:    pcUpdateFlag,
 		FpUpdateFlag:    fpUpdateFlag,
 		Op1ImmPlusOne:   op1ImmPlusOne,
@@ -235,27 +222,27 @@ func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		dstLimbs,
 		op1Limbs,
 		resLimbs,
-		traceVals[224],
-		traceVals[225],
-		traceVals[226],
-		traceVals[227],
-		traceVals[228],
-		traceVals[229],
-		traceVals[230],
-		traceVals[231],
-		traceVals[232],
-		traceVals[233],
-		traceVals[234],
+		traceSampledValues.Get(224),
+		traceSampledValues.Get(225),
+		traceSampledValues.Get(226),
+		traceSampledValues.Get(227),
+		traceSampledValues.Get(228),
+		traceSampledValues.Get(229),
+		traceSampledValues.Get(230),
+		traceSampledValues.Get(231),
+		traceSampledValues.Get(232),
+		traceSampledValues.Get(233),
+		traceSampledValues.Get(234),
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
 
-	opcodesSum63, err := c.qm31.Combine(c.opcodesElements, []m31.QM31{traceVals[0], traceVals[1], traceVals[2]})
+	opcodesSum63, err := c.qm31.Combine(c.opcodesElements, []m31.QM31{traceSampledValues.Get(0), traceSampledValues.Get(1), traceSampledValues.Get(2)})
 	if err != nil {
 		panic(err)
 	}
-	opcodesSum64, err := c.qm31.Combine(c.opcodesElements, []m31.QM31{traceVals[232], traceVals[233], traceVals[234]})
+	opcodesSum64, err := c.qm31.Combine(c.opcodesElements, []m31.QM31{traceSampledValues.Get(232), traceSampledValues.Get(233), traceSampledValues.Get(234)})
 	if err != nil {
 		panic(err)
 	}
@@ -296,10 +283,10 @@ func (c *GenericOpcodeComponent) lookupConstraints(
 	opcodesSum64 m31.QM31,
 	interactionValues [][]m31.QM31,
 ) m31.QM31 {
-	if len(interactionValues) != genericOpcodeInteractionColumns {
-		panic(fmt.Sprintf("generic opcode expects %d interaction columns, got %d", genericOpcodeInteractionColumns, len(interactionValues)))
-	}
 
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
 	partials := make([]m31.QM31, 33)
 	for i := 0; i < 32; i++ {
 		base := 4 * i

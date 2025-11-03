@@ -3,17 +3,19 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
-type AssertEqDoubleDerefOpcodeClaim struct {
-	LogSize uint32
+type JumpDoubleDerefOpcodeClaim struct {
+	LogSize uints.U8
 }
 
-type AssertEqDoubleDerefOpcodeInteractionClaim struct {
+type JumpDoubleDerefOpcodeInteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-type AssertEqDoubleDerefOpcodeComponent struct {
+type JumpDoubleDerefOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
@@ -26,22 +28,20 @@ type AssertEqDoubleDerefOpcodeComponent struct {
 	vanishEvalInv m31.QM31
 }
 
-func NewAssertEqDoubleDerefOpcode(
+func NewJumpDoubleDerefOpcode(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
-	claim AssertEqDoubleDerefOpcodeClaim,
-	interactionClaim AssertEqDoubleDerefOpcodeInteractionClaim,
-) *AssertEqDoubleDerefOpcodeComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeInv := qm31.Inverse(m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize)))
+	claim JumpDoubleDerefOpcodeClaim,
+	interactionClaim JumpDoubleDerefOpcodeInteractionClaim,
+) *JumpDoubleDerefOpcodeComponent {
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AssertEqDoubleDerefOpcodeComponent{
+	return &JumpDoubleDerefOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -53,41 +53,57 @@ func NewAssertEqDoubleDerefOpcode(
 	}
 }
 
-func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c *JumpDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(17, 16)
 
-	trace := traceSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	inputPc := trace[0][0]
-	inputAp := trace[1][0]
-	inputFp := trace[2][0]
-	offset0 := trace[3][0]
-	offset1 := trace[4][0]
-	offset2 := trace[5][0]
-	dstBaseFP := trace[6][0]
-	op0BaseFP := trace[7][0]
-	apUpdateAdd1 := trace[8][0]
-	memDstBase := trace[9][0]
-	mem0Base := trace[10][0]
-	mem1BaseID := trace[11][0]
-	mem1Limb0 := trace[12][0]
-	mem1Limb1 := trace[13][0]
-	mem1Limb2 := trace[14][0]
-	dstID := trace[15][0]
-	enabler := trace[16][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	inputPc := traceSampledValues.Get(0)
+	inputAp := traceSampledValues.Get(1)
+	inputFp := traceSampledValues.Get(2)
+	offset1 := traceSampledValues.Get(3)
+	offset2 := traceSampledValues.Get(4)
+	op0BaseFP := traceSampledValues.Get(5)
+	apUpdateAdd1 := traceSampledValues.Get(6)
+	mem0Base := traceSampledValues.Get(7)
+	mem1BaseID := traceSampledValues.Get(8)
+	mem1Limb0 := traceSampledValues.Get(9)
+	mem1Limb1 := traceSampledValues.Get(10)
+	mem1Limb2 := traceSampledValues.Get(11)
+	nextPcID := traceSampledValues.Get(12)
+	nextPcLimb0 := traceSampledValues.Get(13)
+	nextPcLimb1 := traceSampledValues.Get(14)
+	nextPcLimb2 := traceSampledValues.Get(15)
+	enabler := traceSampledValues.Get(16)
 
-	// Enabler bit constraint.
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 0)
+	part3 := interactionSampledValues.Partial(c.qm31, 12, 1)
+	part3Prev := interactionSampledValues.Partial(c.qm31, 12, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
 	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	decoded := sub.DecodeInstructionCB32BEvaluate(
+	decoded := sub.DecodeInstruction9BD86Evaluate(
 		c.qm31,
 		inputPc,
-		offset0,
 		offset1,
 		offset2,
-		dstBaseFP,
 		op0BaseFP,
 		apUpdateAdd1,
 		c.verifyInstructionElements,
@@ -98,15 +114,6 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 	verifyInstructionSum := decoded.VerifySum
 	sum = decoded.Sum
 
-	// mem_dst_base relation.
-	memDstExpected := c.qm31.Add(
-		c.qm31.Mul(dstBaseFP, inputFp),
-		c.qm31.Mul(c.qm31.Sub(c.qm31.One(), dstBaseFP), inputAp),
-	)
-	constraint = c.qm31.Sub(memDstBase, memDstExpected)
-	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
-	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
-
 	// mem0_base relation.
 	mem0Expected := c.qm31.Add(
 		c.qm31.Mul(op0BaseFP, inputFp),
@@ -116,7 +123,7 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	readPositive := sub.ReadPositiveNumBits27Evaluate(
+	readMem1Base := sub.ReadPositiveNumBits27Evaluate(
 		c.qm31,
 		c.qm31.Add(mem0Base, decoded.Offset1MinusBase),
 		mem1BaseID,
@@ -126,23 +133,26 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 		c.memoryAddressToIdElements,
 		c.memoryIdToBigElements,
 	)
-	memoryAddressSum1 := readPositive.AddressLookupSum
-	memoryIdToBigSum2 := readPositive.IdToBigLookupSum
+	memoryAddressSum1 := readMem1Base.AddressLookupSum
+	memoryIdToBigSum2 := readMem1Base.IdToBigLookupSum
 
-	mem1Value := c.qm31.Add(mem1Limb0, c.qm31.Mul(mem1Limb1, qm31Const(512)))
-	mem1Value = c.qm31.Add(mem1Value, c.qm31.Mul(mem1Limb2, qm31Const(262144)))
-
-	memVerify := sub.MemVerifyEqualEvaluate(
-		c.qm31,
-		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
-		c.qm31.Add(mem1Value, decoded.Offset2MinusBase),
-		dstID,
-		c.memoryAddressToIdElements,
-		sum,
+	mem1Value := c.qm31.Add(
+		c.qm31.Add(mem1Limb0, c.qm31.Mul(mem1Limb1, qm31Const(512))),
+		c.qm31.Mul(mem1Limb2, qm31Const(262144)),
 	)
-	memoryAddressSum3 := memVerify.AddressLookupSum1
-	memoryAddressSum4 := memVerify.AddressLookupSum2
-	sum = memVerify.Sum
+
+	readNextPc := sub.ReadPositiveNumBits27Evaluate(
+		c.qm31,
+		c.qm31.Add(mem1Value, decoded.Offset2MinusBase),
+		nextPcID,
+		nextPcLimb0,
+		nextPcLimb1,
+		nextPcLimb2,
+		c.memoryAddressToIdElements,
+		c.memoryIdToBigElements,
+	)
+	memoryAddressSum3 := readNextPc.AddressLookupSum
+	memoryIdToBigSum4 := readNextPc.IdToBigLookupSum
 
 	var err error
 	opcodesSum5, err := c.qm31.Combine(
@@ -153,10 +163,15 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 		panic(err)
 	}
 
+	nextPcValue := c.qm31.Add(
+		c.qm31.Add(nextPcLimb0, c.qm31.Mul(nextPcLimb1, qm31Const(512))),
+		c.qm31.Mul(nextPcLimb2, qm31Const(262144)),
+	)
+
 	opcodesSum6, err := c.qm31.Combine(
 		c.opcodesElements,
 		[]m31.QM31{
-			c.qm31.Add(inputPc, c.qm31.One()),
+			nextPcValue,
 			c.qm31.Add(inputAp, apUpdateAdd1),
 			inputFp,
 		},
@@ -164,37 +179,6 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 	if err != nil {
 		panic(err)
 	}
-
-	part0 := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][0],
-		interactionSampledValues[1][0],
-		interactionSampledValues[2][0],
-		interactionSampledValues[3][0],
-	)
-	part1 := c.qm31.FromPartialEvals(
-		interactionSampledValues[4][0],
-		interactionSampledValues[5][0],
-		interactionSampledValues[6][0],
-		interactionSampledValues[7][0],
-	)
-	part2 := c.qm31.FromPartialEvals(
-		interactionSampledValues[8][0],
-		interactionSampledValues[9][0],
-		interactionSampledValues[10][0],
-		interactionSampledValues[11][0],
-	)
-	part3 := c.qm31.FromPartialEvals(
-		interactionSampledValues[12][1],
-		interactionSampledValues[13][1],
-		interactionSampledValues[14][1],
-		interactionSampledValues[15][1],
-	)
-	part3Prev := c.qm31.FromPartialEvals(
-		interactionSampledValues[12][0],
-		interactionSampledValues[13][0],
-		interactionSampledValues[14][0],
-		interactionSampledValues[15][0],
-	)
 
 	constraint = c.qm31.Mul(part0, c.qm31.Mul(verifyInstructionSum, memoryAddressSum1))
 	constraint = c.qm31.Sub(constraint, verifyInstructionSum)
@@ -210,8 +194,8 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff2 := c.qm31.Sub(part2, part1)
-	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryAddressSum4, opcodesSum5))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryAddressSum4, enabler))
+	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIdToBigSum4, opcodesSum5))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum4, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum5)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

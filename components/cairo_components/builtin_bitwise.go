@@ -3,10 +3,17 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
+)
+
+const (
+	bitwiseBuiltinTraceColumns       = 89
+	bitwiseBuiltinInteractionColumns = 76
 )
 
 type BitwiseBuiltinClaim struct {
-	LogSize                    uint32
+	LogSize                    uints.U8
 	BitwiseBuiltinSegmentStart uint32
 }
 
@@ -17,7 +24,7 @@ type BitwiseBuiltinInteractionClaim struct {
 type BitwiseBuiltinComponent struct {
 	qm31 *m31.QM31Chip
 
-	logSize uint8
+	logSize uints.U8
 
 	memoryAddressToIdElements m31.InteractionElements
 	memoryIdToBigElements     m31.InteractionElements
@@ -30,6 +37,7 @@ type BitwiseBuiltinComponent struct {
 }
 
 func NewBitwiseBuiltin(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
@@ -37,16 +45,11 @@ func NewBitwiseBuiltin(
 	claim BitwiseBuiltinClaim,
 	interactionClaim BitwiseBuiltinInteractionClaim,
 ) *BitwiseBuiltinComponent {
-	if claim.LogSize > 255 {
-		panic("bitwise_builtin log size must fit in uint8")
-	}
-
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &BitwiseBuiltinComponent{
 		qm31:                      qm31,
-		logSize:                   uint8(claim.LogSize),
+		logSize:                   claim.LogSize,
 		memoryAddressToIdElements: memoryAddressElements,
 		memoryIdToBigElements:     memoryIdToBigElements,
 		verifyBitwiseXorElements:  verifyBitwiseXorElements,
@@ -54,47 +57,48 @@ func NewBitwiseBuiltin(
 			m31.NewM31Unchecked(uint64(claim.BitwiseBuiltinSegmentStart)),
 		),
 		claimedSum:    interactionClaim.ClaimedSum,
-		columnSizeInv: qm31.Inverse(columnSizeQM),
+		columnSizeInv: qm31.Inverse(columnSize),
 		vanishEvalInv: qm31.One(),
 	}
 }
 
 func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(89, 76)
+    traceSampledValues, interactionSampledValues := traces.Take(bitwiseBuiltinTraceColumns, bitwiseBuiltinInteractionColumns)
 
-	if len(traceSampledValues) != 89 {
-		panic("bitwise_builtin expects 89 trace columns")
-	}
-	if len(interactionSampledValues) != 76 {
-		panic("bitwise_builtin expects 76 interaction columns")
-	}
+    // ╔══════════════════════════════════╗
+    // ║        Preprocessed Trace        ║
+    // ╚══════════════════════════════════╝
+    seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
-	getTrace := func(index int) m31.QM31 {
-		column := traceSampledValues[index]
-		if len(column) == 0 {
-			panic("missing trace sample")
-		}
-		return column[0]
-	}
-	gatherLimbs := func(start, count int) []m31.QM31 {
-		limbs := make([]m31.QM31, count)
-		for i := 0; i < count; i++ {
-			limbs[i] = getTrace(start + i)
-		}
-		return limbs
-	}
-
-	seq := traces.Get(sequencePreprocessedColumn(c.logSize))
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
 	base := c.qm31.Add(c.segmentStart, c.qm31.Mul(seq, qm31Const(5)))
 
-	op0ID := getTrace(0)
-	op0Limbs := gatherLimbs(1, 28)
-	op1ID := getTrace(29)
-	op1Limbs := gatherLimbs(30, 28)
-	xorLimbs := gatherLimbs(58, 28)
-	andID := getTrace(86)
-	xorID := getTrace(87)
-	orID := getTrace(88)
+	op0ID := traceSampledValues.Get(0)
+	op0Limbs := traceSampledValues.Slice(1, 28)
+	op1ID := traceSampledValues.Get(29)
+	op1Limbs := traceSampledValues.Slice(30, 28)
+	xorLimbs := traceSampledValues.Slice(58, 28)
+	andID := traceSampledValues.Get(86)
+	xorID := traceSampledValues.Get(87)
+	orID := traceSampledValues.Get(88)
+
+    // ╔══════════════════════════════════╗
+    // ║         Interaction Trace        ║
+    // ╚══════════════════════════════════╝
+    // Use InteractionTrace.Partial to build current/previous partials.
+    partials := make([]m31.QM31, 19)
+    for i := 0; i < 18; i++ {
+        partials[i] = interactionSampledValues.Partial(c.qm31, i*4, 0)
+    }
+    // Last block (start=72) has previous/current samples.
+    partials[18] = interactionSampledValues.Partial(c.qm31, 72, 1)
+    prevLastPartial := interactionSampledValues.Partial(c.qm31, 72, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	op0Lookup := sub.ReadPositiveNumBits252Evaluate(
 		c.qm31,
@@ -198,7 +202,7 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		bitwiseSums: bitwiseSums,
 	}
 
-	return c.applyLookupConstraints(sum, interactionSampledValues, randomCoeff, lookups)
+    return c.applyLookupConstraints(sum, partials, prevLastPartial, randomCoeff, lookups)
 }
 
 type bitwiseBuiltinLookups struct {
@@ -208,52 +212,19 @@ type bitwiseBuiltinLookups struct {
 }
 
 func (c *BitwiseBuiltinComponent) applyLookupConstraints(
-	sum m31.QM31,
-	interactionSampledValues [][]m31.QM31,
-	randomCoeff m31.QM31,
-	lookups bitwiseBuiltinLookups,
+    sum m31.QM31,
+    partials []m31.QM31,
+    prevLastPartial m31.QM31,
+    randomCoeff m31.QM31,
+    lookups bitwiseBuiltinLookups,
 ) m31.QM31 {
-	if len(lookups.memoryAddressToId) != 5 || len(lookups.memoryIdToBig) != 5 {
-		panic("bitwise builtin lookup slices must have length 5")
-	}
-	if len(lookups.bitwiseSums) != 28 {
-		panic("bitwise builtin expects 28 bitwise lookup sums")
-	}
-
-	partials := make([]m31.QM31, 19)
-	index := 0
-	for i := 0; i < 18; i++ {
-		partials[i] = c.qm31.FromPartialEvals(
-			interactionSampledValues[index][0],
-			interactionSampledValues[index+1][0],
-			interactionSampledValues[index+2][0],
-			interactionSampledValues[index+3][0],
-		)
-		index += 4
-	}
-
-	lastColumns := interactionSampledValues[index:]
-	if len(lastColumns) != 4 {
-		panic("bitwise builtin expected 4 interaction columns for the final partials")
-	}
-	for _, column := range lastColumns {
-		if len(column) < 2 {
-			panic("bitwise builtin final interaction columns require two evaluations")
-		}
-	}
-
-	partials[18] = c.qm31.FromPartialEvals(
-		lastColumns[0][1],
-		lastColumns[1][1],
-		lastColumns[2][1],
-		lastColumns[3][1],
-	)
-	negPartial := c.qm31.FromPartialEvals(
-		lastColumns[0][0],
-		lastColumns[1][0],
-		lastColumns[2][0],
-		lastColumns[3][0],
-	)
+    if len(lookups.memoryAddressToId) != 5 || len(lookups.memoryIdToBig) != 5 {
+        panic("bitwise builtin lookup slices must have length 5")
+    }
+    if len(lookups.bitwiseSums) != 28 {
+        panic("bitwise builtin expects 28 bitwise lookup sums")
+    }
+    negPartial := prevLastPartial
 
 	accumulate := func(delta, lookupA, lookupB m31.QM31) {
 		constraint := c.qm31.Mul(delta, c.qm31.Mul(lookupA, lookupB))

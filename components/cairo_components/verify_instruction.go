@@ -3,10 +3,17 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
+)
+
+const (
+	verifyInstructionTraceColumns       = 17
+	verifyInstructionInteractionColumns = 12
 )
 
 type VerifyInstructionClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type VerifyInstructionInteractionClaim struct {
@@ -28,6 +35,7 @@ type VerifyInstructionComponent struct {
 }
 
 func NewVerifyInstruction(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	rangeCheck7_2_5Elements m31.InteractionElements,
 	rangeCheck4_3Elements m31.InteractionElements,
@@ -37,11 +45,7 @@ func NewVerifyInstruction(
 	claim VerifyInstructionClaim,
 	interactionClaim VerifyInstructionInteractionClaim,
 ) *VerifyInstructionComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &VerifyInstructionComponent{
 		qm31:                      qm31,
@@ -51,35 +55,51 @@ func NewVerifyInstruction(
 		memoryIdToBigElements:     memoryIdToBigElements,
 		verifyInstructionElements: verifyInstructionElements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		columnSizeInv:             qm31.Inverse(columnSizeQM),
+		columnSizeInv:             qm31.Inverse(columnSize),
 		vanishEvalInv:             qm31.One(),
 	}
 }
 
 func (c *VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(17, 12)
+	traceSampledValues, interactionSampledValues := traces.Take(verifyInstructionTraceColumns, verifyInstructionInteractionColumns)
 
-	trace := traceSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	inputPC := trace[0][0]
-	offset0 := trace[1][0]
-	offset1 := trace[2][0]
-	offset2 := trace[3][0]
-	instFelt5High := trace[4][0]
-	instFelt6 := trace[5][0]
-	opcodeExtension := trace[6][0]
-	offset0Low := trace[7][0]
-	offset0Mid := trace[8][0]
-	offset1Low := trace[9][0]
-	offset1Mid := trace[10][0]
-	offset1High := trace[11][0]
-	offset2Low := trace[12][0]
-	offset2Mid := trace[13][0]
-	offset2High := trace[14][0]
-	instructionID := trace[15][0]
-	enabler := trace[16][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	inputPC := traceSampledValues.Get(0)
+	offset0 := traceSampledValues.Get(1)
+	offset1 := traceSampledValues.Get(2)
+	offset2 := traceSampledValues.Get(3)
+	instFelt5High := traceSampledValues.Get(4)
+	instFelt6 := traceSampledValues.Get(5)
+	opcodeExtension := traceSampledValues.Get(6)
+	offset0Low := traceSampledValues.Get(7)
+	offset0Mid := traceSampledValues.Get(8)
+	offset1Low := traceSampledValues.Get(9)
+	offset1Mid := traceSampledValues.Get(10)
+	offset1High := traceSampledValues.Get(11)
+	offset2Low := traceSampledValues.Get(12)
+	offset2Mid := traceSampledValues.Get(13)
+	offset2High := traceSampledValues.Get(14)
+	instructionID := traceSampledValues.Get(15)
+	enabler := traceSampledValues.Get(16)
 
-	// No boolean constraint on enabler in Cairo (vanishing enforced via eqs only).
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 1)
+	part2Prev := interactionSampledValues.Partial(c.qm31, 8, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	offsets := sub.EncodeOffsetsEvaluate(
 		c.qm31,
@@ -145,20 +165,6 @@ func (c *VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 	if err != nil {
 		panic(err)
 	}
-
-	part := func(start int, offset int) m31.QM31 {
-		return c.qm31.FromPartialEvals(
-			interactionSampledValues[start][offset],
-			interactionSampledValues[start+1][offset],
-			interactionSampledValues[start+2][offset],
-			interactionSampledValues[start+3][offset],
-		)
-	}
-
-	part0 := part(0, 0)
-	part1 := part(4, 0)
-	part2 := part(8, 1)
-	part2Prev := part(8, 0)
 
 	constraint := c.qm31.Mul(part0, c.qm31.Mul(offsets.Range7_2_5Sum, offsets.Range4_3Sum))
 	constraint = c.qm31.Sub(constraint, offsets.Range7_2_5Sum)

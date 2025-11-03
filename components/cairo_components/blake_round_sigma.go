@@ -24,7 +24,6 @@ type BlakeRoundSigmaComponent struct {
 	claimedSum     m31.QM31
 	columnSizeInv  m31.QM31
 	vanishEvalInv  m31.QM31
-	preprocessed   []PreprocessedColumn
 }
 
 func NewBlakeRoundSigma(
@@ -33,11 +32,6 @@ func NewBlakeRoundSigma(
 	claim BlakeRoundSigmaClaim,
 	interactionClaim BlakeRoundSigmaInteractionClaim,
 ) *BlakeRoundSigmaComponent {
-	preprocessed := make([]PreprocessedColumn, 1+16)
-	preprocessed[0] = sequencePreprocessedColumn(blakeRoundSigmaLogSize)
-	for i := 0; i < 16; i++ {
-		preprocessed[i+1] = NewPreprocessedColumnBlakeSigma(uints.NewU8(uint8(i)))
-	}
 
 	columnSize := m31.NewM31Unchecked(uint32(1) << blakeRoundSigmaLogSize)
 	columnSizeInv := qm31.Inverse(m31.NewQM31FromM31(columnSize))
@@ -48,49 +42,42 @@ func NewBlakeRoundSigma(
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  columnSizeInv,
 		vanishEvalInv:  qm31.One(), // TODO: wire actual vanishing polynomial evaluation.
-		preprocessed:   preprocessed,
 	}
 }
 
-func (c *BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(1, 4)
+func (c *BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+	traceSampledValues, interactionSampledValues := traces.Take(blakeRoundSigmaTraceColumns, blakeRoundSigmaInteractionColumns)
 
-	if len(traceSampledValues) != blakeRoundSigmaTraceColumns {
-		panic("blake_round_sigma expects 1 trace column")
-	}
-	if len(interactionSampledValues) != blakeRoundSigmaInteractionColumns {
-		panic("blake_round_sigma expects 4 interaction columns")
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	values := make([]m31.QM31, 1+16)
+	values[0] = traces.Get(sequencePreprocessedColumn(blakeRoundSigmaLogSize))
+	for i := 0; i < 16; i++ {
+		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(uints.NewU8(uint8(i))))
 	}
 
-	values := make([]m31.QM31, len(c.preprocessed))
-	for i, column := range c.preprocessed {
-		values[i] = traces.Get(column)
-	}
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	enabler := traceSampledValues.Get(0)
+
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	curr := interactionSampledValues.Partial(c.qm31, 0, 1)
+	prev := interactionSampledValues.Partial(c.qm31, 0, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
+	diff := c.qm31.Sub(curr, prev)
 
 	lookupSum, err := c.qm31.Combine(c.lookupElements, values)
 	if err != nil {
 		panic(err)
 	}
-
-	enablerColumn := traceSampledValues[0]
-	if len(enablerColumn) == 0 {
-		panic("blake_round_sigma enabler column empty")
-	}
-	enabler := enablerColumn[0]
-
-	tr0 := interactionSampledValues[0]
-	tr1 := interactionSampledValues[1]
-	tr2 := interactionSampledValues[2]
-	tr3 := interactionSampledValues[3]
-
-	if len(tr0) < 2 || len(tr1) < 2 || len(tr2) < 2 || len(tr3) < 2 {
-		panic("blake_round_sigma interaction columns must have at least two samples")
-	}
-
-	curr := c.qm31.FromPartialEvals(tr0[1], tr1[1], tr2[1], tr3[1])
-	prev := c.qm31.FromPartialEvals(tr0[0], tr1[0], tr2[0], tr3[0])
-	diff := c.qm31.Sub(curr, prev)
-
 	claimedAdjustment := c.qm31.Mul(c.claimedSum, c.columnSizeInv)
 	g0Inner := c.qm31.Add(diff, claimedAdjustment)
 	g0LookupProduct := c.qm31.Mul(g0Inner, lookupSum)

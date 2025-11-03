@@ -3,10 +3,17 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
+)
+
+const (
+	assertEqImmOpcodeTraceColumns       = 9
+	assertEqImmOpcodeInteractionColumns = 12
 )
 
 type AssertEqImmOpcodeClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type AssertEqImmOpcodeInteractionClaim struct {
@@ -26,6 +33,7 @@ type AssertEqImmOpcodeComponent struct {
 }
 
 func NewAssertEqImmOpcode(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
@@ -33,11 +41,8 @@ func NewAssertEqImmOpcode(
 	claim AssertEqImmOpcodeClaim,
 	interactionClaim AssertEqImmOpcodeInteractionClaim,
 ) *AssertEqImmOpcodeComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeInv := qm31.Inverse(m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize)))
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	return &AssertEqImmOpcodeComponent{
 		qm31:                      qm31,
@@ -51,21 +56,38 @@ func NewAssertEqImmOpcode(
 }
 
 func (c *AssertEqImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(9, 12)
+	traceSampledValues, interactionSampledValues := traces.Take(assertEqImmOpcodeTraceColumns, assertEqImmOpcodeInteractionColumns)
 
-	trace := traceSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	inputPc := trace[0][0]
-	inputAp := trace[1][0]
-	inputFp := trace[2][0]
-	offset0 := trace[3][0]
-	dstBaseFP := trace[4][0]
-	apUpdateAdd1 := trace[5][0]
-	memDstBase := trace[6][0]
-	dstID := trace[7][0]
-	enabler := trace[8][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	inputPc := traceSampledValues.Get(0)
+	inputAp := traceSampledValues.Get(1)
+	inputFp := traceSampledValues.Get(2)
+	offset0 := traceSampledValues.Get(3)
+	dstBaseFP := traceSampledValues.Get(4)
+	apUpdateAdd1 := traceSampledValues.Get(5)
+	memDstBase := traceSampledValues.Get(6)
+	dstID := traceSampledValues.Get(7)
+	enabler := traceSampledValues.Get(8)
 
-	// Enabler bit constraint.
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 1)
+	part2Prev := interactionSampledValues.Partial(c.qm31, 8, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
 	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
@@ -125,31 +147,6 @@ func (c *AssertEqImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 	if err != nil {
 		panic(err)
 	}
-
-	part0 := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][0],
-		interactionSampledValues[1][0],
-		interactionSampledValues[2][0],
-		interactionSampledValues[3][0],
-	)
-	part1 := c.qm31.FromPartialEvals(
-		interactionSampledValues[4][0],
-		interactionSampledValues[5][0],
-		interactionSampledValues[6][0],
-		interactionSampledValues[7][0],
-	)
-	part2 := c.qm31.FromPartialEvals(
-		interactionSampledValues[8][1],
-		interactionSampledValues[9][1],
-		interactionSampledValues[10][1],
-		interactionSampledValues[11][1],
-	)
-	part2Prev := c.qm31.FromPartialEvals(
-		interactionSampledValues[8][0],
-		interactionSampledValues[9][0],
-		interactionSampledValues[10][0],
-		interactionSampledValues[11][0],
-	)
 
 	constraint = c.qm31.Mul(part0, c.qm31.Mul(verifyInstructionSum, memoryAddressSum1))
 	constraint = c.qm31.Sub(constraint, verifyInstructionSum)

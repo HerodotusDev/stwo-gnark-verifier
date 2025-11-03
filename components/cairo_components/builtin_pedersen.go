@@ -3,6 +3,7 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -19,7 +20,7 @@ var pedersenPartialEcMulSum10Constants = []uint64{
 }
 
 type PedersenBuiltinClaim struct {
-	LogSize                     uint32
+	LogSize                     uints.U8
 	PedersenBuiltinSegmentStart uint32
 }
 
@@ -40,10 +41,11 @@ type PedersenBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uint32
+	logSize       uints.U8
 }
 
 func NewPedersenBuiltin(
+	api frontend.API,
 	qm31Chip *m31.QM31Chip,
 	rangeCheck54Elements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
@@ -53,8 +55,7 @@ func NewPedersenBuiltin(
 	claim PedersenBuiltinClaim,
 	interactionClaim PedersenBuiltinInteractionClaim,
 ) *PedersenBuiltinComponent {
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &PedersenBuiltinComponent{
 		qm31:                      qm31Chip,
@@ -65,26 +66,21 @@ func NewPedersenBuiltin(
 		partialEcMulElements:      partialEcMulElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PedersenBuiltinSegmentStart))),
-		columnSizeInv:             qm31Chip.Inverse(columnSizeQM),
+		columnSizeInv:             qm31Chip.Inverse(columnSize),
 		vanishEvalInv:             qm31Chip.One(),
 		logSize:                   claim.LogSize,
 	}
 }
 
-func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
 
 	trace := traceSampledValues
-	interaction := interactionSampledValues
 
-	if len(trace) != pedersenBuiltinTraceColumns {
-		panic("pedersen_builtin expects 351 trace columns")
-	}
-	if len(interaction) != pedersenBuiltinInteractionColumns {
-		panic("pedersen_builtin expects 40 interaction columns")
-	}
-
-	seqColumn := NewPreprocessedColumnSeq(uints.NewU8(uint8(c.logSize)))
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	seqColumn := NewPreprocessedColumnSeq(c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0
@@ -333,40 +329,17 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	memoryAddressToIdSum18 := memRes.AddressLookupSum
 	memoryIdToBigSum19 := memRes.IdToBigLookupSum
 
-	getInteractionValue := func(index int, position int) m31.QM31 {
-		col := interaction[index]
-		if len(col) <= position {
-			panic("interaction column missing sampled value")
-		}
-		return col[position]
-	}
-
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	// Use InteractionTrace.Partial to build current/previous partials.
 	var partials [10]m31.QM31
 	for i := 0; i < 9; i++ {
-		base := i * 4
-		partials[i] = qm31.FromPartialEvals(
-			getInteractionValue(base, 0),
-			getInteractionValue(base+1, 0),
-			getInteractionValue(base+2, 0),
-			getInteractionValue(base+3, 0),
-		)
+		partials[i] = interactionSampledValues.Partial(c.qm31, i*4, 0)
 	}
-
-	if len(interaction[36]) < 2 || len(interaction[37]) < 2 || len(interaction[38]) < 2 || len(interaction[39]) < 2 {
-		panic("interaction columns 36-39 require two sampled values")
-	}
-	partialNeg1 := qm31.FromPartialEvals(
-		getInteractionValue(36, 0),
-		getInteractionValue(37, 0),
-		getInteractionValue(38, 0),
-		getInteractionValue(39, 0),
-	)
-	partials[9] = qm31.FromPartialEvals(
-		getInteractionValue(36, 1),
-		getInteractionValue(37, 1),
-		getInteractionValue(38, 1),
-		getInteractionValue(39, 1),
-	)
+	// Last block (start=36) has previous/current samples.
+	partials[9] = interactionSampledValues.Partial(c.qm31, 36, 1)
+	partialNeg1 := interactionSampledValues.Partial(c.qm31, 36, 0)
 
 	apply := func(constraint m31.QM31) {
 		constraint = qm31.Mul(constraint, c.vanishEvalInv)

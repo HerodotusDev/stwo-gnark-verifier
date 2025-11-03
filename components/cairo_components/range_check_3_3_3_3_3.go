@@ -1,8 +1,9 @@
 package cairo_components
 
 import (
-	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
-	"github.com/consensys/gnark/std/math/uints"
+    "github.com/HerodotusDev/stwo-gnark-verifier/m31"
+    "github.com/consensys/gnark/frontend"
+    "github.com/consensys/gnark/std/math/uints"
 )
 
 type RangeCheck3_3_3_3_3InteractionClaim struct {
@@ -16,9 +17,10 @@ type RangeCheck3_3_3_3_3Component struct {
 }
 
 func NewRangeCheck3_3_3_3_3(
-	qm31 *m31.QM31Chip,
-	interactionElements m31.InteractionElements,
-	interactionClaim RangeCheck3_3_3_3_3InteractionClaim,
+    api frontend.API,
+    qm31 *m31.QM31Chip,
+    interactionElements m31.InteractionElements,
+    interactionClaim RangeCheck3_3_3_3_3InteractionClaim,
 ) *RangeCheck3_3_3_3_3Component {
 	values := []uints.U8{
 		uints.NewU8(3),
@@ -36,14 +38,15 @@ func NewRangeCheck3_3_3_3_3(
 	}
 
 	return &RangeCheck3_3_3_3_3Component{
-		inner: newLookupConstraintComponent(
-			qm31,
-			interactionElements,
-			interactionClaim.ClaimedSum,
-			rangeCheck3_3_3_3_3LogSize,
-			preprocessed,
-		),
-	}
+        inner: newLookupConstraintComponent(
+            api,
+            qm31,
+            interactionElements,
+            interactionClaim.ClaimedSum,
+            uints.NewU8(rangeCheck3_3_3_3_3LogSize),
+            preprocessed,
+        ),
+    }
 }
 
 func (c *RangeCheck3_3_3_3_3Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {

@@ -2,6 +2,7 @@ package cairo_components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -16,15 +17,15 @@ type lookupConstraintComponent struct {
 }
 
 func newLookupConstraintComponent(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
 	claimedSum m31.QM31,
-	logSize uint8,
+	logSize uints.U8,
 	preprocessed []PreprocessedColumn,
 ) *lookupConstraintComponent {
-	columnSize := m31.NewM31Unchecked(uint32(1) << logSize)
-	columnSizeQM31 := m31.NewQM31FromM31(columnSize)
-	columnSizeInv := qm31.Inverse(columnSizeQM31)
+	columnSize := computeColumnSize(api, logSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	clone := make([]PreprocessedColumn, len(preprocessed))
 	copy(clone, preprocessed)
@@ -51,6 +52,9 @@ func (c *lookupConstraintComponent) Evaluate(
 ) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(lookupTraceColumns, lookupInteractionColumns)
 
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
 	values := make([]m31.QM31, len(c.preprocessed))
 	for i, column := range c.preprocessed {
 		values[i] = traces.Get(column)
@@ -61,15 +65,21 @@ func (c *lookupConstraintComponent) Evaluate(
 		panic(err)
 	}
 
-	enabler := traceSampledValues[0][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	enabler := traceSampledValues.Get(0)
 
-	tr0 := interactionSampledValues[0]
-	tr1 := interactionSampledValues[1]
-	tr2 := interactionSampledValues[2]
-	tr3 := interactionSampledValues[3]
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	curr := interactionSampledValues.Partial(c.qm31, 0, 1)
+	prev := interactionSampledValues.Partial(c.qm31, 0, 0)
 
-	curr := c.qm31.FromPartialEvals(tr0[1], tr1[1], tr2[1], tr3[1])
-	prev := c.qm31.FromPartialEvals(tr0[0], tr1[0], tr2[0], tr3[0])
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
 	diff := c.qm31.Sub(curr, prev)
 
 	sumTerm := c.qm31.Add(diff, c.qm31.Mul(c.claimedSum, c.columnSizeInv))

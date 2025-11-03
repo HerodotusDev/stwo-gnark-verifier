@@ -3,10 +3,17 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
+)
+
+const (
+	addModBuiltinTraceColumns       = 251
+	addModBuiltinInteractionColumns = 108
 )
 
 type AddModBuiltinClaim struct {
-	LogSize                   uint32
+	LogSize                   uints.U8
 	AddModBuiltinSegmentStart uint32
 }
 
@@ -17,7 +24,7 @@ type AddModBuiltinInteractionClaim struct {
 type AddModBuiltinComponent struct {
 	qm31 *m31.QM31Chip
 
-	logSize uint8
+	logSize uints.U8
 
 	memoryAddressToIdElems m31.InteractionElements
 	memoryIdToBigElems     m31.InteractionElements
@@ -29,19 +36,15 @@ type AddModBuiltinComponent struct {
 }
 
 func NewAddModBuiltin(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
 	memoryIdElements m31.InteractionElements,
 	claim AddModBuiltinClaim,
 	interactionClaim AddModBuiltinInteractionClaim,
 ) *AddModBuiltinComponent {
-	if claim.LogSize > 255 {
-		panic("add_mod_builtin log size must fit in uint8")
-	}
-
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM31)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
 		m31.NewM31Unchecked(uint64(claim.AddModBuiltinSegmentStart)),
@@ -49,7 +52,7 @@ func NewAddModBuiltin(
 
 	return &AddModBuiltinComponent{
 		qm31:                   qm31,
-		logSize:                uint8(claim.LogSize),
+		logSize:                claim.LogSize,
 		memoryAddressToIdElems: memoryAddressElements,
 		memoryIdToBigElems:     memoryIdElements,
 		segmentStart:           segmentStart,
@@ -60,45 +63,49 @@ func NewAddModBuiltin(
 }
 
 func (c *AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(251, 108)
+	traceSampledValues, interactionSampledValues := traces.Take(addModBuiltinTraceColumns, addModBuiltinInteractionColumns)
 
-	trace := traceSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
-	seq := traces.Get(sequencePreprocessedColumn(c.logSize))
-
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
 	readPoint := func(idIndex int) sub.ModPoint {
-		point := sub.ModPoint{ID: trace[idIndex][0]}
+		point := sub.ModPoint{ID: traceSampledValues.Get(idIndex)}
 		for i := 0; i < 11; i++ {
-			point.Limbs[i] = trace[idIndex+1+i][0]
+			point.Limbs[i] = traceSampledValues.Get(idIndex + 1 + i)
 		}
 		return point
 	}
 
 	readPointer3 := func(idIndex int) sub.Pointer3 {
 		return sub.Pointer3{
-			ID: trace[idIndex][0],
+			ID: traceSampledValues.Get(idIndex),
 			Limbs: [3]m31.QM31{
-				trace[idIndex+1][0],
-				trace[idIndex+2][0],
-				trace[idIndex+3][0],
+				traceSampledValues.Get(idIndex + 1),
+				traceSampledValues.Get(idIndex + 2),
+				traceSampledValues.Get(idIndex + 3),
 			},
 		}
 	}
 
 	readOffset := func(start int) sub.OffsetEntry {
 		return sub.OffsetEntry{
-			ID:          trace[start][0],
-			MSB:         trace[start+1][0],
-			MidLimbsSet: trace[start+2][0],
+			ID:          traceSampledValues.Get(start),
+			MSB:         traceSampledValues.Get(start + 1),
+			MidLimbsSet: traceSampledValues.Get(start + 2),
 			Limbs: [3]m31.QM31{
-				trace[start+3][0],
-				trace[start+4][0],
-				trace[start+5][0],
+				traceSampledValues.Get(start + 3),
+				traceSampledValues.Get(start + 4),
+				traceSampledValues.Get(start + 5),
 			},
 		}
 	}
 
-	isInstanceZero := trace[0][0]
+	isInstanceZero := traceSampledValues.Get(0)
 
 	points := [4]sub.ModPoint{
 		readPoint(1),
@@ -113,20 +120,11 @@ func (c *AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	nPtr := readPointer3(61)
 	nPtrPrev := readPointer3(65)
 
-	valuesPtrPrevID := trace[69][0]
+	valuesPtrPrevID := traceSampledValues.Get(69)
 
-	prevPointIDs := [4]m31.QM31{
-		trace[70][0],
-		trace[71][0],
-		trace[72][0],
-		trace[73][0],
-	}
+	prevPointIDs := [4]m31.QM31{traceSampledValues.Get(70), traceSampledValues.Get(71), traceSampledValues.Get(72), traceSampledValues.Get(73)}
 
-	offsets := [3]sub.OffsetEntry{
-		readOffset(74),
-		readOffset(80),
-		readOffset(86),
-	}
+	offsets := [3]sub.OffsetEntry{readOffset(74), readOffset(80), readOffset(86)}
 
 	aPoints := [4]sub.ModPoint{
 		readPoint(92),
@@ -149,12 +147,29 @@ func (c *AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		readPoint(224),
 	}
 
-	subPBit := trace[236][0]
+	subPBit := traceSampledValues.Get(236)
 
 	var carries [14]m31.QM31
 	for i := 0; i < 14; i++ {
-		carries[i] = trace[237+i][0]
+		carries[i] = traceSampledValues.Get(237 + i)
 	}
+
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+
+	// Use InteractionTrace.Partial to build current/previous partials.
+	partials := make([]m31.QM31, 27)
+	for i := 0; i < 26; i++ {
+		partials[i] = interactionSampledValues.Partial(c.qm31, i*4, 0)
+	}
+	// Last block (start=104) has previous/current samples.
+	partials[26] = interactionSampledValues.Partial(c.qm31, 104, 1)
+	prevLastPartial := interactionSampledValues.Partial(c.qm31, 104, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	modInput := sub.ModUtilsInputs{
 		BaseAddress:        c.segmentStart,
@@ -250,7 +265,8 @@ func (c *AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		c.vanishEvalInv,
 		c.claimedSum,
 		c.columnSizeInv,
-		interactionSampledValues,
+		partials,
+		prevLastPartial,
 		addressSums,
 		idSums,
 	)
@@ -265,40 +281,11 @@ func addModBuiltinLookupConstraints(
 	vanishEvalInv m31.QM31,
 	claimedSum m31.QM31,
 	columnSizeInv m31.QM31,
-	interactionSampledValues [][]m31.QM31,
+	partials []m31.QM31,
+	prevLastPartial m31.QM31,
 	addressSums []m31.QM31,
 	idSums []m31.QM31,
 ) m31.QM31 {
-	trace := make([]m31.QM31, 108)
-	var prevTail [4]m31.QM31
-
-	for i := 0; i < 108; i++ {
-		col := interactionSampledValues[i]
-		if i >= 104 {
-			prevTail[i-104] = col[0]
-			trace[i] = col[1]
-			continue
-		}
-		trace[i] = col[0]
-	}
-
-	partials := make([]m31.QM31, 27)
-	for i := 0; i < 27; i++ {
-		base := i * 4
-		partials[i] = qm31.FromPartialEvals(
-			trace[base],
-			trace[base+1],
-			trace[base+2],
-			trace[base+3],
-		)
-	}
-
-	prevLastPartial := qm31.FromPartialEvals(
-		prevTail[0],
-		prevTail[1],
-		prevTail[2],
-		prevTail[3],
-	)
 
 	addrIdx := 0
 	idIdx := 0

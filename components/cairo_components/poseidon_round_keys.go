@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	poseidonRoundKeysLogSize = uint32(6)
-	poseidonRoundKeysColumns = 30
+	poseidonRoundKeysLogSize            = uint32(6)
+	poseidonRoundKeysColumns            = 30
+	poseidonRoundKeysTraceColumns       = 1
+	poseidonRoundKeysInteractionColumns = 4
 )
 
 type PoseidonRoundKeysClaim struct{}
@@ -54,8 +56,11 @@ func NewPoseidonRoundKeys(
 }
 
 func (c *PoseidonRoundKeysComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(1, 4)
+	traceSampledValues, interactionSampledValues := traces.Take(poseidonRoundKeysTraceColumns, poseidonRoundKeysInteractionColumns)
 
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
 	seq := traces.Get(c.seqColumn)
 
 	values := make([]m31.QM31, 1+len(c.keyColumns))
@@ -69,20 +74,20 @@ func (c *PoseidonRoundKeysComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 		panic(err)
 	}
 
-	enabler := traceSampledValues[0][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	enabler := traceSampledValues.Get(0)
 
-	curr := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][1],
-		interactionSampledValues[1][1],
-		interactionSampledValues[2][1],
-		interactionSampledValues[3][1],
-	)
-	prev := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][0],
-		interactionSampledValues[1][0],
-		interactionSampledValues[2][0],
-		interactionSampledValues[3][0],
-	)
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	curr := interactionSampledValues.Partial(c.qm31, 0, 1)
+	prev := interactionSampledValues.Partial(c.qm31, 0, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	diff := c.qm31.Sub(curr, prev)
 	diff = c.qm31.Add(diff, c.qm31.Mul(c.claimedSum, c.columnSizeInv))

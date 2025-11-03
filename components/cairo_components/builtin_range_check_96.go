@@ -3,10 +3,17 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
+)
+
+const (
+	rangeCheck96BuiltinTraceColumns       = 12
+	rangeCheck96BuiltinInteractionColumns = 8
 )
 
 type RangeCheck96BuiltinClaim struct {
-	LogSize                uint32
+	LogSize                uints.U8
 	RangeCheckSegmentStart uint32
 }
 
@@ -17,7 +24,7 @@ type RangeCheck96BuiltinInteractionClaim struct {
 type RangeCheck96BuiltinComponent struct {
 	qm31 *m31.QM31Chip
 
-	logSize uint8
+	logSize uints.U8
 
 	memoryAddressToIdElements m31.InteractionElements
 	rangeCheck6Elements       m31.InteractionElements
@@ -30,6 +37,7 @@ type RangeCheck96BuiltinComponent struct {
 }
 
 func NewRangeCheck96Builtin(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressToIdElements m31.InteractionElements,
 	rangeCheck6Elements m31.InteractionElements,
@@ -37,13 +45,8 @@ func NewRangeCheck96Builtin(
 	claim RangeCheck96BuiltinClaim,
 	interactionClaim RangeCheck96BuiltinInteractionClaim,
 ) *RangeCheck96BuiltinComponent {
-	if claim.LogSize > 255 {
-		panic("range check 96 builtin log size must fit in uint8")
-	}
-
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM31)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
 		m31.NewM31Unchecked(uint64(claim.RangeCheckSegmentStart)),
@@ -51,7 +54,7 @@ func NewRangeCheck96Builtin(
 
 	return &RangeCheck96BuiltinComponent{
 		qm31:                      qm31,
-		logSize:                   uint8(claim.LogSize),
+		logSize:                   claim.LogSize,
 		memoryAddressToIdElements: memoryAddressToIdElements,
 		rangeCheck6Elements:       rangeCheck6Elements,
 		memoryIdToBigElements:     memoryIdToBigElements,
@@ -63,24 +66,40 @@ func NewRangeCheck96Builtin(
 }
 
 func (c *RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(12, 8)
+	traceSampledValues, interactionSampledValues := traces.Take(rangeCheck96BuiltinTraceColumns, rangeCheck96BuiltinInteractionColumns)
 
-	seqColumn := traces.Get(sequencePreprocessedColumn(c.logSize))
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	seqColumn := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 	input := c.qm31.Add(c.segmentStart, seqColumn)
 
-	trace := traceSampledValues
-	valueID := trace[0][0]
-	limb0 := trace[1][0]
-	limb1 := trace[2][0]
-	limb2 := trace[3][0]
-	limb3 := trace[4][0]
-	limb4 := trace[5][0]
-	limb5 := trace[6][0]
-	limb6 := trace[7][0]
-	limb7 := trace[8][0]
-	limb8 := trace[9][0]
-	limb9 := trace[10][0]
-	limb10 := trace[11][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	valueID := traceSampledValues.Get(0)
+	limb0 := traceSampledValues.Get(1)
+	limb1 := traceSampledValues.Get(2)
+	limb2 := traceSampledValues.Get(3)
+	limb3 := traceSampledValues.Get(4)
+	limb4 := traceSampledValues.Get(5)
+	limb5 := traceSampledValues.Get(6)
+	limb6 := traceSampledValues.Get(7)
+	limb7 := traceSampledValues.Get(8)
+	limb8 := traceSampledValues.Get(9)
+	limb9 := traceSampledValues.Get(10)
+	limb10 := traceSampledValues.Get(11)
+
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	firstBlock := interactionSampledValues.Partial(c.qm31, 0, 0)
+	secondBlock := interactionSampledValues.Partial(c.qm31, 4, 1)
+	prevSecondBlock := interactionSampledValues.Partial(c.qm31, 4, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	eval := sub.ReadPositiveNumBits96Evaluate(
 		c.qm31,
@@ -105,25 +124,6 @@ func (c *RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 		randomCoeff,
 	)
 	sum = eval.Sum
-
-	interaction := interactionSampledValues
-	tr0 := interaction[0][0]
-	tr1 := interaction[1][0]
-	tr2 := interaction[2][0]
-	tr3 := interaction[3][0]
-
-	tr4Prev := interaction[4][0]
-	tr4Curr := interaction[4][1]
-	tr5Prev := interaction[5][0]
-	tr5Curr := interaction[5][1]
-	tr6Prev := interaction[6][0]
-	tr6Curr := interaction[6][1]
-	tr7Prev := interaction[7][0]
-	tr7Curr := interaction[7][1]
-
-	firstBlock := c.qm31.FromPartialEvals(tr0, tr1, tr2, tr3)
-	secondBlock := c.qm31.FromPartialEvals(tr4Curr, tr5Curr, tr6Curr, tr7Curr)
-	prevSecondBlock := c.qm31.FromPartialEvals(tr4Prev, tr5Prev, tr6Prev, tr7Prev)
 
 	// ((firstBlock * memAddrSum * rangeCheck6Sum) - memAddrSum - rangeCheck6Sum) == 0
 	constraint := c.qm31.Mul(firstBlock, c.qm31.Mul(eval.AddressLookupSum, eval.RangeCheck6Sum))

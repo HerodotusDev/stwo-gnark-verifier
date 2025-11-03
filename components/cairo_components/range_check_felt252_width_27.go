@@ -1,9 +1,18 @@
 package cairo_components
 
-import "github.com/HerodotusDev/stwo-gnark-verifier/m31"
+import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
+)
+
+const (
+	rangeCheckFelt252Width27TraceColumns       = 20
+	rangeCheckFelt252Width27InteractionColumns = 32
+)
 
 type RangeCheckFelt252Width27Claim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type RangeCheckFelt252Width27InteractionClaim struct {
@@ -13,7 +22,7 @@ type RangeCheckFelt252Width27InteractionClaim struct {
 type RangeCheckFelt252Width27Component struct {
 	qm31 *m31.QM31Chip
 
-	logSize uint8
+	logSize uints.U8
 
 	rangeCheck9_9Elements            m31.InteractionElements
 	rangeCheck18Elements             m31.InteractionElements
@@ -25,6 +34,7 @@ type RangeCheckFelt252Width27Component struct {
 }
 
 func NewRangeCheckFelt252Width27(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	rangeCheck9_9Elements m31.InteractionElements,
 	rangeCheck18Elements m31.InteractionElements,
@@ -32,17 +42,12 @@ func NewRangeCheckFelt252Width27(
 	claim RangeCheckFelt252Width27Claim,
 	interactionClaim RangeCheckFelt252Width27InteractionClaim,
 ) *RangeCheckFelt252Width27Component {
-	if claim.LogSize > 255 {
-		panic("range check felt252 width 27 log size must fit in uint8")
-	}
-
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM31)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	return &RangeCheckFelt252Width27Component{
 		qm31:                             qm31,
-		logSize:                          uint8(claim.LogSize),
+		logSize:                          claim.LogSize,
 		rangeCheck9_9Elements:            rangeCheck9_9Elements,
 		rangeCheck18Elements:             rangeCheck18Elements,
 		rangeCheckFelt252Width27Elements: rangeCheckFelt252Width27Elements,
@@ -53,31 +58,54 @@ func NewRangeCheckFelt252Width27(
 }
 
 func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(20, 32)
+	traceSampledValues, interactionSampledValues := traces.Take(rangeCheckFelt252Width27TraceColumns, rangeCheckFelt252Width27InteractionColumns)
 
-	trace := traceSampledValues
-	inputLimb0 := trace[0][0]
-	inputLimb1 := trace[1][0]
-	inputLimb2 := trace[2][0]
-	inputLimb3 := trace[3][0]
-	inputLimb4 := trace[4][0]
-	inputLimb5 := trace[5][0]
-	inputLimb6 := trace[6][0]
-	inputLimb7 := trace[7][0]
-	inputLimb8 := trace[8][0]
-	inputLimb9 := trace[9][0]
-	limb0High := trace[10][0]
-	limb1Low := trace[11][0]
-	limb2High := trace[12][0]
-	limb3Low := trace[13][0]
-	limb4High := trace[14][0]
-	limb5Low := trace[15][0]
-	limb6High := trace[16][0]
-	limb7Low := trace[17][0]
-	limb8High := trace[18][0]
-	enabler := trace[19][0]
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	// Enabler must be a bit.
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	inputLimb0 := traceSampledValues.Get(0)
+	inputLimb1 := traceSampledValues.Get(1)
+	inputLimb2 := traceSampledValues.Get(2)
+	inputLimb3 := traceSampledValues.Get(3)
+	inputLimb4 := traceSampledValues.Get(4)
+	inputLimb5 := traceSampledValues.Get(5)
+	inputLimb6 := traceSampledValues.Get(6)
+	inputLimb7 := traceSampledValues.Get(7)
+	inputLimb8 := traceSampledValues.Get(8)
+	inputLimb9 := traceSampledValues.Get(9)
+	limb0High := traceSampledValues.Get(10)
+	limb1Low := traceSampledValues.Get(11)
+	limb2High := traceSampledValues.Get(12)
+	limb3Low := traceSampledValues.Get(13)
+	limb4High := traceSampledValues.Get(14)
+	limb5Low := traceSampledValues.Get(15)
+	limb6High := traceSampledValues.Get(16)
+	limb7Low := traceSampledValues.Get(17)
+	limb8High := traceSampledValues.Get(18)
+	enabler := traceSampledValues.Get(19)
+
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	block0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	block1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	block2 := interactionSampledValues.Partial(c.qm31, 8, 0)
+	block3 := interactionSampledValues.Partial(c.qm31, 12, 0)
+	block4 := interactionSampledValues.Partial(c.qm31, 16, 0)
+	block5 := interactionSampledValues.Partial(c.qm31, 20, 0)
+	block6 := interactionSampledValues.Partial(c.qm31, 24, 0)
+	block7Curr := interactionSampledValues.Partial(c.qm31, 28, 1)
+	block7Prev := interactionSampledValues.Partial(c.qm31, 28, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
 	constraint := c.qm31.Mul(enabler, c.qm31.Sub(enabler, c.qm31.One()))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
@@ -180,54 +208,6 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 	if err != nil {
 		panic(err)
 	}
-
-	interaction := interactionSampledValues
-	i0 := interaction[0][0]
-	i1 := interaction[1][0]
-	i2 := interaction[2][0]
-	i3 := interaction[3][0]
-	i4 := interaction[4][0]
-	i5 := interaction[5][0]
-	i6 := interaction[6][0]
-	i7 := interaction[7][0]
-	i8 := interaction[8][0]
-	i9 := interaction[9][0]
-	i10 := interaction[10][0]
-	i11 := interaction[11][0]
-	i12 := interaction[12][0]
-	i13 := interaction[13][0]
-	i14 := interaction[14][0]
-	i15 := interaction[15][0]
-	i16 := interaction[16][0]
-	i17 := interaction[17][0]
-	i18 := interaction[18][0]
-	i19 := interaction[19][0]
-	i20 := interaction[20][0]
-	i21 := interaction[21][0]
-	i22 := interaction[22][0]
-	i23 := interaction[23][0]
-	i24 := interaction[24][0]
-	i25 := interaction[25][0]
-	i26 := interaction[26][0]
-	i27 := interaction[27][0]
-	i28Prev := interaction[28][0]
-	i28Curr := interaction[28][1]
-	i29Prev := interaction[29][0]
-	i29Curr := interaction[29][1]
-	i30Prev := interaction[30][0]
-	i30Curr := interaction[30][1]
-	i31Prev := interaction[31][0]
-	i31Curr := interaction[31][1]
-
-	block0 := c.qm31.FromPartialEvals(i0, i1, i2, i3)
-	block1 := c.qm31.FromPartialEvals(i4, i5, i6, i7)
-	block2 := c.qm31.FromPartialEvals(i8, i9, i10, i11)
-	block3 := c.qm31.FromPartialEvals(i12, i13, i14, i15)
-	block4 := c.qm31.FromPartialEvals(i16, i17, i18, i19)
-	block5 := c.qm31.FromPartialEvals(i20, i21, i22, i23)
-	block6 := c.qm31.FromPartialEvals(i24, i25, i26, i27)
-	block7Curr := c.qm31.FromPartialEvals(i28Curr, i29Curr, i30Curr, i31Curr)
-	block7Prev := c.qm31.FromPartialEvals(i28Prev, i29Prev, i30Prev, i31Prev)
 
 	constraint = c.qm31.Mul(block0, c.qm31.Mul(rc9_9sum0, rc18sum1))
 	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc9_9sum0, rc18sum1))

@@ -3,6 +3,7 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -12,7 +13,7 @@ const (
 )
 
 type PoseidonBuiltinClaim struct {
-	LogSize                     uint32
+	LogSize                     uints.U8
 	PoseidonBuiltinSegmentStart uint32
 }
 
@@ -37,10 +38,11 @@ type PoseidonBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uint32
+	logSize       uints.U8
 }
 
 func NewPoseidonBuiltin(
+	api frontend.API,
 	qm31Chip *m31.QM31Chip,
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
@@ -54,8 +56,7 @@ func NewPoseidonBuiltin(
 	claim PoseidonBuiltinClaim,
 	interactionClaim PoseidonBuiltinInteractionClaim,
 ) *PoseidonBuiltinComponent {
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &PoseidonBuiltinComponent{
 		qm31:                              qm31Chip,
@@ -70,13 +71,13 @@ func NewPoseidonBuiltin(
 		poseidon3PartialRoundsChainLookup: poseidon3PartialRoundsChainElements,
 		claimedSum:                        interactionClaim.ClaimedSum,
 		segmentStart:                      m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PoseidonBuiltinSegmentStart))),
-		columnSizeInv:                     qm31Chip.Inverse(columnSizeQM),
+		columnSizeInv:                     qm31Chip.Inverse(columnSize),
 		vanishEvalInv:                     qm31Chip.One(),
 		logSize:                           claim.LogSize,
 	}
 }
 
-func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
 
 	trace := traceSampledValues
@@ -89,7 +90,10 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		panic("poseidon_builtin expects 68 interaction columns")
 	}
 
-	seqColumn := NewPreprocessedColumnSeq(uints.NewU8(uint8(c.logSize)))
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	seqColumn := NewPreprocessedColumnSeq(c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0
@@ -297,32 +301,17 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		randomCoeff,
 	)
 
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	// Use InteractionTrace.Partial to build current/previous partials.
 	var partials [17]m31.QM31
 	for group := 0; group < 16; group++ {
-		idx := group * 4
-		partials[group] = c.qm31.FromPartialEvals(
-			interaction[idx+0][0],
-			interaction[idx+1][0],
-			interaction[idx+2][0],
-			interaction[idx+3][0],
-		)
+		partials[group] = interactionSampledValues.Partial(c.qm31, group*4, 0)
 	}
-	partials[16] = c.qm31.FromPartialEvals(
-		interaction[64][1],
-		interaction[65][1],
-		interaction[66][1],
-		interaction[67][1],
-	)
-
-	if len(interaction[64]) < 2 || len(interaction[65]) < 2 || len(interaction[66]) < 2 || len(interaction[67]) < 2 {
-		panic("interaction columns missing neg1 values")
-	}
-	partialNeg1 := c.qm31.FromPartialEvals(
-		interaction[64][0],
-		interaction[65][0],
-		interaction[66][0],
-		interaction[67][0],
-	)
+	// Last block (start=64) has previous/current samples.
+	partials[16] = interactionSampledValues.Partial(c.qm31, 64, 1)
+	partialNeg1 := interactionSampledValues.Partial(c.qm31, 64, 0)
 
 	apply := func(constraint m31.QM31) {
 		constraint = c.qm31.Mul(constraint, c.vanishEvalInv)

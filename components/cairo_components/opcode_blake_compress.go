@@ -3,6 +3,7 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -12,7 +13,7 @@ const (
 )
 
 type BlakeCompressOpcodeClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type BlakeCompressOpcodeInteractionClaim struct {
@@ -34,10 +35,11 @@ type BlakeCompressOpcodeComponent struct {
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uint8
+	logSize       uints.U8
 }
 
 func NewBlakeCompressOpcode(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
@@ -50,11 +52,8 @@ func NewBlakeCompressOpcode(
 	claim BlakeCompressOpcodeClaim,
 	interactionClaim BlakeCompressOpcodeInteractionClaim,
 ) *BlakeCompressOpcodeComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeInv := qm31.Inverse(m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize)))
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	return &BlakeCompressOpcodeComponent{
 		qm31:                      qm31,
@@ -69,20 +68,14 @@ func NewBlakeCompressOpcode(
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
 		vanishEvalInv:             qm31.One(),
-		logSize:                   uint8(claim.LogSize),
+		logSize:                   claim.LogSize,
 	}
 }
 
-func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(169, 148)
+func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+	traceSampledValues, interactionSampledValues := traces.Take(blakeCompressTraceColumns, blakeCompressInteractionColumns)
 
-	if len(traceSampledValues) != blakeCompressTraceColumns {
-		panic("blake_compress_opcode expects 169 trace columns")
-	}
-	if len(interactionSampledValues) != blakeCompressInteractionColumns {
-		panic("blake_compress_opcode expects 148 interaction columns")
-	}
-
+	// Main Trace helpers
 	getTrace := func(idx int) m31.QM31 {
 		col := traceSampledValues[idx]
 		if len(col) == 0 {
@@ -91,9 +84,8 @@ func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 		return col[0]
 	}
 
-	seq := traces.Get(
-		NewPreprocessedColumnSeq(uints.NewU8(c.logSize)),
-	)
+	// Preprocessed Trace
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
 	pc := getTrace(0)
 	ap := getTrace(1)
@@ -391,11 +383,22 @@ func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 		idNew,
 	)
 
-	sum = blakeCompressLookupConstraints(
-		c.qm31,
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	partials := make([]m31.QM31, len(pairs)+1)
+	for i := 0; i < len(pairs); i++ {
+		partials[i] = interactionSampledValues.Partial(c.qm31, i*4, 0)
+	}
+	lastStart := len(pairs) * 4
+	prevPartial := interactionSampledValues.Partial(c.qm31, lastStart, 0)
+	partials[len(pairs)] = interactionSampledValues.Partial(c.qm31, lastStart, 1)
+
+	sum = c.lookupConstraints(
 		sum,
-		interactionSampledValues,
 		randomCoeff,
+		partials,
+		prevPartial,
 		c.vanishEvalInv,
 		c.claimedSum,
 		enabler,
@@ -405,6 +408,10 @@ func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 		opcodesSum73,
 	)
 
+	// Interaction Trace
+	// helpers available via typed views elsewhere
+
+	// Constraint Evaluations
 	return sum
 }
 
@@ -553,11 +560,11 @@ func (c *BlakeCompressOpcodeComponent) buildBlakeCompressPairs(
 	return pairs
 }
 
-func blakeCompressLookupConstraints(
-	qm31 *m31.QM31Chip,
+func (c *BlakeCompressOpcodeComponent) lookupConstraints(
 	sum m31.QM31,
-	interaction [][]m31.QM31,
 	randomCoeff m31.QM31,
+	partials []m31.QM31,
+	prevPartial m31.QM31,
 	vanishEvalInv m31.QM31,
 	claimedSum m31.QM31,
 	enabler m31.QM31,
@@ -566,65 +573,34 @@ func blakeCompressLookupConstraints(
 	opcodesSum72 m31.QM31,
 	opcodesSum73 m31.QM31,
 ) m31.QM31 {
-	if len(interaction) != blakeCompressInteractionColumns {
-		panic("blake_compress_opcode expects 148 interaction columns")
-	}
 	if len(pairs) != 36 {
 		panic("unexpected number of lookup pairs for blake_compress_opcode")
 	}
 
-	partials := make([]m31.QM31, len(pairs)+1)
-	for i := range partials {
-		base := i * 4
-		values := [4]m31.QM31{}
-		for j := 0; j < 4; j++ {
-			col := interaction[base+j]
-			if len(col) == 0 {
-				panic("interaction column empty")
-			}
-			value := col[0]
-			if base+j >= blakeCompressInteractionColumns-4 {
-				if len(col) < 2 {
-					panic("interaction history column requires two samples")
-				}
-				value = col[1]
-			}
-			values[j] = value
-		}
-		partials[i] = qm31.FromPartialEvals(values[0], values[1], values[2], values[3])
-	}
-
-	prevPartial := qm31.FromPartialEvals(
-		interaction[blakeCompressInteractionColumns-4][0],
-		interaction[blakeCompressInteractionColumns-3][0],
-		interaction[blakeCompressInteractionColumns-2][0],
-		interaction[blakeCompressInteractionColumns-1][0],
-	)
-
 	for idx, pair := range pairs {
 		partial := partials[idx]
 		if idx > 0 {
-			partial = qm31.Sub(partial, partials[idx-1])
+			partial = c.qm31.Sub(partial, partials[idx-1])
 		}
-		constraint := qm31.Mul(qm31.Mul(partial, pair.First), pair.Second)
-		constraint = qm31.Sub(constraint, pair.First)
+		constraint := c.qm31.Mul(c.qm31.Mul(partial, pair.First), pair.Second)
+		constraint = c.qm31.Sub(constraint, pair.First)
 		if pair.SecondPositive {
-			constraint = qm31.Add(constraint, pair.Second)
+			constraint = c.qm31.Add(constraint, pair.Second)
 		} else {
-			constraint = qm31.Sub(constraint, pair.Second)
+			constraint = c.qm31.Sub(constraint, pair.Second)
 		}
-		constraint = qm31.Mul(constraint, vanishEvalInv)
-		sum = accumulateConstraint(qm31, sum, randomCoeff, constraint)
+		constraint = c.qm31.Mul(constraint, vanishEvalInv)
+		sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 	}
 
-	last := qm31.Sub(partials[len(partials)-1], partials[len(partials)-2])
-	last = qm31.Sub(last, prevPartial)
-	last = qm31.Add(last, qm31.Mul(claimedSum, columnSizeInv))
-	constraint := qm31.Mul(qm31.Mul(last, opcodesSum72), opcodesSum73)
-	constraint = qm31.Add(constraint, qm31.Mul(opcodesSum72, enabler))
-	constraint = qm31.Sub(constraint, qm31.Mul(opcodesSum73, enabler))
-	constraint = qm31.Mul(constraint, vanishEvalInv)
-	sum = accumulateConstraint(qm31, sum, randomCoeff, constraint)
+	last := c.qm31.Sub(partials[len(partials)-1], partials[len(partials)-2])
+	last = c.qm31.Sub(last, prevPartial)
+	last = c.qm31.Add(last, c.qm31.Mul(claimedSum, columnSizeInv))
+	constraint := c.qm31.Mul(c.qm31.Mul(last, opcodesSum72), opcodesSum73)
+	constraint = c.qm31.Add(constraint, c.qm31.Mul(opcodesSum72, enabler))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(opcodesSum73, enabler))
+	constraint = c.qm31.Mul(constraint, vanishEvalInv)
+	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	return sum
 }

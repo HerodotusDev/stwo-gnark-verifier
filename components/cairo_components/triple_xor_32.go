@@ -24,6 +24,11 @@ type TripleXor32Component struct {
 	vanishEvalInv m31.QM31
 }
 
+const (
+	tripleXor32TraceColumns       = 21
+	tripleXor32InteractionColumns = 20
+)
+
 func NewTripleXor32(
 	qm31 *m31.QM31Chip,
 	verifyBitwiseXor8Elements m31.InteractionElements,
@@ -48,36 +53,55 @@ func NewTripleXor32(
 }
 
 func (c *TripleXor32Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(21, 20)
+	traceSampledValues, interactionSampledValues := traces.Take(tripleXor32TraceColumns, tripleXor32InteractionColumns)
 
-	trace := traceSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	input0 := trace[0][0]
-	input1 := trace[1][0]
-	input2 := trace[2][0]
-	input3 := trace[3][0]
-	input4 := trace[4][0]
-	input5 := trace[5][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	input0 := traceSampledValues.Get(0)
+	input1 := traceSampledValues.Get(1)
+	input2 := traceSampledValues.Get(2)
+	input3 := traceSampledValues.Get(3)
+	input4 := traceSampledValues.Get(4)
+	input5 := traceSampledValues.Get(5)
 
-	ms0 := trace[6][0]
-	ms1 := trace[7][0]
-	ms2 := trace[8][0]
-	ms3 := trace[9][0]
-	ms4 := trace[10][0]
-	ms5 := trace[11][0]
+	ms0 := traceSampledValues.Get(6)
+	ms1 := traceSampledValues.Get(7)
+	ms2 := traceSampledValues.Get(8)
+	ms3 := traceSampledValues.Get(9)
+	ms4 := traceSampledValues.Get(10)
+	ms5 := traceSampledValues.Get(11)
 
-	xor12 := trace[12][0]
-	xor13 := trace[13][0]
-	xor14 := trace[14][0]
-	xor15 := trace[15][0]
-	xor16 := trace[16][0]
-	xor17 := trace[17][0]
-	xor18 := trace[18][0]
-	xor19 := trace[19][0]
+	xor12 := traceSampledValues.Get(12)
+	xor13 := traceSampledValues.Get(13)
+	xor14 := traceSampledValues.Get(14)
+	xor15 := traceSampledValues.Get(15)
+	xor16 := traceSampledValues.Get(16)
+	xor17 := traceSampledValues.Get(17)
+	xor18 := traceSampledValues.Get(18)
+	xor19 := traceSampledValues.Get(19)
 
-	enabler := trace[20][0]
+	enabler := traceSampledValues.Get(20)
 
-	// Enabler must be boolean.
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 0)
+	part3 := interactionSampledValues.Partial(c.qm31, 12, 0)
+	part4 := interactionSampledValues.Partial(c.qm31, 16, 1)
+	part4Prev := interactionSampledValues.Partial(c.qm31, 16, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
 	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
@@ -128,32 +152,6 @@ func (c *TripleXor32Component) Evaluate(sum m31.QM31, traces *Traces, randomCoef
 	if err != nil {
 		panic(err)
 	}
-
-	part := func(start int, offset int) m31.QM31 {
-		return c.qm31.FromPartialEvals(
-			interactionSampledValues[start][offset],
-			interactionSampledValues[start+1][offset],
-			interactionSampledValues[start+2][offset],
-			interactionSampledValues[start+3][offset],
-		)
-	}
-
-	part0 := part(0, 0)
-	part1 := part(4, 0)
-	part2 := part(8, 0)
-	part3 := part(12, 0)
-	part4 := c.qm31.FromPartialEvals(
-		interactionSampledValues[16][1],
-		interactionSampledValues[17][1],
-		interactionSampledValues[18][1],
-		interactionSampledValues[19][1],
-	)
-	part4Prev := c.qm31.FromPartialEvals(
-		interactionSampledValues[16][0],
-		interactionSampledValues[17][0],
-		interactionSampledValues[18][0],
-		interactionSampledValues[19][0],
-	)
 
 	// (part0 * sum0 * sum1) - sum0 - sum1
 	constraint = c.qm31.Mul(part0, c.qm31.Mul(sum0, sum1))

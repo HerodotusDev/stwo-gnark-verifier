@@ -3,10 +3,12 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 type MulModBuiltinClaim struct {
-	LogSize                   uint32
+	LogSize                   uints.U8
 	MulModBuiltinSegmentStart uint32
 }
 
@@ -17,7 +19,7 @@ type MulModBuiltinInteractionClaim struct {
 type MulModBuiltinComponent struct {
 	qm31 *m31.QM31Chip
 
-	logSize uint8
+	logSize uints.U8
 
 	memoryAddressToIdElems m31.InteractionElements
 	memoryIdToBigElems     m31.InteractionElements
@@ -45,6 +47,7 @@ func padSums(qm31 *m31.QM31Chip, values []m31.QM31, size int) []m31.QM31 {
 }
 
 func NewMulModBuiltin(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
 	memoryIdElements m31.InteractionElements,
@@ -54,13 +57,8 @@ func NewMulModBuiltin(
 	claim MulModBuiltinClaim,
 	interactionClaim MulModBuiltinInteractionClaim,
 ) *MulModBuiltinComponent {
-	if claim.LogSize > 255 {
-		panic("mul_mod_builtin log size must fit in uint8")
-	}
-
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
-	columnSizeInv := qm31.Inverse(columnSizeQM31)
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
 		m31.NewM31Unchecked(uint64(claim.MulModBuiltinSegmentStart)),
@@ -68,7 +66,7 @@ func NewMulModBuiltin(
 
 	return &MulModBuiltinComponent{
 		qm31:                   qm31,
-		logSize:                uint8(claim.LogSize),
+		logSize:                claim.LogSize,
 		memoryAddressToIdElems: memoryAddressElements,
 		memoryIdToBigElems:     memoryIdElements,
 		rangeCheck12Elems:      rangeCheck12Elements,
@@ -81,12 +79,12 @@ func NewMulModBuiltin(
 	}
 }
 
-func (c *MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c *MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(410, 376)
 
 	trace := traceSampledValues
 
-	seq := traces.Get(sequencePreprocessedColumn(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
 	get := func(idx int) m31.QM31 {
 		return trace[idx][0]

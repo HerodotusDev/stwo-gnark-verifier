@@ -2,12 +2,15 @@ package cairo_components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	pedersenPointsTableLogSize = uint32(23)
-	pedersenPointsTableColumns = 56
+	pedersenPointsTableLogSize            = 23
+	pedersenPointsTableColumns            = 56
+	pedersenPointsTableTraceColumns       = 1
+	pedersenPointsTableInteractionColumns = 4
 )
 
 type PedersenPointsTableClaim struct{}
@@ -30,12 +33,12 @@ type PedersenPointsTableComponent struct {
 }
 
 func NewPedersenPointsTable(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
 	interactionClaim PedersenPointsTableInteractionClaim,
 ) *PedersenPointsTableComponent {
-	columnSize := uint32(1) << pedersenPointsTableLogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, uints.NewU8(pedersenPointsTableLogSize))
 
 	pointColumns := make([]PreprocessedColumn, pedersenPointsTableColumns)
 	for i := 0; i < pedersenPointsTableColumns; i++ {
@@ -46,7 +49,7 @@ func NewPedersenPointsTable(
 		qm31:           qm31,
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
-		columnSizeInv:  qm31.Inverse(columnSizeQM),
+		columnSizeInv:  qm31.Inverse(columnSize),
 		vanishEvalInv:  qm31.One(),
 		seqColumn:      NewPreprocessedColumnSeq(uints.NewU8(uint8(pedersenPointsTableLogSize))),
 		pointColumns:   pointColumns,
@@ -54,8 +57,11 @@ func NewPedersenPointsTable(
 }
 
 func (c *PedersenPointsTableComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(1, 4)
+	traceSampledValues, interactionSampledValues := traces.Take(pedersenPointsTableTraceColumns, pedersenPointsTableInteractionColumns)
 
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
 	seq := traces.Get(c.seqColumn)
 
 	values := make([]m31.QM31, 1+len(c.pointColumns))
@@ -69,20 +75,20 @@ func (c *PedersenPointsTableComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 		panic(err)
 	}
 
-	enabler := traceSampledValues[0][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	enabler := traceSampledValues.Get(0)
 
-	curr := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][1],
-		interactionSampledValues[1][1],
-		interactionSampledValues[2][1],
-		interactionSampledValues[3][1],
-	)
-	prev := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][0],
-		interactionSampledValues[1][0],
-		interactionSampledValues[2][0],
-		interactionSampledValues[3][0],
-	)
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	curr := interactionSampledValues.Partial(c.qm31, 0, 1)
+	prev := interactionSampledValues.Partial(c.qm31, 0, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	diff := c.qm31.Sub(curr, prev)
 	diff = c.qm31.Add(diff, c.qm31.Mul(c.claimedSum, c.columnSizeInv))

@@ -3,6 +3,8 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -144,7 +146,7 @@ var constraintSpecs = []constraintSpec{
 }
 
 type PartialEcMulClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type PartialEcMulInteractionClaim struct {
@@ -162,10 +164,11 @@ type PartialEcMulComponent struct {
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uint32
+	logSize       uints.U8
 }
 
 func NewPartialEcMul(
+	api frontend.API,
 	qm31Chip *m31.QM31Chip,
 	pedersenElements m31.InteractionElements,
 	rangeCheck9Elements m31.InteractionElements,
@@ -174,8 +177,7 @@ func NewPartialEcMul(
 	claim PartialEcMulClaim,
 	interactionClaim PartialEcMulInteractionClaim,
 ) *PartialEcMulComponent {
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &PartialEcMulComponent{
 		qm31:                 qm31Chip,
@@ -184,123 +186,91 @@ func NewPartialEcMul(
 		rangeCheck19Elements: rangeCheck19Elements,
 		partialEcMulElements: partialEcMulElements,
 		claimedSum:           interactionClaim.ClaimedSum,
-		columnSizeInv:        qm31Chip.Inverse(columnSizeQM),
+		columnSizeInv:        qm31Chip.Inverse(columnSize),
 		vanishEvalInv:        qm31Chip.One(),
 		logSize:              claim.LogSize,
 	}
 }
 
-func (c *PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c *PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(partialEcMulTraceColumns, partialEcMulInteractionColumns)
 
-	trace := traceSampledValues
-	interaction := interactionSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	if len(trace) != partialEcMulTraceColumns {
-		panic("partial_ec_mul expects 472 trace columns")
-	}
-	if len(interaction) != partialEcMulInteractionColumns {
-		panic("partial_ec_mul expects 428 interaction columns")
-	}
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	// Read via indexed helpers instead of a cursor.
+	inputLimbs := traceSampledValues.Slice(0, 73)
 
-	cursor := 0
-	nextTrace := func() m31.QM31 {
-		if cursor >= len(trace) {
-			panic("insufficient trace columns")
-		}
-		col := trace[cursor]
-		cursor++
-		if len(col) == 0 {
-			panic("trace column missing sampled value")
-		}
-		val := col[0]
-		return val
-	}
+	// Pedersen outputs
+	pedersenOutputs := traceSampledValues.Slice(73, 56)
 
-	inputLimbs := make([]m31.QM31, 73)
-	for i := range inputLimbs {
-		inputLimbs[i] = nextTrace()
-	}
-
-	var pedersenOutputs [56]m31.QM31
-	for i := range pedersenOutputs {
-		pedersenOutputs[i] = nextTrace()
-	}
-
+	// Subsequent blocks are sized arrays with trailing PBits/coeffs.
 	var subDiff1 [28]m31.QM31
-	for i := range subDiff1 {
-		subDiff1[i] = nextTrace()
-	}
-	subDiff1PBit := nextTrace()
+	copy(subDiff1[:], traceSampledValues.Slice(129, 28))
+	subDiff1PBit := traceSampledValues.Get(157)
 
 	var addRes [28]m31.QM31
-	for i := range addRes {
-		addRes[i] = nextTrace()
-	}
-	addResPBit := nextTrace()
+	copy(addRes[:], traceSampledValues.Slice(158, 28))
+	addResPBit := traceSampledValues.Get(186)
 
 	var subDiff2 [28]m31.QM31
-	for i := range subDiff2 {
-		subDiff2[i] = nextTrace()
-	}
-	subDiff2PBit := nextTrace()
+	copy(subDiff2[:], traceSampledValues.Slice(187, 28))
+	subDiff2PBit := traceSampledValues.Get(215)
 
 	var divRes [28]m31.QM31
-	for i := range divRes {
-		divRes[i] = nextTrace()
-	}
-	divK := nextTrace()
+	copy(divRes[:], traceSampledValues.Slice(216, 28))
+	divK := traceSampledValues.Get(244)
 
 	var divCarries [27]m31.QM31
-	for i := range divCarries {
-		divCarries[i] = nextTrace()
-	}
+	copy(divCarries[:], traceSampledValues.Slice(245, 27))
 
 	var mul1Res [28]m31.QM31
-	for i := range mul1Res {
-		mul1Res[i] = nextTrace()
-	}
-	mul1K := nextTrace()
+	copy(mul1Res[:], traceSampledValues.Slice(272, 28))
+	mul1K := traceSampledValues.Get(300)
 
 	var mul1Carries [27]m31.QM31
-	for i := range mul1Carries {
-		mul1Carries[i] = nextTrace()
-	}
+	copy(mul1Carries[:], traceSampledValues.Slice(301, 27))
 
 	var subDiff3 [28]m31.QM31
-	for i := range subDiff3 {
-		subDiff3[i] = nextTrace()
-	}
-	subDiff3PBit := nextTrace()
+	copy(subDiff3[:], traceSampledValues.Slice(328, 28))
+	subDiff3PBit := traceSampledValues.Get(356)
 
 	var subDiff4 [28]m31.QM31
-	for i := range subDiff4 {
-		subDiff4[i] = nextTrace()
-	}
-	subDiff4PBit := nextTrace()
+	copy(subDiff4[:], traceSampledValues.Slice(357, 28))
+	subDiff4PBit := traceSampledValues.Get(385)
 
 	var mul2Res [28]m31.QM31
-	for i := range mul2Res {
-		mul2Res[i] = nextTrace()
-	}
-	mul2K := nextTrace()
+	copy(mul2Res[:], traceSampledValues.Slice(386, 28))
+	mul2K := traceSampledValues.Get(414)
 
 	var mul2Carries [27]m31.QM31
-	for i := range mul2Carries {
-		mul2Carries[i] = nextTrace()
-	}
+	copy(mul2Carries[:], traceSampledValues.Slice(415, 27))
 
 	var subDiff5 [28]m31.QM31
-	for i := range subDiff5 {
-		subDiff5[i] = nextTrace()
-	}
-	subDiff5PBit := nextTrace()
+	copy(subDiff5[:], traceSampledValues.Slice(442, 28))
+	subDiff5PBit := traceSampledValues.Get(470)
 
-	enabler := nextTrace()
+	enabler := traceSampledValues.Get(471)
 
-	if cursor != partialEcMulTraceColumns {
-		panic("unexpected number of trace columns consumed")
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	groupVals := make([]m31.QM31, partialEcMulGroupCount)
+	for g := 0; g < partialEcMulGroupCount-1; g++ {
+		groupVals[g] = interactionSampledValues.Partial(c.qm31, g*4, 0)
 	}
+	// Last group (start=424) has previous/current samples.
+	groupVals[partialEcMulGroupCount-1] = interactionSampledValues.Partial(c.qm31, 424, 1)
+	negGroup := interactionSampledValues.Partial(c.qm31, 424, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	// Enabler constraint
 	enablerSq := c.qm31.Mul(enabler, enabler)
@@ -422,43 +392,6 @@ func (c *PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 	if err != nil {
 		panic(err)
 	}
-
-	getCurr := func(idx int) m31.QM31 {
-		col := interaction[idx]
-		if len(col) == 0 {
-			panic("interaction column missing sampled value")
-		}
-		return col[len(col)-1]
-	}
-
-	getPrev := func(idx int) m31.QM31 {
-		col := interaction[idx]
-		if len(col) == 0 {
-			panic("interaction column missing sampled value")
-		}
-		if len(col) == 1 {
-			return col[0]
-		}
-		return col[0]
-	}
-
-	groupVals := make([]m31.QM31, partialEcMulGroupCount)
-	for g := 0; g < partialEcMulGroupCount; g++ {
-		base := g * 4
-		groupVals[g] = c.qm31.FromPartialEvals(
-			getCurr(base),
-			getCurr(base+1),
-			getCurr(base+2),
-			getCurr(base+3),
-		)
-	}
-
-	negGroup := c.qm31.FromPartialEvals(
-		getPrev(424),
-		getPrev(425),
-		getPrev(426),
-		getPrev(427),
-	)
 
 	getRange9 := func(index int) m31.QM31 {
 		if index < 0 {

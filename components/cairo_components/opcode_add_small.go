@@ -3,17 +3,24 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
-type AddOpcodeClaim struct {
-	LogSize uint32
+const (
+	addSmallOpcodeTraceColumns       = 33
+	addSmallOpcodeInteractionColumns = 20
+)
+
+type AddSmallOpcodeClaim struct {
+	LogSize uints.U8
 }
 
-type AddOpcodeInteractionClaim struct {
+type AddSmallOpcodeInteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-type AddOpcodeComponent struct {
+type AddSmallOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
@@ -26,22 +33,20 @@ type AddOpcodeComponent struct {
 	vanishEvalInv m31.QM31
 }
 
-func NewAddOpcode(
+func NewAddSmallOpcode(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
-	claim AddOpcodeClaim,
-	interactionClaim AddOpcodeInteractionClaim,
-) *AddOpcodeComponent {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeInv := qm31.Inverse(m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize)))
+	claim AddSmallOpcodeClaim,
+	interactionClaim AddSmallOpcodeInteractionClaim,
+) *AddSmallOpcodeComponent {
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AddOpcodeComponent{
+	return &AddSmallOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -49,38 +54,68 @@ func NewAddOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(), // TODO: actual vanishing evaluation.
+		vanishEvalInv:             qm31.One(), // TODO: provide actual vanishing evaluation.
 	}
 }
 
-func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(103, 20)
+func (c *AddSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(addSmallOpcodeTraceColumns, addSmallOpcodeInteractionColumns)
 
-	trace := traceSampledValues
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	inputPc := trace[0][0]
-	inputAp := trace[1][0]
-	inputFp := trace[2][0]
-	offset0 := trace[3][0]
-	offset1 := trace[4][0]
-	offset2 := trace[5][0]
-	dstBaseFP := trace[6][0]
-	op0BaseFP := trace[7][0]
-	op1Imm := trace[8][0]
-	op1BaseFP := trace[9][0]
-	apUpdateAdd1 := trace[10][0]
-	memDstBase := trace[11][0]
-	mem0Base := trace[12][0]
-	mem1Base := trace[13][0]
-	dstID := trace[14][0]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	inputPc := traceSampledValues.Get(0)
+	inputAp := traceSampledValues.Get(1)
+	inputFp := traceSampledValues.Get(2)
+	offset0 := traceSampledValues.Get(3)
+	offset1 := traceSampledValues.Get(4)
+	offset2 := traceSampledValues.Get(5)
+	dstBaseFP := traceSampledValues.Get(6)
+	op0BaseFP := traceSampledValues.Get(7)
+	op1Imm := traceSampledValues.Get(8)
+	op1BaseFP := traceSampledValues.Get(9)
+	apUpdateAdd1 := traceSampledValues.Get(10)
+	memDstBase := traceSampledValues.Get(11)
+	mem0Base := traceSampledValues.Get(12)
+	mem1Base := traceSampledValues.Get(13)
+	dstID := traceSampledValues.Get(14)
+	dstMSB := traceSampledValues.Get(15)
+	dstMidSet := traceSampledValues.Get(16)
+	dstLimb0 := traceSampledValues.Get(17)
+	dstLimb1 := traceSampledValues.Get(18)
+	dstLimb2 := traceSampledValues.Get(19)
+	op0ID := traceSampledValues.Get(20)
+	op0MSB := traceSampledValues.Get(21)
+	op0MidSet := traceSampledValues.Get(22)
+	op0Limb0 := traceSampledValues.Get(23)
+	op0Limb1 := traceSampledValues.Get(24)
+	op0Limb2 := traceSampledValues.Get(25)
+	op1ID := traceSampledValues.Get(26)
+	op1MSB := traceSampledValues.Get(27)
+	op1MidSet := traceSampledValues.Get(28)
+	op1Limb0 := traceSampledValues.Get(29)
+	op1Limb1 := traceSampledValues.Get(30)
+	op1Limb2 := traceSampledValues.Get(31)
+	enabler := traceSampledValues.Get(32)
 
-	dstLimbs := gatherLimbs(trace, 15, 28)
-	op0ID := trace[43][0]
-	op0Limbs := gatherLimbs(trace, 44, 28)
-	op1ID := trace[72][0]
-	op1Limbs := gatherLimbs(trace, 73, 28)
-	subPBit := trace[101][0]
-	enabler := trace[102][0]
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 0)
+	part3 := interactionSampledValues.Partial(c.qm31, 12, 0)
+	part4Prev := interactionSampledValues.Partial(c.qm31, 16, 0)
+	part4 := interactionSampledValues.Partial(c.qm31, 16, 1)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	constraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
@@ -105,7 +140,7 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	verifySum := decoded.VerifySum
 	sum = decoded.Sum
 
-	// Constraint - if imm then offset2 is 1.
+	// Constraint: if imm then offset2 is 1.
 	constraint = c.qm31.Mul(
 		op1Imm,
 		c.qm31.Sub(c.qm31.One(), decoded.Offset2MinusBase),
@@ -143,49 +178,70 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	dstResult := sub.ReadPositiveNumBits252Evaluate(
+	dstRes := sub.ReadSmallEvaluate(
 		c.qm31,
 		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
 		dstID,
-		dstLimbs,
+		dstMSB,
+		dstMidSet,
+		dstLimb0,
+		dstLimb1,
+		dstLimb2,
 		c.memoryAddressToIdElements,
 		c.memoryIdToBigElements,
-	)
-	memAddrSum1 := dstResult.AddressLookupSum
-	memIdBigSum2 := dstResult.IdToBigLookupSum
-
-	op0Result := sub.ReadPositiveNumBits252Evaluate(
-		c.qm31,
-		c.qm31.Add(mem0Base, decoded.Offset1MinusBase),
-		op0ID,
-		op0Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
-	)
-	memAddrSum3 := op0Result.AddressLookupSum
-	memIdBigSum4 := op0Result.IdToBigLookupSum
-
-	op1Result := sub.ReadPositiveNumBits252Evaluate(
-		c.qm31,
-		c.qm31.Add(mem1Base, decoded.Offset2MinusBase),
-		op1ID,
-		op1Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
-	)
-	memAddrSum5 := op1Result.AddressLookupSum
-	memIdBigSum6 := op1Result.IdToBigLookupSum
-
-	sum = sub.VerifyAdd252Evaluate(
-		c.qm31,
-		op0Limbs,
-		op1Limbs,
-		dstLimbs,
-		subPBit,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
+	memAddrSum1 := dstRes.AddressLookupSum
+	memIdBigSum2 := dstRes.IdToBigLookupSum
+	sum = dstRes.Sum
+
+	op0Res := sub.ReadSmallEvaluate(
+		c.qm31,
+		c.qm31.Add(mem0Base, decoded.Offset1MinusBase),
+		op0ID,
+		op0MSB,
+		op0MidSet,
+		op0Limb0,
+		op0Limb1,
+		op0Limb2,
+		c.memoryAddressToIdElements,
+		c.memoryIdToBigElements,
+		sum,
+		c.vanishEvalInv,
+		randomCoeff,
+	)
+	memAddrSum3 := op0Res.AddressLookupSum
+	memIdBigSum4 := op0Res.IdToBigLookupSum
+	sum = op0Res.Sum
+
+	op1Res := sub.ReadSmallEvaluate(
+		c.qm31,
+		c.qm31.Add(mem1Base, decoded.Offset2MinusBase),
+		op1ID,
+		op1MSB,
+		op1MidSet,
+		op1Limb0,
+		op1Limb1,
+		op1Limb2,
+		c.memoryAddressToIdElements,
+		c.memoryIdToBigElements,
+		sum,
+		c.vanishEvalInv,
+		randomCoeff,
+	)
+	memAddrSum5 := op1Res.AddressLookupSum
+	memIdBigSum6 := op1Res.IdToBigLookupSum
+	sum = op1Res.Sum
+
+	// dst limb equals sum.
+	dstValue := dstRes.Value
+	op0Value := op0Res.Value
+	op1Value := op1Res.Value
+	constraint = c.qm31.Sub(dstValue, c.qm31.Add(op0Value, op1Value))
+	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
+	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	opcodesSum0, err := c.qm31.Combine(
 		c.opcodesElements,
@@ -207,51 +263,14 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		panic(err)
 	}
 
-	part0 := c.qm31.FromPartialEvals(
-		interactionSampledValues[0][0],
-		interactionSampledValues[1][0],
-		interactionSampledValues[2][0],
-		interactionSampledValues[3][0],
-	)
-	part1 := c.qm31.FromPartialEvals(
-		interactionSampledValues[4][0],
-		interactionSampledValues[5][0],
-		interactionSampledValues[6][0],
-		interactionSampledValues[7][0],
-	)
-	part2 := c.qm31.FromPartialEvals(
-		interactionSampledValues[8][0],
-		interactionSampledValues[9][0],
-		interactionSampledValues[10][0],
-		interactionSampledValues[11][0],
-	)
-	part3 := c.qm31.FromPartialEvals(
-		interactionSampledValues[12][0],
-		interactionSampledValues[13][0],
-		interactionSampledValues[14][0],
-		interactionSampledValues[15][0],
-	)
-	part4Prev := c.qm31.FromPartialEvals(
-		interactionSampledValues[16][0],
-		interactionSampledValues[17][0],
-		interactionSampledValues[18][0],
-		interactionSampledValues[19][0],
-	)
-	part4 := c.qm31.FromPartialEvals(
-		interactionSampledValues[16][1],
-		interactionSampledValues[17][1],
-		interactionSampledValues[18][1],
-		interactionSampledValues[19][1],
-	)
-
-	// Constraint 0
+	// Constraint group 0
 	constraint = c.qm31.Mul(part0, c.qm31.Mul(verifySum, memAddrSum1))
 	constraint = c.qm31.Sub(constraint, verifySum)
 	constraint = c.qm31.Sub(constraint, memAddrSum1)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	// Constraint 1
+	// Group 1
 	diff1 := c.qm31.Sub(part1, part0)
 	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memIdBigSum2, memAddrSum3))
 	constraint = c.qm31.Sub(constraint, memIdBigSum2)
@@ -259,7 +278,7 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	// Constraint 2
+	// Group 2
 	diff2 := c.qm31.Sub(part2, part1)
 	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memIdBigSum4, memAddrSum5))
 	constraint = c.qm31.Sub(constraint, memIdBigSum4)
@@ -267,7 +286,7 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	// Constraint 3
+	// Group 3
 	diff3 := c.qm31.Sub(part3, part2)
 	constraint = c.qm31.Mul(diff3, c.qm31.Mul(memIdBigSum6, opcodesSum0))
 	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memIdBigSum6, enabler))
@@ -275,19 +294,13 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
+	// Group 4
 	diff4 := c.qm31.Sub(part4, part3)
 	diff4 = c.qm31.Sub(diff4, part4Prev)
 	diff4 = c.qm31.Add(diff4, c.qm31.Mul(c.claimedSum, c.columnSizeInv))
 	constraint = c.qm31.Add(c.qm31.Mul(diff4, opcodesSum1), enabler)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
-	return sum
-}
 
-func gatherLimbs(trace [][]m31.QM31, start int, count int) []m31.QM31 {
-	limbs := make([]m31.QM31, count)
-	for i := 0; i < count; i++ {
-		limbs[i] = trace[start+i][0]
-	}
-	return limbs
+	return sum
 }

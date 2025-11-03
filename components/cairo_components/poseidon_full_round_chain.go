@@ -3,6 +3,8 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -11,7 +13,7 @@ const (
 )
 
 type PoseidonFullRoundChainClaim struct {
-	LogSize uint32
+	LogSize uints.U8
 }
 
 type PoseidonFullRoundChainInteractionClaim struct {
@@ -32,6 +34,7 @@ type PoseidonFullRoundChainComponent struct {
 }
 
 func NewPoseidonFullRoundChain(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	cube252Elements m31.InteractionElements,
 	poseidonRoundKeysElements m31.InteractionElements,
@@ -40,8 +43,7 @@ func NewPoseidonFullRoundChain(
 	claim PoseidonFullRoundChainClaim,
 	interactionClaim PoseidonFullRoundChainInteractionClaim,
 ) *PoseidonFullRoundChainComponent {
-	columnSize := uint64(1) << claim.LogSize
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return &PoseidonFullRoundChainComponent{
 		qm31:                      qm31,
@@ -50,48 +52,49 @@ func NewPoseidonFullRoundChain(
 		range33333Elements:        range33333Elements,
 		fullRoundChainElements:    fullRoundChainElements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		columnSizeInv:             qm31.Inverse(columnSizeQM),
+		columnSizeInv:             qm31.Inverse(columnSize),
 		vanishEvalInv:             qm31.One(),
 	}
 }
 
 func (c *PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(126, 24)
+	traceSampledValues, interactionSampledValues := traces.Take(poseidonFullRoundTraceColumns, poseidonFullRoundInteractionColumns)
 
-	if len(traceSampledValues) != poseidonFullRoundTraceColumns {
-		panic("poseidon_full_round_chain expects 126 trace columns")
-	}
-	if len(interactionSampledValues) != poseidonFullRoundInteractionColumns {
-		panic("poseidon_full_round_chain expects 24 interaction columns")
-	}
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// (none)
 
-	getTrace := func(index int) m31.QM31 {
-		column := traceSampledValues[index]
-		if len(column) == 0 {
-			panic("missing trace sample")
-		}
-		return column[0]
-	}
-	gatherTrace := func(start, count int) []m31.QM31 {
-		values := make([]m31.QM31, count)
-		for i := 0; i < count; i++ {
-			values[i] = getTrace(start + i)
-		}
-		return values
-	}
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	inputLimbs := traceSampledValues.Slice(0, 32)
+	cubeOutputs0 := traceSampledValues.Slice(32, 10)
+	cubeOutputs1 := traceSampledValues.Slice(42, 10)
+	cubeOutputs2 := traceSampledValues.Slice(52, 10)
+	poseidonRoundKeys := traceSampledValues.Slice(62, 30)
+	combination0 := traceSampledValues.Slice(92, 10)
+	pCoef0 := traceSampledValues.Get(102)
+	combination1 := traceSampledValues.Slice(103, 10)
+	pCoef1 := traceSampledValues.Get(113)
+	combination2 := traceSampledValues.Slice(114, 10)
+	pCoef2 := traceSampledValues.Get(124)
+	enabler := traceSampledValues.Get(125)
 
-	inputLimbs := gatherTrace(0, 32)
-	cubeOutputs0 := gatherTrace(32, 10)
-	cubeOutputs1 := gatherTrace(42, 10)
-	cubeOutputs2 := gatherTrace(52, 10)
-	poseidonRoundKeys := gatherTrace(62, 30)
-	combination0 := gatherTrace(92, 10)
-	pCoef0 := getTrace(102)
-	combination1 := gatherTrace(103, 10)
-	pCoef1 := getTrace(113)
-	combination2 := gatherTrace(114, 10)
-	pCoef2 := getTrace(124)
-	enabler := getTrace(125)
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	partials := make([]m31.QM31, 6)
+	for i := 0; i < 5; i++ {
+		partials[i] = interactionSampledValues.Partial(c.qm31, i*4, 0)
+	}
+	// Last block (start=20) has previous/current samples.
+	partials[5] = interactionSampledValues.Partial(c.qm31, 20, 1)
+	prevPartial := interactionSampledValues.Partial(c.qm31, 20, 0)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
 
 	enablerConstraint := c.qm31.Sub(c.qm31.Mul(enabler, enabler), enabler)
 	enablerConstraint = c.qm31.Mul(enablerConstraint, c.vanishEvalInv)
@@ -211,7 +214,8 @@ func (c *PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces,
 	sum = c.lookupConstraints(
 		sum,
 		randomCoeff,
-		interactionSampledValues,
+		partials,
+		prevPartial,
 		cubeSum0,
 		cubeSum1,
 		cubeSum2,
@@ -233,7 +237,8 @@ func (c *PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces,
 func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	sum m31.QM31,
 	randomCoeff m31.QM31,
-	interactionSampledValues [][]m31.QM31,
+	partials []m31.QM31,
+	prevPartial m31.QM31,
 	cubeSum0 m31.QM31,
 	cubeSum1 m31.QM31,
 	cubeSum2 m31.QM31,
@@ -248,33 +253,7 @@ func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	sum11 m31.QM31,
 	enabler m31.QM31,
 ) m31.QM31 {
-	if len(interactionSampledValues) != poseidonFullRoundInteractionColumns {
-		panic("poseidon_full_round_chain expects 24 interaction values")
-	}
-
-	traceVals := make([]m31.QM31, 24)
-	prevVals := make([]m31.QM31, 4)
-	for i := 0; i < 24; i++ {
-		column := interactionSampledValues[i]
-		if i < 20 {
-			if len(column) != 1 {
-				panic("unexpected interaction sample size")
-			}
-			traceVals[i] = column[0]
-		} else {
-			if len(column) != 2 {
-				panic("unexpected interaction sample size")
-			}
-			prevVals[i-20] = column[0]
-			traceVals[i] = column[1]
-		}
-	}
-
-	fp := func(a, b, cVal, d m31.QM31) m31.QM31 {
-		return c.qm31.FromPartialEvals(a, b, cVal, d)
-	}
-
-	tmp0 := fp(traceVals[0], traceVals[1], traceVals[2], traceVals[3])
+	tmp0 := partials[0]
 	constraint := c.qm31.Mul(tmp0, cubeSum0)
 	constraint = c.qm31.Mul(constraint, cubeSum1)
 	constraint = c.qm31.Sub(constraint, cubeSum0)
@@ -282,7 +261,7 @@ func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	tmp1 := fp(traceVals[4], traceVals[5], traceVals[6], traceVals[7])
+	tmp1 := partials[1]
 	diff := c.qm31.Sub(tmp1, tmp0)
 	constraint = c.qm31.Mul(diff, cubeSum2)
 	constraint = c.qm31.Mul(constraint, roundKeysSum)
@@ -291,7 +270,7 @@ func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	tmp2 := fp(traceVals[8], traceVals[9], traceVals[10], traceVals[11])
+	tmp2 := partials[2]
 	diff = c.qm31.Sub(tmp2, tmp1)
 	constraint = c.qm31.Mul(diff, rangeSum4)
 	constraint = c.qm31.Mul(constraint, rangeSum5)
@@ -300,7 +279,7 @@ func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	tmp3 := fp(traceVals[12], traceVals[13], traceVals[14], traceVals[15])
+	tmp3 := partials[3]
 	diff = c.qm31.Sub(tmp3, tmp2)
 	constraint = c.qm31.Mul(diff, rangeSum6)
 	constraint = c.qm31.Mul(constraint, rangeSum7)
@@ -309,7 +288,7 @@ func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	tmp4 := fp(traceVals[16], traceVals[17], traceVals[18], traceVals[19])
+	tmp4 := partials[4]
 	diff = c.qm31.Sub(tmp4, tmp3)
 	constraint = c.qm31.Mul(diff, rangeSum8)
 	constraint = c.qm31.Mul(constraint, rangeSum9)
@@ -318,10 +297,9 @@ func (c *PoseidonFullRoundChainComponent) lookupConstraints(
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	tmp5 := fp(traceVals[20], traceVals[21], traceVals[22], traceVals[23])
+	tmp5 := partials[5]
 	diff = c.qm31.Sub(tmp5, tmp4)
-	prev := fp(prevVals[0], prevVals[1], prevVals[2], prevVals[3])
-	diff = c.qm31.Sub(diff, prev)
+	diff = c.qm31.Sub(diff, prevPartial)
 	columnAdjust := c.qm31.Mul(c.claimedSum, c.columnSizeInv)
 	diff = c.qm31.Add(diff, columnAdjust)
 
