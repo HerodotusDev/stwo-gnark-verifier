@@ -4,6 +4,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
@@ -31,7 +32,10 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	}
 }
 
-func (c *VerifierChip) Verify(proof variables.Proof) {
+func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
+	// Mix PCS configuration into the channel
+	pcsConfig.MixInto(c.channelChip)
+
 	// TODO: Verify commitments
 
 	// TODO: Check Proof-of-Work nonce

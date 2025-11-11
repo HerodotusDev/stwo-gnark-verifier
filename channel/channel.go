@@ -40,6 +40,10 @@ type Channel struct {
 	channelTime ChannelTime
 }
 
+func (c *Channel) Digest() Blake2sHash {
+	return c.digest
+}
+
 // ╔══════════════════════════════════╗
 // ║           Constructor            ║
 // ╚══════════════════════════════════╝
