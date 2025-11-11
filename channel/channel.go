@@ -13,17 +13,6 @@ import (
 
 type Blake2sHash [8]uints.U32
 
-var blake2sInitialStateWords = [8]uint32{
-	0x6b08e647,
-	0xbb67ae85,
-	0x3c6ef372,
-	0xa54ff53a,
-	0x510e527f,
-	0x9b05688c,
-	0x1f83d9ab,
-	0x5be0cd19,
-}
-
 const InteractionPowBits = 24
 
 type ChannelTime struct {
@@ -231,35 +220,9 @@ func (c *Channel) qm31ToBytes(felt m31.QM31) []uints.U8 {
 	return bytes
 }
 
-// computeDigest replays the Blake2s state machine on the provided message.
+// computeDigest hashes the message and returns the digest as eight u32 words.
 func (c *Channel) computeDigest(msg []uints.U8) Blake2sHash {
-	state := newBlake2sState()
-	length := len(msg)
-	if length == 0 {
-		state, _ = c.blake2sChip.Finalize(state)
-		return Blake2sHash(state.H)
-	}
-
-	headLen := 0
-	tailLen := length
-
-	if length >= 64 {
-		tailLen = length % 64
-		if tailLen == 0 {
-			tailLen = 64
-		}
-		headLen = length - tailLen
-		if headLen > 0 {
-			state = c.blake2sChip.Update(state, msg[:headLen])
-		}
-	}
-
-	if tailLen > 0 {
-		copy(state.Buf[:tailLen], msg[headLen:])
-	}
-	state.BufLen = tailLen
-
-	state, _ = c.blake2sChip.Finalize(state)
+	state, _ := c.blake2sChip.Blake2s(msg)
 	return Blake2sHash(state.H)
 }
 
@@ -270,17 +233,4 @@ func zeroHash() Blake2sHash {
 		hash[i] = uints.NewU32(0)
 	}
 	return hash
-}
-
-// newBlake2sState materializes the canonical Blake2s initial state.
-func newBlake2sState() blake2s.Blake2sState {
-	var state blake2s.Blake2sState
-	for i, word := range blake2sInitialStateWords {
-		state.H[i] = uints.NewU32(word)
-	}
-	state.T[0] = uints.NewU32(0)
-	state.T[1] = uints.NewU32(0)
-	state.F[0] = uints.NewU32(0)
-	state.F[1] = uints.NewU32(0)
-	return state
 }

@@ -6,7 +6,10 @@ import (
 	"testing"
 	"time"
 
+	stdblake2s "golang.org/x/crypto/blake2s"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
@@ -130,7 +133,7 @@ type blake2sHashCircuit struct {
 
 func (c *blake2sHashCircuit) Define(api frontend.API) error {
 	blake2sChip := blake2s.NewBlake2sChip(api)
-	state := blake2sChip.Blake2s(c.In[:])
+	state, _ := blake2sChip.Blake2s(c.In[:])
 
 	// this recreates a uapi solely for the assert
 	uapi, _ := uints.New[uints.U32](api)
@@ -158,6 +161,92 @@ func TestBlake2sHashABC(t *testing.T) {
 }
 
 // ╔══════════════════════════════════╗
+// ║      Blake2s Hash Node Tests     ║
+// ╚══════════════════════════════════╝
+
+type hashNodeCircuit struct{}
+
+func (c *hashNodeCircuit) Define(api frontend.API) error {
+	blake2sChip := blake2s.NewBlake2sChip(api)
+	values := []m31.M31{
+		m31.NewM31Unchecked(uint32(2)),
+		m31.NewM31Unchecked(uint32(101)),
+	}
+	digest := blake2sChip.HashNode(nil, nil, values)
+
+	expectedBytes := stdblake2s.Sum256([]byte{2, 0, 0, 0, 101, 0, 0, 0})
+	uapi, _ := uints.New[uints.U32](api)
+	for i := 0; i < len(digest); i++ {
+		uapi.AssertIsEqual(digest[i], uints.NewU8(expectedBytes[i]))
+	}
+	return nil
+}
+
+type hashNodeWithChildrenCircuit struct{}
+
+func (c *hashNodeWithChildrenCircuit) Define(api frontend.API) error {
+	blake2sChip := blake2s.NewBlake2sChip(api)
+	left := [32]uints.U8{}
+	right := [32]uints.U8{}
+	for i := 0; i < 32; i++ {
+		left[i] = uints.NewU8(uint8(i))
+		right[i] = uints.NewU8(uint8(255 - i))
+	}
+	values := []m31.M31{
+		m31.NewM31Unchecked(uint32(7)),
+	}
+	digest := blake2sChip.HashNode(left[:], right[:], values)
+
+	msg := make([]byte, 0, 32+32+4)
+	msg = append(msg, func() []byte {
+		b := make([]byte, 32)
+		for i := 0; i < 32; i++ {
+			b[i] = byte(i)
+		}
+		return b
+	}()...)
+	msg = append(msg, func() []byte {
+		b := make([]byte, 32)
+		for i := 0; i < 32; i++ {
+			b[i] = byte(255 - i)
+		}
+		return b
+	}()...)
+	msg = append(msg, []byte{7, 0, 0, 0}...)
+
+	expectedBytes := stdblake2s.Sum256(msg)
+	uapi, _ := uints.New[uints.U32](api)
+	for i := 0; i < len(digest); i++ {
+		uapi.AssertIsEqual(digest[i], uints.NewU8(expectedBytes[i]))
+	}
+	return nil
+}
+
+func TestHashNodeNoChildren(t *testing.T) {
+	assert := test.NewAssert(t)
+	circuit := &hashNodeCircuit{}
+	witness := &hashNodeCircuit{}
+	assert.ProverSucceeded(circuit, witness,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing(),
+	)
+}
+
+func TestHashNodeWithChildren(t *testing.T) {
+	assert := test.NewAssert(t)
+	circuit := &hashNodeWithChildrenCircuit{}
+	witness := &hashNodeWithChildrenCircuit{}
+	assert.ProverSucceeded(circuit, witness,
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(backend.GROTH16),
+		test.NoProverChecks(),
+		test.NoFuzzing(),
+	)
+}
+
+// ╔══════════════════════════════════╗
 // ║       Blake2s Hash Bench         ║
 // ╚══════════════════════════════════╝
 
@@ -177,7 +266,7 @@ func (c *blake2sHashBenchCircuit) Define(api frontend.API) error {
 
 	blake2sChip := blake2s.NewBlake2sChip(api)
 	for range c.n_hashes {
-		blake2sChip.Blake2s(c.In[:])
+		_, _ = blake2sChip.Blake2s(c.In[:])
 	}
 
 	return nil
