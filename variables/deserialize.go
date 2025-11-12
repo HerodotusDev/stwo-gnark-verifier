@@ -59,6 +59,7 @@ func BuildProof(proofRaw *ProofRaw) *Proof {
 	var proof Proof
 
 	proof.Claim = BuildClaim(&proofRaw.Claim)
+	proof.InteractionPow = uints.NewU64(proofRaw.InteractionPow)
 	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
 	proof.StarkProof = BuildStarkProof(&proofRaw.StarkProof)
 

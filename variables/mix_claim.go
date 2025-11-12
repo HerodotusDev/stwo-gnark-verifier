@@ -110,85 +110,85 @@ func (state CasmState) mixInto(ch *channel.Channel, uapi64 *uints.BinaryField[ui
 // ╚══════════════════════════════════╝
 
 func (claims OpcodeClaims) mixInto(ch *channel.Channel) {
-	claimPerOpcode := uints.NewU64(1)
+	// TODO: this mixing depends on the proof (and wether we have certain opcodes or not). Make it static.
+	ch.MixU64(uints.NewU64(uint64(len(claims.Add))))
 	for _, entry := range claims.Add {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.AddSmall))))
 	for _, entry := range claims.AddSmall {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.AddAp))))
 	for _, entry := range claims.AddAp {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.AssertEq))))
 	for _, entry := range claims.AssertEq {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.AssertEqImm))))
 	for _, entry := range claims.AssertEqImm {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.AssertEqDoubleDeref))))
 	for _, entry := range claims.AssertEqDoubleDeref {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Blake))))
 	for _, entry := range claims.Blake {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Call))))
 	for _, entry := range claims.Call {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.CallRelImm))))
 	for _, entry := range claims.CallRelImm {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Generic))))
 	for _, entry := range claims.Generic {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Jnz))))
 	for _, entry := range claims.Jnz {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.JnzTaken))))
 	for _, entry := range claims.JnzTaken {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Jump))))
 	for _, entry := range claims.Jump {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.JumpDoubleDeref))))
 	for _, entry := range claims.JumpDoubleDeref {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.JumpRel))))
 	for _, entry := range claims.JumpRel {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.JumpRelImm))))
 	for _, entry := range claims.JumpRelImm {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Mul))))
 	for _, entry := range claims.Mul {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.MulSmall))))
 	for _, entry := range claims.MulSmall {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
+	ch.MixU64(uints.NewU64(uint64(len(claims.Qm31))))
 	for _, entry := range claims.Qm31 {
-		ch.MixU64(claimPerOpcode)
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
 	for _, entry := range claims.Ret {
-		ch.MixU64(claimPerOpcode)
+		ch.MixU64(uints.NewU64(uint64(len(claims.Ret))))
 		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
 	}
 }

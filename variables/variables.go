@@ -14,6 +14,7 @@ const (
 
 type Proof struct {
 	Claim            CairoClaim
+	InteractionPow   uints.U64
 	InteractionClaim CairoInteractionClaim
 	StarkProof       StarkProof
 }
