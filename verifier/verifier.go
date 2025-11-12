@@ -66,6 +66,9 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	// Mix interaction claim into channel
 	proof.InteractionClaim.MixInto(c.channelChip)
 
+	// Verify interaction trace commitment
+	commitmentVerifier.Commit(cairo_components.INTERACTION_IDX, proof.StarkProof.Commitments[2], logSizes[cairo_components.INTERACTION_IDX], c.channelChip)
+
 	// Verify OODS
 	// TODO: Draw oods point from channel
 	oodsPoint := c.qm31.One()
