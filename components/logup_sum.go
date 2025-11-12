@@ -261,7 +261,7 @@ func publicMemoryEntries(qm31Chip *m31.QM31Chip, publicData variables.PublicData
 	programLen := len(publicData.PublicMemory.Program)
 	outputLen := len(publicData.PublicMemory.Output)
 	safeCallLen := len(publicData.PublicMemory.SafeCall)
-	segments := presentSegments(publicData.PublicMemory.PublicSegments)
+	segments := publicData.PublicMemory.PublicSegments.PresentSegments()
 	requiredCapacity := programLen + outputLen + safeCallLen + len(segments)*2
 
 	entries := make([]variables.PublicMemoryEntry, 0, requiredCapacity)
@@ -315,30 +315,6 @@ func publicMemoryEntries(qm31Chip *m31.QM31Chip, publicData variables.PublicData
 	}
 
 	return entries
-}
-
-func presentSegments(ranges variables.PublicSegmentRanges) []variables.SegmentRange {
-	segments := make([]variables.SegmentRange, 0, 11)
-
-	appendIfPresent := func(segment *variables.SegmentRange) {
-		if segment != nil {
-			segments = append(segments, *segment)
-		}
-	}
-
-	segments = append(segments, ranges.Output)
-	appendIfPresent(ranges.Pedersen)
-	appendIfPresent(ranges.RangeCheck128)
-	appendIfPresent(ranges.Ecdsa)
-	appendIfPresent(ranges.Bitwise)
-	appendIfPresent(ranges.EcOp)
-	appendIfPresent(ranges.Keccak)
-	appendIfPresent(ranges.Poseidon)
-	appendIfPresent(ranges.RangeCheck96)
-	appendIfPresent(ranges.AddMod)
-	appendIfPresent(ranges.MulMod)
-
-	return segments
 }
 
 func combineAndInverse(qm31Chip *m31.QM31Chip, elements m31.InteractionElements, inputs []m31.QM31) m31.QM31 {

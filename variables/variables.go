@@ -315,6 +315,41 @@ type PublicSegmentRanges struct {
 	MulMod        *SegmentRange
 }
 
+func (ranges PublicSegmentRanges) PresentSegments() []SegmentRange {
+	segments := []SegmentRange{ranges.Output}
+	if ranges.Pedersen != nil {
+		segments = append(segments, *ranges.Pedersen)
+	}
+	if ranges.RangeCheck128 != nil {
+		segments = append(segments, *ranges.RangeCheck128)
+	}
+	if ranges.Ecdsa != nil {
+		segments = append(segments, *ranges.Ecdsa)
+	}
+	if ranges.Bitwise != nil {
+		segments = append(segments, *ranges.Bitwise)
+	}
+	if ranges.EcOp != nil {
+		segments = append(segments, *ranges.EcOp)
+	}
+	if ranges.Keccak != nil {
+		segments = append(segments, *ranges.Keccak)
+	}
+	if ranges.Poseidon != nil {
+		segments = append(segments, *ranges.Poseidon)
+	}
+	if ranges.RangeCheck96 != nil {
+		segments = append(segments, *ranges.RangeCheck96)
+	}
+	if ranges.AddMod != nil {
+		segments = append(segments, *ranges.AddMod)
+	}
+	if ranges.MulMod != nil {
+		segments = append(segments, *ranges.MulMod)
+	}
+	return segments
+}
+
 type SegmentRange struct {
 	StartPtr SegmentPointer
 	StopPtr  SegmentPointer

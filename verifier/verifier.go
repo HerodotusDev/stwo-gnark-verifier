@@ -45,6 +45,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	preprocessedLogs := logSizes[cairo_components.PREPROCESSED_IDX]
 	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogs, c.channelChip)
 
+	proof.Claim.MixInto(c.channelChip, c.api)
 	// TODO: Check Proof-of-Work nonce
 
 	// Draw interaction elements
