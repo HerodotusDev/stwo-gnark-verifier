@@ -63,6 +63,9 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim)
 	c.qm31.AssertEqual(sum, c.qm31.Zero())
 
+	// Mix interaction claim into channel
+	proof.InteractionClaim.MixInto(c.channelChip)
+
 	// Verify OODS
 	// TODO: Draw oods point from channel
 	oodsPoint := c.qm31.One()
