@@ -37,24 +37,31 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	// Mix PCS configuration into the channel
 	pcsConfig.MixInto(c.channelChip)
 
+	// Initialize commitment verifier
 	commitmentVerifier := NewCommitmentSchemeVerifier(c.api, pcsConfig)
 	logSizes := proof.Claim.LogSizes()
 
 	// Verify preprocessed trace commitment
 	logSizes[cairo_components.PREPROCESSED_IDX] = cairo_components.PreprocessedLogSizes()
-	preprocessedLogs := logSizes[cairo_components.PREPROCESSED_IDX]
-	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogs, c.channelChip)
+	preprocessedLogSizes := logSizes[cairo_components.PREPROCESSED_IDX]
+	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogSizes, c.channelChip)
 
+	// Mix claim into channel
 	proof.Claim.MixInto(c.channelChip, c.api)
-	// TODO: Check Proof-of-Work nonce
+
+	// Verify main trace commitment
+	commitmentVerifier.Commit(cairo_components.MAIN_IDX, proof.StarkProof.Commitments[1], logSizes[cairo_components.MAIN_IDX], c.channelChip)
+
+	// Check Proof-of-Work nonce
+	c.channelChip.MixAndCheckPowNonce(proof.InteractionPow, 24)
 
 	// Draw interaction elements
 	var cairoInteractionElements variables.CairoInteractionElements
 	cairoInteractionElements.Draw(c.channelChip, c.qm31)
 
 	// Verify Logup sum
-	// sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim)
-	// c.qm31.AssertEqual(sum, m31.NewQM31Unchecked(1880435071, 2071788161, 272129029, 1457783626))
+	sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim)
+	c.qm31.AssertEqual(sum, c.qm31.Zero())
 
 	// Verify OODS
 	// TODO: Draw oods point from channel
