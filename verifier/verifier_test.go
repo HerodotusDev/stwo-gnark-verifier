@@ -23,7 +23,7 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 	return nil
 }
 
-func TestCairoComponentAtomicEvaluations(t *testing.T) {
+func TestVerifier(t *testing.T) {
 	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsStaticProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)

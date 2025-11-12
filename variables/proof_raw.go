@@ -313,7 +313,7 @@ type ComponentClaimedSumEntry struct {
 // StarkProofRaw mirrors the serialized Stark proof payload emitted by the prover.
 type StarkProofRaw struct {
 	Config        json.RawMessage         `json:"config"`
-	Commitments   json.RawMessage         `json:"commitments"`
+	Commitments   [][]uint8               `json:"commitments"`
 	Decommitments []MerkleDecommitmentRaw `json:"decommitments"`
 	FriProof      json.RawMessage         `json:"fri_proof"`
 	ProofOfWork   json.RawMessage         `json:"proof_of_work"`

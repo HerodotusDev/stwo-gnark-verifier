@@ -886,6 +886,7 @@ func BuildStarkProof(starkProofRaw *StarkProofRaw) StarkProof {
 	}
 
 	return StarkProof{
+		Commitments:   buildCommitments(starkProofRaw.Commitments),
 		SampledValues: buildSampledValues(starkProofRaw.SampledValues),
 		QueriedValues: buildQueriedValues(starkProofRaw.QueriedValues),
 		Decommitments: buildDecommitments(starkProofRaw.Decommitments),
@@ -951,6 +952,26 @@ func buildDecommitments(raw []MerkleDecommitmentRaw) []MerkleDecommitment {
 			HashWitness:   buildHashWitness(entry.HashWitness),
 			ColumnWitness: convertUintSliceToM31(entry.ColumnWitness),
 		}
+	}
+
+	return result
+}
+
+func buildCommitments(raw [][]uint8) [][32]uints.U8 {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	result := make([][32]uints.U8, len(raw))
+	for i, entry := range raw {
+		if len(entry) != 32 {
+			panic("commitment root must be 32 bytes")
+		}
+		var root [32]uints.U8
+		for j, b := range entry {
+			root[j] = uints.NewU8(b)
+		}
+		result[i] = root
 	}
 
 	return result
