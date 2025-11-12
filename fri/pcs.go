@@ -22,6 +22,7 @@ func (cfg FriConfig) MixInto(ch *channel.Channel) {
 }
 
 // PcsConfig stores the polynomial commitment scheme parameters.
+// TODO: known right after VM execution so should be a constant
 type PcsConfig struct {
 	PowBits   uints.U32
 	FriConfig FriConfig

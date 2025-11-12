@@ -169,8 +169,8 @@ type VerifyBitwiseXor12Component struct {
 }
 
 const (
-	verifyBitwiseXor12TraceColumns       = 16
-	verifyBitwiseXor12InteractionColumns = 32
+	VerifyBitwiseXor12TraceColumns       = 16
+	VerifyBitwiseXor12InteractionColumns = 32
 )
 
 func NewVerifyBitwiseXor12(
@@ -189,7 +189,7 @@ func NewVerifyBitwiseXor12(
 }
 
 func (c *VerifyBitwiseXor12Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(verifyBitwiseXor12TraceColumns, verifyBitwiseXor12InteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(VerifyBitwiseXor12TraceColumns, VerifyBitwiseXor12InteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

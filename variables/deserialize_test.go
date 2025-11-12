@@ -69,6 +69,10 @@ func TestBuildProofHDP(t *testing.T) {
 		t.Fatalf("built proof is nil")
 	}
 
+	if len(build.StarkProof.Commitments) == 0 {
+		t.Fatalf("expected commitments")
+	}
+
 	if build.Claim.MemoryAddressToId.LogSize.Val != uint8(20) {
 		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 20)
 	}
@@ -91,6 +95,10 @@ func TestBuildProofAllComponents(t *testing.T) {
 	build := BuildProof(raw)
 	if build == nil {
 		t.Fatalf("built proof is nil")
+	}
+
+	if len(build.StarkProof.Commitments) == 0 {
+		t.Fatalf("expected commitments")
 	}
 
 	if build.Claim.MemoryAddressToId.LogSize.Val != uint8(9) {
@@ -128,6 +136,9 @@ func TestBuildProofAllComponentsStatic(t *testing.T) {
 	}
 	if len(proof.StarkProof.Decommitments) == 0 {
 		t.Fatalf("expected decommitments")
+	}
+	if len(proof.StarkProof.Commitments) == 0 {
+		t.Fatalf("expected commitments")
 	}
 
 	firstValue := proof.StarkProof.QueriedValues[0][0].Variable()

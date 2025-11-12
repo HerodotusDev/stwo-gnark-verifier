@@ -7,6 +7,7 @@ const (
 	MAIN_IDX         = 1
 	INTERACTION_IDX  = 2
 	CP_IDX           = 3
+	N_TREES          = 4
 )
 
 // Traces encapsulates the sampled values for preprocessed, main trace

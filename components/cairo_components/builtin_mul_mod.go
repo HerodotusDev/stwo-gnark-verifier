@@ -7,6 +7,11 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+const (
+	mulModBuiltinTraceColumns       = 410
+	mulModBuiltinInteractionColumns = 376
+)
+
 type MulModBuiltinClaim struct {
 	LogSize                   uints.U8
 	MulModBuiltinSegmentStart uint32
@@ -80,7 +85,7 @@ func NewMulModBuiltin(
 }
 
 func (c *MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(410, 376)
+	traceSampledValues, interactionSampledValues := traces.Take(mulModBuiltinTraceColumns, mulModBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 

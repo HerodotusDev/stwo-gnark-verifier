@@ -6,6 +6,11 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+const (
+	memoryAddressToIdTraceColumns       = 16
+	memoryAddressToIdInteractionColumns = 16
+)
+
 // MemoryAddressToIdClaim carries the circuit-facing claim for the component.
 type MemoryAddressToIdClaim struct {
 	LogSize uints.U8
@@ -26,9 +31,6 @@ type MemoryAddressToIdComponent struct {
 	columnSize          m31.QM31
 	claimedSum          m31.QM31
 	vanishEvalInv       m31.QM31
-
-	N_COLUMNS             int
-	N_INTERACTION_COLUMNS int
 }
 
 // NewMemoryAddressToId wires the component constraints into the circuit.
@@ -47,21 +49,19 @@ func NewMemoryAddressToId(
 	vanishEvalInv := qm31.Inverse(qm31.One())
 
 	return &MemoryAddressToIdComponent{
-		api:                   api,
-		qm31:                  qm31,
-		interactionElements:   interactionElements,
-		logSize:               claim.LogSize,
-		columnSize:            columnSize,
-		claimedSum:            interactionClaim.ClaimedSum,
-		vanishEvalInv:         vanishEvalInv,
-		N_COLUMNS:             16,
-		N_INTERACTION_COLUMNS: 16,
+		api:                 api,
+		qm31:                qm31,
+		interactionElements: interactionElements,
+		logSize:             claim.LogSize,
+		columnSize:          columnSize,
+		claimedSum:          interactionClaim.ClaimedSum,
+		vanishEvalInv:       vanishEvalInv,
 	}
 }
 
 // Evaluate enforces the component constraints at the sampled point.
 func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(c.N_COLUMNS, c.N_INTERACTION_COLUMNS)
+	traceSampledValues, interactionSampledValues := traces.Take(memoryAddressToIdTraceColumns, memoryAddressToIdInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
