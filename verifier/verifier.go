@@ -69,21 +69,27 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	// Verify interaction trace commitment
 	commitmentVerifier.Commit(cairo_components.INTERACTION_IDX, proof.StarkProof.Commitments[2], logSizes[cairo_components.INTERACTION_IDX], c.channelChip)
 
+	// Draw random coeff from channel for OODS
+	randomCoeff := c.channelChip.DrawFelt()
+
+	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
+	compositionLogDegreeBound := cairo_components.MaxLogSize(logSizes) + 1
+	compositionLogSizes := []uint32{compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound}
+	commitmentVerifier.Commit(cairo_components.CP_IDX, proof.StarkProof.Commitments[cairo_components.CP_IDX], compositionLogSizes, c.channelChip)
+
 	// Verify OODS
 	// TODO: Draw oods point from channel
 	oodsPoint := c.qm31.One()
-	// TODO: Draw random coeff from channel
-	random_coeff := c.qm31.One()
 	components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
-	c.VerifyOODS(proof.StarkProof.SampledValues, components, random_coeff)
+	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 }
 
-func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, random_coeff m31.QM31) {
+func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
 	// TODO: Extract CP evaluation from sampled values
 	composition_oods_eval := m31.NewQM31Unchecked(681221237, 2077141275, 236160070, 1930131422)
 
 	// evaluate constraints using sampled values
-	constraints_oods_eval := components.Evaluate(sampledValues, random_coeff)
+	constraints_oods_eval := components.Evaluate(sampledValues, randomCoeff)
 
 	// verify OODS
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
