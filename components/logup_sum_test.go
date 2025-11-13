@@ -14,7 +14,7 @@ import (
 var (
 	testPublicData        = buildTestPublicData()
 	testPublicDataSumQM31 = m31.NewQM31Unchecked(971792689, 636659210, 1237675822, 245392094)
-	testLogupSumQM31      = m31.NewQM31Unchecked(1114783544, 427659254, 2083455222, 465542323)
+	testLogupSumQM31      = m31.NewQM31Unchecked(138003185, 504981591, 1541318630, 538197314)
 )
 
 // ╔══════════════════════════════════╗

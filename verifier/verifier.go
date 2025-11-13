@@ -3,6 +3,7 @@ package verifier
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
+	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
@@ -17,12 +18,14 @@ type VerifierChip struct {
 	channelChip *channel.Channel
 	m31         *m31.M31Chip
 	qm31        *m31.QM31Chip
+	circle      *circle.CircleChip
 }
 
 func NewVerifierChip(api frontend.API) *VerifierChip {
 	blake2sChip := blake2s.NewBlake2sChip(api)
 	m31Chip := m31.NewM31Chip(api)
 	qm31Chip := m31.NewQM31Chip(m31Chip)
+	circleChip := circle.NewCircleChip(api, m31Chip, qm31Chip)
 	channelChip := channel.NewChannel(api)
 	return &VerifierChip{
 		api:         api,
@@ -30,6 +33,7 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 		channelChip: channelChip,
 		m31:         m31Chip,
 		qm31:        qm31Chip,
+		circle:      circleChip,
 	}
 }
 
@@ -67,7 +71,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	proof.InteractionClaim.MixInto(c.channelChip)
 
 	// Verify interaction trace commitment
-	commitmentVerifier.Commit(cairo_components.INTERACTION_IDX, proof.StarkProof.Commitments[2], logSizes[cairo_components.INTERACTION_IDX], c.channelChip)
+	commitmentVerifier.Commit(cairo_components.INTERACTION_IDX, proof.StarkProof.Commitments[cairo_components.INTERACTION_IDX], logSizes[cairo_components.INTERACTION_IDX], c.channelChip)
 
 	// Draw random coeff from channel for OODS
 	randomCoeff := c.channelChip.DrawFelt()
@@ -78,9 +82,8 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	commitmentVerifier.Commit(cairo_components.CP_IDX, proof.StarkProof.Commitments[cairo_components.CP_IDX], compositionLogSizes, c.channelChip)
 
 	// Verify OODS
-	// TODO: Draw oods point from channel
-	oodsPoint := c.qm31.One()
-	components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
+	oodsPoint := c.circle.GetRandomPoint(c.channelChip)
+	components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint.X)
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 }
 
