@@ -43,6 +43,7 @@ func NewCube252(
 	rangeCheck9Elements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	cube252Elements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim Cube252Claim,
 	interactionClaim Cube252InteractionClaim,
 ) *Cube252Component {
@@ -55,7 +56,7 @@ func NewCube252(
 		cube252Elements:      cube252Elements,
 		claimedSum:           interactionClaim.ClaimedSum,
 		columnSizeInv:        qm31.Inverse(columnSize),
-		vanishEvalInv:        qm31.One(),
+		vanishEvalInv:        vanishEvalInv,
 	}
 }
 

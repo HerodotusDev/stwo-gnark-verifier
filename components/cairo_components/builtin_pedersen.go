@@ -52,6 +52,7 @@ func NewPedersenBuiltin(
 	memoryIdToBigElements m31.InteractionElements,
 	rangeCheck8Elements m31.InteractionElements,
 	partialEcMulElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim PedersenBuiltinClaim,
 	interactionClaim PedersenBuiltinInteractionClaim,
 ) *PedersenBuiltinComponent {
@@ -67,7 +68,7 @@ func NewPedersenBuiltin(
 		claimedSum:                interactionClaim.ClaimedSum,
 		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PedersenBuiltinSegmentStart))),
 		columnSizeInv:             qm31Chip.Inverse(columnSize),
-		vanishEvalInv:             qm31Chip.One(),
+		vanishEvalInv:             vanishEvalInv,
 		logSize:                   claim.LogSize,
 	}
 }

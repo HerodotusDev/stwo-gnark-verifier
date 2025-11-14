@@ -1,17 +1,20 @@
 package components
 
 import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 // A chip for OODS
 type Components struct {
-	api  frontend.API
-	m31  *m31.M31Chip
-	qm31 *m31.QM31Chip
+	api    frontend.API
+	m31    *m31.M31Chip
+	qm31   *m31.QM31Chip
+	circle *circle.CircleChip
 
 	addApOpcodes                []*cairo_components.AddApOpcodeComponent
 	addModBuiltin               *cairo_components.AddModBuiltinComponent
@@ -79,27 +82,24 @@ type Components struct {
 // Creates a new OODS chip
 func NewComponents(
 	api frontend.API,
-	m31 *m31.M31Chip,
+	m31Chip *m31.M31Chip,
 	qm31Chip *m31.QM31Chip,
+	circleChip *circle.CircleChip,
 	cairoInteractionElements variables.CairoInteractionElements,
 	claim variables.CairoClaim,
 	interactionClaim variables.CairoInteractionClaim,
-	oodsPoint m31.QM31,
+	oodsPoint circle.Point,
 ) *Components {
 	comp := &Components{
-		api:  api,
-		m31:  m31,
-		qm31: qm31Chip,
+		api:    api,
+		m31:    m31Chip,
+		qm31:   qm31Chip,
+		circle: circleChip,
 	}
-
-	comp.memoryAddressToId = cairo_components.NewMemoryAddressToId(
-		api,
-		qm31Chip,
-		cairoInteractionElements.MemoryAddressToId,
-		claim.MemoryAddressToId,
-		interactionClaim.MemoryAddressToId,
-		oodsPoint,
-	)
+	vanishEvalInverses := make(map[uints.U8]m31.QM31, circle.CircleLogOrder)
+	for logSize := uint8(4); logSize < circle.CircleLogOrder; logSize++ {
+		vanishEvalInverses[uints.NewU8(logSize)] = circleChip.CanonicVanishingInverse(uint32(logSize), oodsPoint)
+	}
 
 	// opcode components
 	if claims := claim.Opcodes.AddAp; len(claims) > 0 {
@@ -115,6 +115,7 @@ func NewComponents(
 				cairoInteractionElements.RangeChecks.RC1_9,
 				cairoInteractionElements.RangeChecks.RC8,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -132,6 +133,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -149,6 +151,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -166,6 +169,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -182,6 +186,7 @@ func NewComponents(
 				cairoInteractionElements.VerifyInstruction,
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -198,6 +203,7 @@ func NewComponents(
 				cairoInteractionElements.VerifyInstruction,
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -219,6 +225,7 @@ func NewComponents(
 				cairoInteractionElements.BlakeRound,
 				cairoInteractionElements.TripleXor32,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -236,6 +243,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -253,6 +261,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -273,6 +282,7 @@ func NewComponents(
 				cairoInteractionElements.RangeChecks.RC9_9,
 				cairoInteractionElements.RangeChecks.RC1_9,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -290,6 +300,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -307,6 +318,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -324,6 +336,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -341,6 +354,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -358,6 +372,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -375,6 +390,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -393,6 +409,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.RangeChecks.RC1_9,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -411,6 +428,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.RangeChecks.RC1_1,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -429,6 +447,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.RangeChecks.RC4_4_4_4,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -446,6 +465,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryAddressToId,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.Opcodes,
+				vanishEvalInverses[opcodeClaim.LogSize],
 				opcodeClaim,
 				interactions[i],
 			))
@@ -459,6 +479,7 @@ func NewComponents(
 			qm31Chip,
 			cairoInteractionElements.MemoryAddressToId,
 			cairoInteractionElements.MemoryIDToValue,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.AddModBuiltin,
 		)
@@ -471,6 +492,7 @@ func NewComponents(
 			cairoInteractionElements.MemoryAddressToId,
 			cairoInteractionElements.MemoryIDToValue,
 			cairoInteractionElements.VerifyBitwiseXor9,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.BitwiseBuiltin,
 		)
@@ -485,6 +507,7 @@ func NewComponents(
 			cairoInteractionElements.RangeChecks.RC1_2,
 			cairoInteractionElements.RangeChecks.RC4_4,
 			cairoInteractionElements.RangeChecks.RC1_8,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.MulModBuiltin,
 		)
@@ -499,6 +522,7 @@ func NewComponents(
 			cairoInteractionElements.MemoryIDToValue,
 			cairoInteractionElements.RangeChecks.RC8,
 			cairoInteractionElements.PartialEcMul,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.PedersenBuiltin,
 		)
@@ -517,6 +541,7 @@ func NewComponents(
 			cairoInteractionElements.RangeChecks.RC4_4_4_4,
 			cairoInteractionElements.RangeChecks.RC4_4,
 			cairoInteractionElements.Poseidon3PartialRoundsChain,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.PoseidonBuiltin,
 		)
@@ -529,6 +554,7 @@ func NewComponents(
 			cairoInteractionElements.MemoryAddressToId,
 			cairoInteractionElements.RangeChecks.RC6,
 			cairoInteractionElements.MemoryIDToValue,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.RangeCheck96,
 		)
@@ -540,12 +566,21 @@ func NewComponents(
 			qm31Chip,
 			cairoInteractionElements.MemoryAddressToId,
 			cairoInteractionElements.MemoryIDToValue,
+			vanishEvalInverses[builtin.LogSize],
 			*builtin,
 			*interactionClaim.Builtins.RangeCheck128,
 		)
 	}
 
 	// Memory ID components
+	comp.memoryAddressToId = cairo_components.NewMemoryAddressToId(
+		api,
+		qm31Chip,
+		cairoInteractionElements.MemoryAddressToId,
+		claim.MemoryAddressToId,
+		interactionClaim.MemoryAddressToId,
+		vanishEvalInverses[claim.MemoryAddressToId.LogSize],
+	)
 	if bigClaims := claim.MemoryIDToValue.Big; len(bigClaims) > 0 {
 		claimedSums := interactionClaim.MemoryIDToValue.BigClaimedSums
 		comp.memoryIdToBigBigComponents = make([]*cairo_components.MemoryIdToBigBigComponent, 0, len(bigClaims))
@@ -555,6 +590,7 @@ func NewComponents(
 				qm31Chip,
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.RangeChecks.RC9_9,
+				vanishEvalInverses[bigClaim.LogSize],
 				bigClaim,
 				cairo_components.MemoryIdToBigBigInteractionClaim{ClaimedSum: claimedSums[i]},
 			))
@@ -567,6 +603,7 @@ func NewComponents(
 			qm31Chip,
 			cairoInteractionElements.MemoryIDToValue,
 			cairoInteractionElements.RangeChecks.RC9_9,
+			vanishEvalInverses[smallClaim.LogSize],
 			*smallClaim,
 			cairo_components.MemoryIdToBigSmallInteractionClaim{ClaimedSum: interactionClaim.MemoryIDToValue.SmallClaimedSum},
 		)
@@ -585,6 +622,7 @@ func NewComponents(
 				cairoInteractionElements.VerifyBitwiseXor7,
 				cairoInteractionElements.VerifyBitwiseXor9,
 				cairoInteractionElements.BlakeG,
+				vanishEvalInverses[blakeClaim.BlakeG.LogSize],
 				*blakeClaim.BlakeG,
 				blakeInteraction.BlakeG,
 			)
@@ -599,6 +637,7 @@ func NewComponents(
 				cairoInteractionElements.MemoryIDToValue,
 				cairoInteractionElements.BlakeG,
 				cairoInteractionElements.BlakeRound,
+				vanishEvalInverses[blakeClaim.BlakeRound.LogSize],
 				*blakeClaim.BlakeRound,
 				blakeInteraction.BlakeRound,
 			)
@@ -607,6 +646,7 @@ func NewComponents(
 			comp.blakeRoundSigma = cairo_components.NewBlakeRoundSigma(
 				qm31Chip,
 				cairoInteractionElements.BlakeRoundSigma,
+				vanishEvalInverses[uints.NewU8(4)],
 				*blakeClaim.BlakeRoundSigma,
 				blakeInteraction.BlakeRoundSigma,
 			)
@@ -614,8 +654,9 @@ func NewComponents(
 		if blakeClaim.TripleXor32 != nil {
 			comp.tripleXor32 = cairo_components.NewTripleXor32(
 				qm31Chip,
-				cairoInteractionElements.VerifyBitwiseXor12,
+				cairoInteractionElements.VerifyBitwiseXor8,
 				cairoInteractionElements.TripleXor32,
+				vanishEvalInverses[uints.NewU8(uint8(blakeClaim.TripleXor32.LogSize))],
 				*blakeClaim.TripleXor32,
 				blakeInteraction.TripleXor32,
 			)
@@ -625,6 +666,7 @@ func NewComponents(
 				api,
 				qm31Chip,
 				cairoInteractionElements.VerifyBitwiseXor12,
+				vanishEvalInverses[uints.NewU8(20)],
 				blakeInteraction.VerifyBitwiseXor12,
 			)
 		}
@@ -641,6 +683,7 @@ func NewComponents(
 				cairoInteractionElements.RangeChecks.RC9_9,
 				cairoInteractionElements.RangeChecks.RC1_9,
 				cairoInteractionElements.PartialEcMul,
+				vanishEvalInverses[pedersenClaim.PartialEcMul.LogSize],
 				*pedersenClaim.PartialEcMul,
 				pedersenInteraction.PartialEcMul,
 			)
@@ -650,6 +693,7 @@ func NewComponents(
 				api,
 				qm31Chip,
 				cairoInteractionElements.PedersenPointsTable,
+				vanishEvalInverses[uints.NewU8(23)],
 				pedersenInteraction.PedersenPointsTable,
 			)
 		}
@@ -668,6 +712,7 @@ func NewComponents(
 				cairoInteractionElements.RangeChecks.RC4_4,
 				cairoInteractionElements.RangeCheckFelt252Width27,
 				cairoInteractionElements.Poseidon3PartialRoundsChain,
+				vanishEvalInverses[poseidonClaim.Poseidon3PartialRoundsChain.LogSize],
 				*poseidonClaim.Poseidon3PartialRoundsChain,
 				poseidonInteraction.Poseidon3PartialRoundsChain,
 			)
@@ -680,6 +725,7 @@ func NewComponents(
 				cairoInteractionElements.PoseidonRoundKeys,
 				cairoInteractionElements.RangeChecks.RC3_3_3_3_3,
 				cairoInteractionElements.PoseidonFullRoundChain,
+				vanishEvalInverses[poseidonClaim.PoseidonFullRoundChain.LogSize],
 				*poseidonClaim.PoseidonFullRoundChain,
 				poseidonInteraction.PoseidonFullRoundChain,
 			)
@@ -691,6 +737,7 @@ func NewComponents(
 				cairoInteractionElements.RangeChecks.RC9_9,
 				cairoInteractionElements.RangeChecks.RC1_9,
 				cairoInteractionElements.Cube252,
+				vanishEvalInverses[poseidonClaim.Cube252.LogSize],
 				*poseidonClaim.Cube252,
 				poseidonInteraction.Cube252,
 			)
@@ -699,6 +746,7 @@ func NewComponents(
 			comp.poseidonRoundKeys = cairo_components.NewPoseidonRoundKeys(
 				qm31Chip,
 				cairoInteractionElements.PoseidonRoundKeys,
+				vanishEvalInverses[uints.NewU8(6)],
 				poseidonInteraction.PoseidonRoundKeys,
 			)
 		}
@@ -709,6 +757,7 @@ func NewComponents(
 				cairoInteractionElements.RangeChecks.RC9_9,
 				cairoInteractionElements.RangeChecks.RC1_8,
 				cairoInteractionElements.RangeCheckFelt252Width27,
+				vanishEvalInverses[poseidonClaim.RangeCheckFelt252Width27.LogSize],
 				*poseidonClaim.RangeCheckFelt252Width27,
 				poseidonInteraction.RangeCheckFelt252Width27,
 			)
@@ -721,6 +770,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC6,
+			vanishEvalInverses[uints.NewU8(6)],
 			interactionClaim.RangeChecks.RC6,
 		)
 	}
@@ -729,6 +779,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC8,
+			vanishEvalInverses[uints.NewU8(8)],
 			interactionClaim.RangeChecks.RC8,
 		)
 	}
@@ -737,6 +788,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC1_1,
+			vanishEvalInverses[uints.NewU8(11)],
 			interactionClaim.RangeChecks.RC11,
 		)
 	}
@@ -745,6 +797,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC1_2,
+			vanishEvalInverses[uints.NewU8(12)],
 			interactionClaim.RangeChecks.RC12,
 		)
 	}
@@ -753,6 +806,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC1_8,
+			vanishEvalInverses[uints.NewU8(18)],
 			interactionClaim.RangeChecks.RC18,
 		)
 	}
@@ -761,6 +815,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC1_9,
+			vanishEvalInverses[uints.NewU8(19)],
 			interactionClaim.RangeChecks.RC19,
 		)
 	}
@@ -769,6 +824,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC4_3,
+			vanishEvalInverses[uints.NewU8(7)],
 			interactionClaim.RangeChecks.RC4_3,
 		)
 	}
@@ -777,6 +833,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC4_4,
+			vanishEvalInverses[uints.NewU8(8)],
 			interactionClaim.RangeChecks.RC4_4,
 		)
 	}
@@ -785,6 +842,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC5_4,
+			vanishEvalInverses[uints.NewU8(9)],
 			interactionClaim.RangeChecks.RC5_4,
 		)
 	}
@@ -793,6 +851,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC9_9,
+			vanishEvalInverses[uints.NewU8(18)],
 			interactionClaim.RangeChecks.RC9_9,
 		)
 	}
@@ -801,6 +860,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC7_2_5,
+			vanishEvalInverses[uints.NewU8(14)],
 			interactionClaim.RangeChecks.RC7_2_5,
 		)
 	}
@@ -809,6 +869,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC3_6_6_3,
+			vanishEvalInverses[uints.NewU8(18)],
 			interactionClaim.RangeChecks.RC3_6_6_3,
 		)
 	}
@@ -817,6 +878,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC4_4_4_4,
+			vanishEvalInverses[uints.NewU8(16)],
 			interactionClaim.RangeChecks.RC4_4_4_4,
 		)
 	}
@@ -825,6 +887,7 @@ func NewComponents(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC3_3_3_3_3,
+			vanishEvalInverses[uints.NewU8(15)],
 			interactionClaim.RangeChecks.RC3_3_3_3_3,
 		)
 	}
@@ -834,24 +897,28 @@ func NewComponents(
 		api,
 		qm31Chip,
 		cairoInteractionElements.VerifyBitwiseXor4,
+		vanishEvalInverses[uints.NewU8(8)],
 		cairo_components.VerifyBitwiseXor4InteractionClaim{ClaimedSum: interactionClaim.VerifyBitwiseXor4.ClaimedSum},
 	)
 	comp.verifyBitwiseXor7 = cairo_components.NewVerifyBitwiseXor7(
 		api,
 		qm31Chip,
 		cairoInteractionElements.VerifyBitwiseXor7,
+		vanishEvalInverses[uints.NewU8(14)],
 		cairo_components.VerifyBitwiseXor7InteractionClaim{ClaimedSum: interactionClaim.VerifyBitwiseXor7.ClaimedSum},
 	)
 	comp.verifyBitwiseXor8 = cairo_components.NewVerifyBitwiseXor8(
 		api,
 		qm31Chip,
 		cairoInteractionElements.VerifyBitwiseXor8,
+		vanishEvalInverses[uints.NewU8(16)],
 		cairo_components.VerifyBitwiseXor8InteractionClaim{ClaimedSum: interactionClaim.VerifyBitwiseXor8.ClaimedSum},
 	)
 	comp.verifyBitwiseXor9 = cairo_components.NewVerifyBitwiseXor9(
 		api,
 		qm31Chip,
 		cairoInteractionElements.VerifyBitwiseXor9,
+		vanishEvalInverses[uints.NewU8(18)],
 		cairo_components.VerifyBitwiseXor9InteractionClaim{ClaimedSum: interactionClaim.VerifyBitwiseXor9.ClaimedSum},
 	)
 
@@ -865,6 +932,7 @@ func NewComponents(
 			cairoInteractionElements.MemoryAddressToId,
 			cairoInteractionElements.MemoryIDToValue,
 			cairoInteractionElements.VerifyInstruction,
+			vanishEvalInverses[claim.VerifyInstruction.LogSize],
 			*claim.VerifyInstruction,
 			interactionClaim.VerifyInstruction,
 		)
@@ -998,7 +1066,6 @@ func (c *Components) Evaluate(sampledValues [][][]m31.QM31, random_coeff m31.QM3
 	if c.pedersenPointsTable != nil {
 		sum = c.pedersenPointsTable.Evaluate(sum, traces, random_coeff)
 	}
-
 	// Poseidon context
 	if c.poseidon3PartialRoundsChain != nil {
 		sum = c.poseidon3PartialRoundsChain.Evaluate(sum, traces, random_coeff)
@@ -1020,7 +1087,6 @@ func (c *Components) Evaluate(sampledValues [][][]m31.QM31, random_coeff m31.QM3
 	if c.memoryAddressToId != nil {
 		sum = c.memoryAddressToId.Evaluate(sum, traces, random_coeff)
 	}
-
 	// Memory ID lookups
 	for _, comp := range c.memoryIdToBigBigComponents {
 		sum = comp.Evaluate(sum, traces, random_coeff)
@@ -1028,7 +1094,6 @@ func (c *Components) Evaluate(sampledValues [][][]m31.QM31, random_coeff m31.QM3
 	if c.memoryIdToBigSmallComponent != nil {
 		sum = c.memoryIdToBigSmallComponent.Evaluate(sum, traces, random_coeff)
 	}
-
 	if c.rangeCheck6 != nil {
 		sum = c.rangeCheck6.Evaluate(sum, traces, random_coeff)
 	}

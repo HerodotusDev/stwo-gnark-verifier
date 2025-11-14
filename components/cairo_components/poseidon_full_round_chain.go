@@ -40,6 +40,7 @@ func NewPoseidonFullRoundChain(
 	poseidonRoundKeysElements m31.InteractionElements,
 	range33333Elements m31.InteractionElements,
 	fullRoundChainElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim PoseidonFullRoundChainClaim,
 	interactionClaim PoseidonFullRoundChainInteractionClaim,
 ) *PoseidonFullRoundChainComponent {
@@ -53,7 +54,7 @@ func NewPoseidonFullRoundChain(
 		fullRoundChainElements:    fullRoundChainElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             qm31.Inverse(columnSize),
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

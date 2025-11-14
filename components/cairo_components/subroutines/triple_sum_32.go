@@ -1,6 +1,8 @@
 package subroutines
 
-import "github.com/HerodotusDev/stwo-gnark-verifier/m31"
+import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+)
 
 type TripleSum32Inputs struct {
 	A0 m31.QM31

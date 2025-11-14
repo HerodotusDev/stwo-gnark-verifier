@@ -23,6 +23,7 @@ func newLookupConstraintComponent(
 	claimedSum m31.QM31,
 	logSize uints.U8,
 	preprocessed []PreprocessedColumn,
+	vanishEvalInv m31.QM31,
 ) *lookupConstraintComponent {
 	columnSize := computeColumnSize(api, logSize)
 	columnSizeInv := qm31.Inverse(columnSize)
@@ -35,7 +36,7 @@ func newLookupConstraintComponent(
 		interactionElements: interactionElements,
 		claimedSum:          claimedSum,
 		columnSizeInv:       columnSizeInv,
-		vanishEvalInv:       qm31.One(), // TODO: wire actual vanishing polynomial evaluation.
+		vanishEvalInv:       vanishEvalInv,
 		preprocessed:        clone,
 	}
 }

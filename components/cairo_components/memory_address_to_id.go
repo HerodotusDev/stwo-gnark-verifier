@@ -40,13 +40,9 @@ func NewMemoryAddressToId(
 	interactionElements m31.InteractionElements,
 	claim MemoryAddressToIdClaim,
 	interactionClaim MemoryAddressToIdInteractionClaim,
-	oodsPoint m31.QM31,
+	vanishEvalInv m31.QM31,
 ) *MemoryAddressToIdComponent {
-	// Compute the column size inside the circuit using our shared helper
 	columnSize := computeColumnSize(api, claim.LogSize)
-
-	// TODO: Compute vanishEval from the oods point and logSize
-	vanishEvalInv := qm31.Inverse(qm31.One())
 
 	return &MemoryAddressToIdComponent{
 		api:                 api,

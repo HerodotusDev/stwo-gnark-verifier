@@ -44,6 +44,7 @@ func NewAddApOpcode(
 	rangeCheck19Elements m31.InteractionElements,
 	rangeCheck8Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim AddApOpcodeClaim,
 	interactionClaim AddApOpcodeInteractionClaim,
 ) *AddApOpcodeComponent {
@@ -60,7 +61,7 @@ func NewAddApOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(), // TODO: compute actual value from evaluation point.
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

@@ -42,6 +42,7 @@ func NewBitwiseBuiltin(
 	memoryAddressElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
 	verifyBitwiseXorElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim BitwiseBuiltinClaim,
 	interactionClaim BitwiseBuiltinInteractionClaim,
 ) *BitwiseBuiltinComponent {
@@ -58,7 +59,7 @@ func NewBitwiseBuiltin(
 		),
 		claimedSum:    interactionClaim.ClaimedSum,
 		columnSizeInv: qm31.Inverse(columnSize),
-		vanishEvalInv: qm31.One(),
+		vanishEvalInv: vanishEvalInv,
 	}
 }
 

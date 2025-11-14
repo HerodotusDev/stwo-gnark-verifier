@@ -209,18 +209,19 @@ func (f *addApOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck8 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.AddApOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AddApOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.AddApOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
-    return cairo_components.NewAddApOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
+	return cairo_components.NewAddApOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
 		memoryAddress,
 		memoryIdToBig,
 		rangeCheck19,
 		rangeCheck8,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -271,16 +272,17 @@ func (f *addSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.AddSmallOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AddSmallOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.AddSmallOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
-    return cairo_components.NewAddSmallOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
+	return cairo_components.NewAddSmallOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
 		memoryAddress,
 		memoryIdToBig,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -332,17 +334,18 @@ func (f *mulSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck11 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.MulSmallOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.MulSmallOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.MulSmallOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
-    return cairo_components.NewMulSmallOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
+	return cairo_components.NewMulSmallOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
 		memoryAddress,
 		memoryIdToBig,
 		rangeCheck11,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -394,17 +397,18 @@ func (f *mulOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.MulOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.MulOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.MulOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
-    return cairo_components.NewMulOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
+	return cairo_components.NewMulOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
 		memoryAddress,
 		memoryIdToBig,
 		rangeCheck19,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -456,17 +460,18 @@ func (f *qm31OpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck4444 := ctx.qm31Chip.DummyInteractionElements(4)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.Qm31OpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.Qm31OpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.Qm31OpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
-    return cairo_components.NewQm31Opcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
+	return cairo_components.NewQm31Opcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
 		memoryAddress,
 		memoryIdToBig,
 		rangeCheck4444,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -515,22 +520,23 @@ func (f *addModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
-    claim := cairo_components.AddModBuiltinClaim{
-        LogSize:                   uints.NewU8(4),
-        AddModBuiltinSegmentStart: 3,
-    }
+	claim := cairo_components.AddModBuiltinClaim{
+		LogSize:                   uints.NewU8(4),
+		AddModBuiltinSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.AddModBuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewAddModBuiltin(
-        ctx.api,
-        ctx.qm31Chip,
-        memoryAddress,
-        memoryIdToBig,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewAddModBuiltin(
+		ctx.api,
+		ctx.qm31Chip,
+		memoryAddress,
+		memoryIdToBig,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *addModBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -581,23 +587,24 @@ func (f *bitwiseBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	verifyBitwise := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.BitwiseBuiltinClaim{
-        LogSize:                    uints.NewU8(4),
-        BitwiseBuiltinSegmentStart: 3,
-    }
+	claim := cairo_components.BitwiseBuiltinClaim{
+		LogSize:                    uints.NewU8(4),
+		BitwiseBuiltinSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.BitwiseBuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewBitwiseBuiltin(
-        ctx.api,
-        ctx.qm31Chip,
-        memoryAddress,
-        memoryIdToBig,
-        verifyBitwise,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewBitwiseBuiltin(
+		ctx.api,
+		ctx.qm31Chip,
+		memoryAddress,
+		memoryIdToBig,
+		verifyBitwise,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *bitwiseBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -650,25 +657,26 @@ func (f *mulModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck3 := ctx.qm31Chip.DummyInteractionElements(4)
 	rangeCheck18 := ctx.qm31Chip.DummyInteractionElements(1)
 
-    claim := cairo_components.MulModBuiltinClaim{
-        LogSize:                   uints.NewU8(4),
-        MulModBuiltinSegmentStart: 3,
-    }
+	claim := cairo_components.MulModBuiltinClaim{
+		LogSize:                   uints.NewU8(4),
+		MulModBuiltinSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.MulModBuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewMulModBuiltin(
-        ctx.api,
-        ctx.qm31Chip,
-        memoryAddress,
-        memoryIdToBig,
-        rangeCheck12,
-        rangeCheck3,
-        rangeCheck18,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewMulModBuiltin(
+		ctx.api,
+		ctx.qm31Chip,
+		memoryAddress,
+		memoryIdToBig,
+		rangeCheck12,
+		rangeCheck3,
+		rangeCheck18,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *mulModBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -719,20 +727,21 @@ func (f *assertEqOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.AssertEqOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AssertEqOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.AssertEqOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewAssertEqOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewAssertEqOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *assertEqOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -780,21 +789,22 @@ func (f *assertEqDoubleDerefOpcodeFixture) Build(ctx componentContext) component
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewAssertEqDoubleDerefOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewAssertEqDoubleDerefOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *assertEqDoubleDerefOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -841,20 +851,21 @@ func (f *assertEqImmOpcodeFixture) Build(ctx componentContext) componentUnderTes
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.AssertEqImmOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AssertEqImmOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.AssertEqImmOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewAssertEqImmOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewAssertEqImmOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *assertEqImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -902,21 +913,22 @@ func (f *retOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.RetOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.RetOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.RetOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewRetOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewRetOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *retOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -964,21 +976,22 @@ func (f *callOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.CallOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.CallOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.CallOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewCallOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewCallOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *callOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1026,21 +1039,22 @@ func (f *callRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.CallRelImmOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.CallRelImmOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.CallRelImmOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewCallRelImmOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewCallRelImmOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *callRelImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1088,21 +1102,22 @@ func (f *jumpOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.JumpOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.JumpOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewJumpOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewJumpOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *jumpOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1150,21 +1165,22 @@ func (f *jumpRelOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.JumpRelOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpRelOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.JumpRelOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewJumpRelOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewJumpRelOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *jumpRelOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1212,21 +1228,22 @@ func (f *jumpRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.JumpRelImmOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpRelImmOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.JumpRelImmOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewJumpRelImmOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewJumpRelImmOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *jumpRelImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1286,6 +1303,7 @@ func (f *jumpDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnde
 		memoryAddress,
 		memoryIdToBig,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -1348,6 +1366,7 @@ func (f *jnzOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		memoryAddress,
 		memoryIdToBig,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -1398,21 +1417,22 @@ func (f *jnzTakenOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.JnzTakenOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JnzTakenOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.JnzTakenOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewJnzTakenOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewJnzTakenOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *jnzTakenOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1458,19 +1478,20 @@ func (f *memoryIdToBigSmallFixture) Build(ctx componentContext) componentUnderTe
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck := ctx.qm31Chip.DummyInteractionElements(2)
 
-    claim := cairo_components.MemoryIdToBigSmallClaim{LogSize: uints.NewU8(4)}
+	claim := cairo_components.MemoryIdToBigSmallClaim{LogSize: uints.NewU8(4)}
 	interactionClaim := cairo_components.MemoryIdToBigSmallInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewMemoryIdToBigSmallComponent(
-        ctx.api,
-        ctx.qm31Chip,
-        memoryIdToBig,
-        rangeCheck,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewMemoryIdToBigSmallComponent(
+		ctx.api,
+		ctx.qm31Chip,
+		memoryIdToBig,
+		rangeCheck,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *memoryIdToBigSmallFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1520,22 +1541,23 @@ func (f *memoryIdToBigBigFixture) Build(ctx componentContext) componentUnderTest
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck := ctx.qm31Chip.DummyInteractionElements(2)
 
-    claim := cairo_components.MemoryIdToBigBigClaim{
-        LogSize: uints.NewU8(4),
-        Offset:  0,
-    }
+	claim := cairo_components.MemoryIdToBigBigClaim{
+		LogSize: uints.NewU8(4),
+		Offset:  0,
+	}
 	interactionClaim := cairo_components.MemoryIdToBigBigInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewMemoryIdToBigBigComponent(
-        ctx.api,
-        ctx.qm31Chip,
-        memoryIdToBig,
-        rangeCheck,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewMemoryIdToBigBigComponent(
+		ctx.api,
+		ctx.qm31Chip,
+		memoryIdToBig,
+		rangeCheck,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *memoryIdToBigBigFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1584,12 +1606,13 @@ func (f *pedersenPointsTableFixture) Name() string {
 func (f *pedersenPointsTableFixture) Build(ctx componentContext) componentUnderTest {
 	points := ctx.qm31Chip.DummyInteractionElements(57)
 
-    return cairo_components.NewPedersenPointsTable(
-        ctx.api,
-        ctx.qm31Chip,
-        points,
-        cairo_components.PedersenPointsTableInteractionClaim{ClaimedSum: qm31One.ToQM31()},
-    )
+	return cairo_components.NewPedersenPointsTable(
+		ctx.api,
+		ctx.qm31Chip,
+		points,
+		ctx.qm31Chip.One(),
+		cairo_components.PedersenPointsTableInteractionClaim{ClaimedSum: qm31One.ToQM31()},
+	)
 }
 
 func (f *pedersenPointsTableFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1637,21 +1660,22 @@ func (f *partialEcMulFixture) Name() string {
 }
 
 func (f *partialEcMulFixture) Build(ctx componentContext) componentUnderTest {
-    claim := cairo_components.PartialEcMulClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.PartialEcMulClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.PartialEcMulInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewPartialEcMul(
-        ctx.api,
-        ctx.qm31Chip,
-        ctx.qm31Chip.DummyInteractionElements(57),
-        ctx.qm31Chip.DummyInteractionElements(2),
-        ctx.qm31Chip.DummyInteractionElements(1),
-        ctx.qm31Chip.DummyInteractionElements(73),
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewPartialEcMul(
+		ctx.api,
+		ctx.qm31Chip,
+		ctx.qm31Chip.DummyInteractionElements(57),
+		ctx.qm31Chip.DummyInteractionElements(2),
+		ctx.qm31Chip.DummyInteractionElements(1),
+		ctx.qm31Chip.DummyInteractionElements(73),
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *partialEcMulFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1695,25 +1719,26 @@ func (f *pedersenBuiltinFixture) Name() string {
 }
 
 func (f *pedersenBuiltinFixture) Build(ctx componentContext) componentUnderTest {
-    claim := cairo_components.PedersenBuiltinClaim{
-        LogSize:                     uints.NewU8(4),
-        PedersenBuiltinSegmentStart: 3,
-    }
+	claim := cairo_components.PedersenBuiltinClaim{
+		LogSize:                     uints.NewU8(4),
+		PedersenBuiltinSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.PedersenBuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-    return cairo_components.NewPedersenBuiltin(
-        ctx.api,
-        ctx.qm31Chip,
-        ctx.qm31Chip.DummyInteractionElements(2),
-        ctx.qm31Chip.DummyInteractionElements(2),
-        ctx.qm31Chip.DummyInteractionElements(29),
-        ctx.qm31Chip.DummyInteractionElements(1),
-        ctx.qm31Chip.DummyInteractionElements(73),
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewPedersenBuiltin(
+		ctx.api,
+		ctx.qm31Chip,
+		ctx.qm31Chip.DummyInteractionElements(2),
+		ctx.qm31Chip.DummyInteractionElements(2),
+		ctx.qm31Chip.DummyInteractionElements(29),
+		ctx.qm31Chip.DummyInteractionElements(1),
+		ctx.qm31Chip.DummyInteractionElements(73),
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *pedersenBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -1765,6 +1790,7 @@ func (f *poseidonRoundKeysFixture) Build(ctx componentContext) componentUnderTes
 	return cairo_components.NewPoseidonRoundKeys(
 		ctx.qm31Chip,
 		keys,
+		ctx.qm31Chip.One(),
 		cairo_components.PoseidonRoundKeysInteractionClaim{ClaimedSum: qm31One.ToQM31()},
 	)
 }
@@ -1835,6 +1861,7 @@ func (f *poseidon3PartialRoundsChainFixture) Build(ctx componentContext) compone
 		range44,
 		rangeFelt,
 		partialChain,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -1895,6 +1922,7 @@ func (f *cube252Fixture) Build(ctx componentContext) componentUnderTest {
 		rangeCheck9,
 		rangeCheck19,
 		cubeElements,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -1957,6 +1985,7 @@ func (f *poseidonFullRoundChainFixture) Build(ctx componentContext) componentUnd
 		poseidonRoundKeys,
 		range33333,
 		fullChain,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2002,10 +2031,10 @@ func (f *poseidonBuiltinFixture) Name() string {
 }
 
 func (f *poseidonBuiltinFixture) Build(ctx componentContext) componentUnderTest {
-        claim := cairo_components.PoseidonBuiltinClaim{
-            LogSize:                     uints.NewU8(4),
-            PoseidonBuiltinSegmentStart: 3,
-        }
+	claim := cairo_components.PoseidonBuiltinClaim{
+		LogSize:                     uints.NewU8(4),
+		PoseidonBuiltinSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.PoseidonBuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -2022,6 +2051,7 @@ func (f *poseidonBuiltinFixture) Build(ctx componentContext) componentUnderTest 
 		ctx.qm31Chip.DummyInteractionElements(4),
 		ctx.qm31Chip.DummyInteractionElements(2),
 		ctx.qm31Chip.DummyInteractionElements(42),
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2083,6 +2113,7 @@ func (f *tripleXor32Fixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyXor,
 		tripleXor,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2147,6 +2178,7 @@ func (f *verifyInstructionFixture) Build(ctx componentContext) componentUnderTes
 		memoryAddress,
 		memoryId,
 		verifyInstruction,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2202,6 +2234,7 @@ func (f *blakeRoundSigmaFixture) Build(ctx componentContext) componentUnderTest 
 	return cairo_components.NewBlakeRoundSigma(
 		ctx.qm31Chip,
 		lookup,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2273,6 +2306,7 @@ func (f *blakeGFixture) Build(ctx componentContext) componentUnderTest {
 		verifyXor7,
 		verifyXor9,
 		blakeG,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2339,6 +2373,7 @@ func (f *blakeRoundFixture) Build(ctx componentContext) componentUnderTest {
 		memoryIdToBig,
 		blakeG,
 		blakeRound,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2419,6 +2454,7 @@ func (f *blakeCompressOpcodeFixture) Build(ctx componentContext) componentUnderT
 		blakeRound,
 		tripleXor32,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2489,6 +2525,7 @@ func (f *genericOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		rangeCheck99,
 		rangeCheck19,
 		opcodes,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -2534,6 +2571,7 @@ func (f *verifyBitwiseXor12Fixture) Build(ctx componentContext) componentUnderTe
 		ctx.api,
 		ctx.qm31Chip,
 		elements,
+		ctx.qm31Chip.One(),
 		cairo_components.VerifyBitwiseXor12InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 	)
 }
@@ -2592,19 +2630,20 @@ func (f *addOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-    claim := cairo_components.AddOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AddOpcodeClaim{LogSize: uints.NewU8(3)}
 	interactionClaim := cairo_components.AddOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
-    return cairo_components.NewAddOpcode(
-        ctx.api,
-        ctx.qm31Chip,
-        verifyInstruction,
-        memoryAddress,
-        memoryIdToBig,
-        opcodes,
-        claim,
-        interactionClaim,
-    )
+	return cairo_components.NewAddOpcode(
+		ctx.api,
+		ctx.qm31Chip,
+		verifyInstruction,
+		memoryAddress,
+		memoryIdToBig,
+		opcodes,
+		ctx.qm31Chip.One(),
+		claim,
+		interactionClaim,
+	)
 }
 
 func (f *addOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
@@ -2716,12 +2755,13 @@ func newRangeCheck11Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck11(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck11InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck11(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck11InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2738,12 +2778,13 @@ func newRangeCheck12Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck12(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck12InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck12(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck12InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2760,12 +2801,13 @@ func newRangeCheck18Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck18(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck18InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck18(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck18InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2782,12 +2824,13 @@ func newRangeCheck19Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck19(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck19InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck19(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck19InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2819,12 +2862,13 @@ func newRangeCheck3_6_6_3Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-                return cairo_components.NewRangeCheck3_6_6_3(
-                    ctx.api,
-                    ctx.qm31Chip,
-                    elements,
-                    cairo_components.RangeCheck3_6_6_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-                )
+			return cairo_components.NewRangeCheck3_6_6_3(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck3_6_6_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2860,12 +2904,13 @@ func newRangeCheck3_3_3_3_3Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck3_3_3_3_3(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck3_3_3_3_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck3_3_3_3_3(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck3_3_3_3_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2889,12 +2934,13 @@ func newRangeCheck4_3Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck4_3(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck4_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck4_3(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck4_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2918,12 +2964,13 @@ func newRangeCheck4_4Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck4_4(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck4_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck4_4(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck4_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2955,12 +3002,13 @@ func newRangeCheck4_4_4_4Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck4_4_4_4(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck4_4_4_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck4_4_4_4(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck4_4_4_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -2984,12 +3032,13 @@ func newRangeCheck5_4Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck5_4(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck5_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck5_4(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck5_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3006,12 +3055,13 @@ func newRangeCheck6Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck6(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck6InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck6(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck6InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3039,12 +3089,13 @@ func newRangeCheck7_2_5Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck7_2_5(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck7_2_5InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck7_2_5(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck7_2_5InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3061,12 +3112,13 @@ func newRangeCheck8Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck8(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck8InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck8(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck8InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3090,12 +3142,13 @@ func newRangeCheck9_9Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-            return cairo_components.NewRangeCheck9_9(
-                ctx.api,
-                ctx.qm31Chip,
-                elements,
-                cairo_components.RangeCheck9_9InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-            )
+			return cairo_components.NewRangeCheck9_9(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.RangeCheck9_9InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3117,10 +3170,10 @@ func (f *rangeCheckBuiltin96Fixture) Build(ctx componentContext) componentUnderT
 	rangeCheck6 := ctx.qm31Chip.DummyInteractionElements(1)
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
-        claim := cairo_components.RangeCheck96BuiltinClaim{
-            LogSize:                uints.NewU8(4),
-            RangeCheckSegmentStart: 3,
-        }
+	claim := cairo_components.RangeCheck96BuiltinClaim{
+		LogSize:                uints.NewU8(4),
+		RangeCheckSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.RangeCheck96BuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -3131,6 +3184,7 @@ func (f *rangeCheckBuiltin96Fixture) Build(ctx componentContext) componentUnderT
 		memoryAddress,
 		rangeCheck6,
 		memoryIdToBig,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -3178,10 +3232,10 @@ func (f *rangeCheckBuiltin128Fixture) Build(ctx componentContext) componentUnder
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
-        claim := cairo_components.RangeCheck128BuiltinClaim{
-            LogSize:                uints.NewU8(4),
-            RangeCheckSegmentStart: 3,
-        }
+	claim := cairo_components.RangeCheck128BuiltinClaim{
+		LogSize:                uints.NewU8(4),
+		RangeCheckSegmentStart: 3,
+	}
 	interactionClaim := cairo_components.RangeCheck128BuiltinInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -3191,6 +3245,7 @@ func (f *rangeCheckBuiltin128Fixture) Build(ctx componentContext) componentUnder
 		ctx.qm31Chip,
 		memoryAddress,
 		memoryIdToBig,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -3236,9 +3291,9 @@ func (f *rangeCheckFelt252Width27Fixture) Build(ctx componentContext) componentU
 	rangeCheck18 := ctx.qm31Chip.DummyInteractionElements(1)
 	rangeCheckFelt := ctx.qm31Chip.DummyInteractionElements(10)
 
-        claim := cairo_components.RangeCheckFelt252Width27Claim{
-            LogSize: uints.NewU8(3),
-        }
+	claim := cairo_components.RangeCheckFelt252Width27Claim{
+		LogSize: uints.NewU8(3),
+	}
 	interactionClaim := cairo_components.RangeCheckFelt252Width27InteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -3249,6 +3304,7 @@ func (f *rangeCheckFelt252Width27Fixture) Build(ctx componentContext) componentU
 		rangeCheck9_9,
 		rangeCheck18,
 		rangeCheckFelt,
+		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
 	)
@@ -3295,12 +3351,13 @@ func newVerifyBitwiseXor4Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-                return cairo_components.NewVerifyBitwiseXor4(
-                    ctx.api,
-                    ctx.qm31Chip,
-                    elements,
-                    cairo_components.VerifyBitwiseXor4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-                )
+			return cairo_components.NewVerifyBitwiseXor4(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.VerifyBitwiseXor4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3323,12 +3380,13 @@ func newVerifyBitwiseXor7Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-                return cairo_components.NewVerifyBitwiseXor7(
-                    ctx.api,
-                    ctx.qm31Chip,
-                    elements,
-                    cairo_components.VerifyBitwiseXor7InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-                )
+			return cairo_components.NewVerifyBitwiseXor7(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.VerifyBitwiseXor7InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3351,12 +3409,13 @@ func newVerifyBitwiseXor8Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-                return cairo_components.NewVerifyBitwiseXor8(
-                    ctx.api,
-                    ctx.qm31Chip,
-                    elements,
-                    cairo_components.VerifyBitwiseXor8InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-                )
+			return cairo_components.NewVerifyBitwiseXor8(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.VerifyBitwiseXor8InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
@@ -3379,12 +3438,13 @@ func newVerifyBitwiseXor9Fixture(expected qm31Literal) componentFixture {
 			},
 		},
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-                return cairo_components.NewVerifyBitwiseXor9(
-                    ctx.api,
-                    ctx.qm31Chip,
-                    elements,
-                    cairo_components.VerifyBitwiseXor9InteractionClaim{ClaimedSum: qm31One.ToQM31()},
-                )
+			return cairo_components.NewVerifyBitwiseXor9(
+				ctx.api,
+				ctx.qm31Chip,
+				elements,
+				ctx.qm31Chip.One(),
+				cairo_components.VerifyBitwiseXor9InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+			)
 		},
 	}
 }
