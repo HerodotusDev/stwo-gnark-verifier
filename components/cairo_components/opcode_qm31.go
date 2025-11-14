@@ -42,6 +42,7 @@ func NewQm31Opcode(
 	memoryIdToBigElements m31.InteractionElements,
 	rangeCheck4444Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim Qm31OpcodeClaim,
 	interactionClaim Qm31OpcodeInteractionClaim,
 ) *Qm31OpcodeComponent {
@@ -57,7 +58,7 @@ func NewQm31Opcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

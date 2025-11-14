@@ -24,6 +24,7 @@ func NewVerifyBitwiseXor4(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor4InteractionClaim,
 ) *VerifyBitwiseXor4Component {
 	return &VerifyBitwiseXor4Component{
@@ -34,6 +35,7 @@ func NewVerifyBitwiseXor4(
 			interactionClaim.ClaimedSum,
 			verifyBitwiseXor4LogSize,
 			4,
+			vanishEvalInv,
 		),
 	}
 }
@@ -60,6 +62,7 @@ func NewVerifyBitwiseXor7(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor7InteractionClaim,
 ) *VerifyBitwiseXor7Component {
 	return &VerifyBitwiseXor7Component{
@@ -70,6 +73,7 @@ func NewVerifyBitwiseXor7(
 			interactionClaim.ClaimedSum,
 			verifyBitwiseXor7LogSize,
 			7,
+			vanishEvalInv,
 		),
 	}
 }
@@ -96,6 +100,7 @@ func NewVerifyBitwiseXor8(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor8InteractionClaim,
 ) *VerifyBitwiseXor8Component {
 	return &VerifyBitwiseXor8Component{
@@ -106,6 +111,7 @@ func NewVerifyBitwiseXor8(
 			interactionClaim.ClaimedSum,
 			verifyBitwiseXor8LogSize,
 			8,
+			vanishEvalInv,
 		),
 	}
 }
@@ -132,6 +138,7 @@ func NewVerifyBitwiseXor9(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor9InteractionClaim,
 ) *VerifyBitwiseXor9Component {
 	return &VerifyBitwiseXor9Component{
@@ -142,6 +149,7 @@ func NewVerifyBitwiseXor9(
 			interactionClaim.ClaimedSum,
 			verifyBitwiseXor9LogSize,
 			9,
+			vanishEvalInv,
 		),
 	}
 }
@@ -177,6 +185,7 @@ func NewVerifyBitwiseXor12(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor12InteractionClaim,
 ) *VerifyBitwiseXor12Component {
 	return &VerifyBitwiseXor12Component{
@@ -184,7 +193,7 @@ func NewVerifyBitwiseXor12(
 		interactionElements: interactionElements,
 		claimedSum:          interactionClaim.ClaimedSum,
 		columnSizeInv:       qm31.Inverse(computeColumnSize(api, uints.NewU8(verifyBitwiseXor12LogSize))),
-		vanishEvalInv:       qm31.One(),
+		vanishEvalInv:       vanishEvalInv,
 	}
 }
 

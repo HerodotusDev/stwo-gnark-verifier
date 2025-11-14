@@ -38,6 +38,7 @@ func NewAssertEqImmOpcode(
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressToIdElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim AssertEqImmOpcodeClaim,
 	interactionClaim AssertEqImmOpcodeInteractionClaim,
 ) *AssertEqImmOpcodeComponent {
@@ -51,7 +52,7 @@ func NewAssertEqImmOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(), // Dummy vanishing inverse for atomic test setup.
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

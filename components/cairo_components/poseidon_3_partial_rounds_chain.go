@@ -44,6 +44,7 @@ func NewPoseidon3PartialRoundsChain(
 	range44Elements m31.InteractionElements,
 	rangeFelt252Width27Elements m31.InteractionElements,
 	poseidon3PartialRoundsElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim Poseidon3PartialRoundsChainClaim,
 	interactionClaim Poseidon3PartialRoundsChainInteractionClaim,
 ) *Poseidon3PartialRoundsChainComponent {
@@ -59,7 +60,7 @@ func NewPoseidon3PartialRoundsChain(
 		poseidon3PartialRoundsElements: poseidon3PartialRoundsElements,
 		claimedSum:                     interactionClaim.ClaimedSum,
 		columnSizeInv:                  qm31.Inverse(columnSize),
-		vanishEvalInv:                  qm31.One(),
+		vanishEvalInv:                  vanishEvalInv,
 	}
 }
 

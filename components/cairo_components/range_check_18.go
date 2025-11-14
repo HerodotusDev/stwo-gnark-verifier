@@ -17,21 +17,23 @@ type RangeCheck18Component struct {
 }
 
 func NewRangeCheck18(
-    api frontend.API,
-    qm31 *m31.QM31Chip,
-    interactionElements m31.InteractionElements,
-    interactionClaim RangeCheck18InteractionClaim,
+	api frontend.API,
+	qm31 *m31.QM31Chip,
+	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
+	interactionClaim RangeCheck18InteractionClaim,
 ) *RangeCheck18Component {
-    return &RangeCheck18Component{
-        inner: newLookupConstraintComponent(
-            api,
+	return &RangeCheck18Component{
+		inner: newLookupConstraintComponent(
+			api,
             qm31,
-            interactionElements,
-            interactionClaim.ClaimedSum,
-            uints.NewU8(rangeCheck18LogSize),
-            []PreprocessedColumn{sequencePreprocessedColumn(rangeCheck18LogSize)},
-        ),
-    }
+			interactionElements,
+			interactionClaim.ClaimedSum,
+			uints.NewU8(rangeCheck18LogSize),
+			[]PreprocessedColumn{sequencePreprocessedColumn(rangeCheck18LogSize)},
+			vanishEvalInv,
+		),
+	}
 }
 
 func (c *RangeCheck18Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {

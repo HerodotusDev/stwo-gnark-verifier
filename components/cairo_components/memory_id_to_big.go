@@ -46,6 +46,7 @@ func NewMemoryIdToBigBigComponent(
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
 	rangeCheckElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim MemoryIdToBigBigClaim,
 	interactionClaim MemoryIdToBigBigInteractionClaim,
 ) *MemoryIdToBigBigComponent {
@@ -61,7 +62,7 @@ func NewMemoryIdToBigBigComponent(
 		rangeCheckElements: rangeCheckElements,
 		claimedSum:         interactionClaim.ClaimedSum,
 		columnSizeInv:      columnSizeInv,
-		vanishEvalInv:      qm31.One(),
+		vanishEvalInv:      vanishEvalInv,
 		logSize:            claim.LogSize,
 		seqAddend:          seqAddend,
 	}
@@ -197,6 +198,7 @@ func NewMemoryIdToBigSmallComponent(
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
 	rangeCheckElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim MemoryIdToBigSmallClaim,
 	interactionClaim MemoryIdToBigSmallInteractionClaim,
 ) *MemoryIdToBigSmallComponent {
@@ -209,7 +211,7 @@ func NewMemoryIdToBigSmallComponent(
 		rangeCheckElements: rangeCheckElements,
 		claimedSum:         interactionClaim.ClaimedSum,
 		columnSizeInv:      columnSizeInv,
-		vanishEvalInv:      qm31.One(),
+		vanishEvalInv:      vanishEvalInv,
 		logSize:            claim.LogSize,
 	}
 }

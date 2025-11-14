@@ -39,6 +39,7 @@ func NewRangeCheckFelt252Width27(
 	rangeCheck9_9Elements m31.InteractionElements,
 	rangeCheck18Elements m31.InteractionElements,
 	rangeCheckFelt252Width27Elements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim RangeCheckFelt252Width27Claim,
 	interactionClaim RangeCheckFelt252Width27InteractionClaim,
 ) *RangeCheckFelt252Width27Component {
@@ -53,7 +54,7 @@ func NewRangeCheckFelt252Width27(
 		rangeCheckFelt252Width27Elements: rangeCheckFelt252Width27Elements,
 		claimedSum:                       interactionClaim.ClaimedSum,
 		columnSizeInv:                    columnSizeInv,
-		vanishEvalInv:                    qm31.One(), // Assume vanishing polynomial evaluates to 1.
+		vanishEvalInv:                    vanishEvalInv,
 	}
 }
 

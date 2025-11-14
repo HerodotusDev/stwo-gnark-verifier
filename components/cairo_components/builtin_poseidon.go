@@ -53,6 +53,7 @@ func NewPoseidonBuiltin(
 	range4444Elements m31.InteractionElements,
 	range44Elements m31.InteractionElements,
 	poseidon3PartialRoundsChainElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim PoseidonBuiltinClaim,
 	interactionClaim PoseidonBuiltinInteractionClaim,
 ) *PoseidonBuiltinComponent {
@@ -72,7 +73,7 @@ func NewPoseidonBuiltin(
 		claimedSum:                        interactionClaim.ClaimedSum,
 		segmentStart:                      m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PoseidonBuiltinSegmentStart))),
 		columnSizeInv:                     qm31Chip.Inverse(columnSize),
-		vanishEvalInv:                     qm31Chip.One(),
+		vanishEvalInv:                     vanishEvalInv,
 		logSize:                           claim.LogSize,
 	}
 }

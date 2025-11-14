@@ -34,6 +34,7 @@ type PoseidonRoundKeysComponent struct {
 func NewPoseidonRoundKeys(
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim PoseidonRoundKeysInteractionClaim,
 ) *PoseidonRoundKeysComponent {
 	columnSize := uint32(1) << poseidonRoundKeysLogSize
@@ -49,7 +50,7 @@ func NewPoseidonRoundKeys(
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  qm31.Inverse(columnSizeQM),
-		vanishEvalInv:  qm31.One(),
+		vanishEvalInv:  vanishEvalInv,
 		seqColumn:      NewPreprocessedColumnSeq(uints.NewU8(uint8(poseidonRoundKeysLogSize))),
 		keyColumns:     keyColumns,
 	}

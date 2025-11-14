@@ -40,6 +40,7 @@ func NewJumpDoubleDerefOpcode(
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim JumpDoubleDerefOpcodeClaim,
 	interactionClaim JumpDoubleDerefOpcodeInteractionClaim,
 ) *JumpDoubleDerefOpcodeComponent {
@@ -54,7 +55,7 @@ func NewJumpDoubleDerefOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

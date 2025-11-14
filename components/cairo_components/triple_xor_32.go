@@ -33,6 +33,7 @@ func NewTripleXor32(
 	qm31 *m31.QM31Chip,
 	verifyBitwiseXor8Elements m31.InteractionElements,
 	tripleXor32Elements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim TripleXor32Claim,
 	interactionClaim TripleXor32InteractionClaim,
 ) *TripleXor32Component {
@@ -48,7 +49,7 @@ func NewTripleXor32(
 		tripleXor32Elements:       tripleXor32Elements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             qm31.Inverse(columnSizeQM),
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

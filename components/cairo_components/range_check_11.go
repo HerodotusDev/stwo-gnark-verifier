@@ -20,6 +20,7 @@ func NewRangeCheck11(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim RangeCheck11InteractionClaim,
 ) *RangeCheck11Component {
 	return &RangeCheck11Component{
@@ -30,6 +31,7 @@ func NewRangeCheck11(
 			interactionClaim.ClaimedSum,
 			uints.NewU8(rangeCheck11LogSize),
 			[]PreprocessedColumn{sequencePreprocessedColumn(rangeCheck11LogSize)},
+			vanishEvalInv,
 		),
 	}
 }
