@@ -126,6 +126,7 @@ func (c *Blake2sChip) Update(state Blake2sState, msg []uints.U8) Blake2sState {
 		return state
 	}
 
+	// TODO: initialize in the constructor
 	// Comparator for carry on 32-bit counter increment
 	// |state.T[0] - BLAKE2S_BLOCKBYTES| <= 2^32-1
 	less := cmp.NewBoundedComparator(c.api, absDiffUpp, false)

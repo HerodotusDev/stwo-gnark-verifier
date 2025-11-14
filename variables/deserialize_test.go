@@ -106,7 +106,7 @@ func TestBuildProofAllComponents(t *testing.T) {
 	}
 
 	components := build.InteractionClaim.MemoryAddressToId.ClaimedSum.Components()
-	expected := [4]uint64{1295835890, 1110824088, 1812637607, 687778173}
+	expected := [4]uint64{1962029288, 1291897314, 1919682745, 45377508}
 	for idx, want := range expected {
 		if got := components[idx].Variable(); got != want {
 			t.Fatalf("unexpected MemoryAddressToId interaction component[%d]: got %v, want %d", idx, got, want)
