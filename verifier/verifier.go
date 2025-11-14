@@ -88,8 +88,13 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
-	// TODO: Extract CP evaluation from sampled values
-	composition_oods_eval := m31.NewQM31Unchecked(803564532, 1632537402, 546515135, 648357509)
+	// Extract CP evaluation from sampled values
+	composition_oods_eval := c.qm31.FromPartialEvals(
+		sampledValues[cairo_components.CP_IDX][0][0],
+		sampledValues[cairo_components.CP_IDX][1][0],
+		sampledValues[cairo_components.CP_IDX][2][0],
+		sampledValues[cairo_components.CP_IDX][3][0],
+	)
 
 	// evaluate constraints using sampled values
 	constraints_oods_eval := components.Evaluate(sampledValues, randomCoeff)
