@@ -49,8 +49,8 @@ func assertProofBasics(t *testing.T, proof *ProofRaw) {
 		t.Fatalf("opcode interaction claim empty")
 	}
 
-	if len(proof.Proof) == 0 {
-		t.Fatalf("stark proof payload missing")
+	if len(proof.StarkProof.SampledValues) == 0 {
+		t.Fatalf("stark proof sampled values missing")
 	}
 }
 

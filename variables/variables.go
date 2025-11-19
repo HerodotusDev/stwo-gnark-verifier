@@ -14,7 +14,11 @@ const (
 type Proof struct {
 	Claim            CairoClaim
 	InteractionClaim CairoInteractionClaim
-	SampledValues    [][][]m31.QM31
+	StarkProof       StarkProof
+}
+
+type StarkProof struct {
+	SampledValues [][][]m31.QM31
 }
 
 // ╔══════════════════════════════════╗
@@ -144,7 +148,111 @@ func drawInteractionElements(ch *channel.Channel, qm31Chip *m31.QM31Chip, powerC
 
 type CairoClaim struct {
 	PublicData        PublicData
+	Opcodes           OpcodeClaims
+	VerifyInstruction *cairo_components.VerifyInstructionClaim
+	BlakeContext      BlakeContextClaim
+	Builtins          BuiltinsClaim
+	PedersenContext   PedersenContextClaim
+	PoseidonContext   PoseidonContextClaim
 	MemoryAddressToId cairo_components.MemoryAddressToIdClaim
+	MemoryIDToValue   MemoryIDToValueClaim
+	RangeChecks       RangeChecksClaim
+	VerifyBitwiseXor4 *SimpleLogSizeClaim
+	VerifyBitwiseXor7 *SimpleLogSizeClaim
+	VerifyBitwiseXor8 *SimpleLogSizeClaim
+	VerifyBitwiseXor9 *SimpleLogSizeClaim
+}
+
+type OpcodeClaims struct {
+	Add                 []cairo_components.AddOpcodeClaim
+	AddSmall            []cairo_components.AddSmallOpcodeClaim
+	AddAp               []cairo_components.AddApOpcodeClaim
+	AssertEq            []cairo_components.AssertEqOpcodeClaim
+	AssertEqImm         []cairo_components.AssertEqImmOpcodeClaim
+	AssertEqDoubleDeref []cairo_components.AssertEqDoubleDerefOpcodeClaim
+	Blake               []cairo_components.BlakeCompressOpcodeClaim
+	Call                []cairo_components.CallOpcodeClaim
+	CallRelImm          []cairo_components.CallRelImmOpcodeClaim
+	Generic             []cairo_components.GenericOpcodeClaim
+	Jnz                 []cairo_components.JnzOpcodeClaim
+	JnzTaken            []cairo_components.JnzTakenOpcodeClaim
+	Jump                []cairo_components.JumpOpcodeClaim
+	JumpDoubleDeref     []cairo_components.JumpDoubleDerefOpcodeClaim
+	JumpRel             []cairo_components.JumpRelOpcodeClaim
+	JumpRelImm          []cairo_components.JumpRelImmOpcodeClaim
+	Mul                 []cairo_components.MulOpcodeClaim
+	MulSmall            []cairo_components.MulSmallOpcodeClaim
+	Qm31                []cairo_components.Qm31OpcodeClaim
+	Ret                 []cairo_components.RetOpcodeClaim
+}
+
+type BlakeContextClaim struct {
+	Claim *BlakeClaim
+}
+
+type BlakeClaim struct {
+	BlakeRound         *cairo_components.BlakeRoundClaim
+	BlakeG             *cairo_components.BlakeGClaim
+	BlakeRoundSigma    *cairo_components.BlakeRoundSigmaClaim
+	TripleXor32        *cairo_components.TripleXor32Claim
+	VerifyBitwiseXor12 *SimpleLogSizeClaim
+}
+
+type BuiltinsClaim struct {
+	AddModBuiltin   *cairo_components.AddModBuiltinClaim
+	BitwiseBuiltin  *cairo_components.BitwiseBuiltinClaim
+	MulModBuiltin   *cairo_components.MulModBuiltinClaim
+	PedersenBuiltin *cairo_components.PedersenBuiltinClaim
+	PoseidonBuiltin *cairo_components.PoseidonBuiltinClaim
+	RangeCheck96    *cairo_components.RangeCheck96BuiltinClaim
+	RangeCheck128   *cairo_components.RangeCheck128BuiltinClaim
+}
+
+type PedersenContextClaim struct {
+	Claim *PedersenClaim
+}
+
+type PedersenClaim struct {
+	PartialEcMul        *cairo_components.PartialEcMulClaim
+	PedersenPointsTable *cairo_components.PedersenPointsTableClaim
+}
+
+type PoseidonContextClaim struct {
+	Claim *PoseidonClaim
+}
+
+type PoseidonClaim struct {
+	Poseidon3PartialRoundsChain *cairo_components.Poseidon3PartialRoundsChainClaim
+	PoseidonFullRoundChain      *cairo_components.PoseidonFullRoundChainClaim
+	Cube252                     *cairo_components.Cube252Claim
+	PoseidonRoundKeys           *cairo_components.PoseidonRoundKeysClaim
+	RangeCheckFelt252Width27    *cairo_components.RangeCheckFelt252Width27Claim
+}
+
+type MemoryIDToValueClaim struct {
+	Big   []cairo_components.MemoryIdToBigBigClaim
+	Small *cairo_components.MemoryIdToBigSmallClaim
+}
+
+type RangeChecksClaim struct {
+	RC6         *SimpleLogSizeClaim
+	RC8         *SimpleLogSizeClaim
+	RC11        *SimpleLogSizeClaim
+	RC12        *SimpleLogSizeClaim
+	RC18        *SimpleLogSizeClaim
+	RC19        *SimpleLogSizeClaim
+	RC4_3       *SimpleLogSizeClaim
+	RC4_4       *SimpleLogSizeClaim
+	RC5_4       *SimpleLogSizeClaim
+	RC9_9       *SimpleLogSizeClaim
+	RC7_2_5     *SimpleLogSizeClaim
+	RC3_6_6_3   *SimpleLogSizeClaim
+	RC4_4_4_4   *SimpleLogSizeClaim
+	RC3_3_3_3_3 *SimpleLogSizeClaim
+}
+
+type SimpleLogSizeClaim struct {
+	LogSize uint32
 }
 
 // ╔══════════════════════════════════╗
@@ -236,7 +344,7 @@ type OpcodeInteractionClaim struct {
 	AssertEq            []cairo_components.AssertEqOpcodeInteractionClaim
 	AssertEqImm         []cairo_components.AssertEqImmOpcodeInteractionClaim
 	AssertEqDoubleDeref []cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim
-	Blake               []cairo_components.BlakeOpcodeInteractionClaim
+	Blake               []cairo_components.BlakeCompressOpcodeInteractionClaim
 	Call                []cairo_components.CallOpcodeInteractionClaim
 	CallRelImm          []cairo_components.CallRelImmOpcodeInteractionClaim
 	Generic             []cairo_components.GenericOpcodeInteractionClaim

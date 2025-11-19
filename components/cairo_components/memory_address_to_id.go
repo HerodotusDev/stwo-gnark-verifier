@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	gnarkbits "github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -23,12 +22,13 @@ type MemoryAddressToIdComponent struct {
 	qm31 *m31.QM31Chip
 
 	interactionElements m31.InteractionElements
-	columnSize          frontend.Variable
+	logSize             uints.U8
+	columnSize          m31.QM31
 	claimedSum          m31.QM31
 	vanishEvalInv       m31.QM31
 
-	N_COLUMNS             uint32
-	N_INTERACTION_COLUMNS uint32
+	N_COLUMNS             int
+	N_INTERACTION_COLUMNS int
 }
 
 // NewMemoryAddressToId wires the component constraints into the circuit.
@@ -40,22 +40,8 @@ func NewMemoryAddressToId(
 	interactionClaim MemoryAddressToIdInteractionClaim,
 	oodsPoint m31.QM31,
 ) *MemoryAddressToIdComponent {
-	bytesAPI, err := uints.NewBytes(api)
-	if err != nil {
-		panic(err)
-	}
-
-	logSizeValue := bytesAPI.Value(claim.LogSize)
-	logSizeBits := gnarkbits.ToBinary(api, logSizeValue, gnarkbits.WithNbDigits(8))
-
-	columnSize := frontend.Variable(1)
-	for i := len(logSizeBits) - 1; i >= 0; i-- {
-		if i != len(logSizeBits)-1 {
-			columnSize = api.Mul(columnSize, columnSize)
-		}
-		candidate := api.Mul(columnSize, 2)
-		columnSize = api.Select(logSizeBits[i], candidate, columnSize)
-	}
+	// Compute the column size inside the circuit using our shared helper
+	columnSize := computeColumnSize(api, claim.LogSize)
 
 	// TODO: Compute vanishEval from the oods point and logSize
 	vanishEvalInv := qm31.Inverse(qm31.One())
@@ -64,6 +50,7 @@ func NewMemoryAddressToId(
 		api:                   api,
 		qm31:                  qm31,
 		interactionElements:   interactionElements,
+		logSize:               claim.LogSize,
 		columnSize:            columnSize,
 		claimedSum:            interactionClaim.ClaimedSum,
 		vanishEvalInv:         vanishEvalInv,
@@ -73,51 +60,49 @@ func NewMemoryAddressToId(
 }
 
 // Evaluate enforces the component constraints at the sampled point.
-func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]m31.QM31, random_coeff m31.QM31) m31.QM31 {
-	// TODO: Handle preprocessed trace (the +1 is because addresses start at 1)
-	seq := c.qm31.Add(c.qm31.One(), c.qm31.One())
+func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(c.N_COLUMNS, c.N_INTERACTION_COLUMNS)
 
-	// we assume that the sampled values starts with the memory_address_to_id component (the previous columns were popped)
-	id_0 := sampledValues[MAIN_IDX][0][0]
-	mult_0 := sampledValues[MAIN_IDX][1][0]
-	id_1 := sampledValues[MAIN_IDX][2][0]
-	mult_1 := sampledValues[MAIN_IDX][3][0]
-	id_2 := sampledValues[MAIN_IDX][4][0]
-	mult_2 := sampledValues[MAIN_IDX][5][0]
-	id_3 := sampledValues[MAIN_IDX][6][0]
-	mult_3 := sampledValues[MAIN_IDX][7][0]
-	id_4 := sampledValues[MAIN_IDX][8][0]
-	mult_4 := sampledValues[MAIN_IDX][9][0]
-	id_5 := sampledValues[MAIN_IDX][10][0]
-	mult_5 := sampledValues[MAIN_IDX][11][0]
-	id_6 := sampledValues[MAIN_IDX][12][0]
-	mult_6 := sampledValues[MAIN_IDX][13][0]
-	id_7 := sampledValues[MAIN_IDX][14][0]
-	mult_7 := sampledValues[MAIN_IDX][15][0]
+	// ╔══════════════════════════════════╗
+	// ║        Preprocessed Trace        ║
+	// ╚══════════════════════════════════╝
+	// Addresses start at 1 in the trace, so shift by one after reading the sequence column.
+	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
 
-	interaction_column_0 := sampledValues[INTERACTION_IDX][0][0]
-	interaction_column_1 := sampledValues[INTERACTION_IDX][1][0]
-	interaction_column_2 := sampledValues[INTERACTION_IDX][2][0]
-	interaction_column_3 := sampledValues[INTERACTION_IDX][3][0]
-	interaction_column_4 := sampledValues[INTERACTION_IDX][4][0]
-	interaction_column_5 := sampledValues[INTERACTION_IDX][5][0]
-	interaction_column_6 := sampledValues[INTERACTION_IDX][6][0]
-	interaction_column_7 := sampledValues[INTERACTION_IDX][7][0]
-	interaction_column_8 := sampledValues[INTERACTION_IDX][8][0]
-	interaction_column_9 := sampledValues[INTERACTION_IDX][9][0]
-	interaction_column_10 := sampledValues[INTERACTION_IDX][10][0]
-	interaction_column_11 := sampledValues[INTERACTION_IDX][11][0]
-	interaction_column_12 := sampledValues[INTERACTION_IDX][12][0]
-	interaction_column_12_neg1 := sampledValues[INTERACTION_IDX][12][1]
-	interaction_column_13 := sampledValues[INTERACTION_IDX][13][0]
-	interaction_column_13_neg1 := sampledValues[INTERACTION_IDX][13][1]
-	interaction_column_14 := sampledValues[INTERACTION_IDX][14][0]
-	interaction_column_14_neg1 := sampledValues[INTERACTION_IDX][14][1]
-	interaction_column_15 := sampledValues[INTERACTION_IDX][15][0]
-	interaction_column_15_neg1 := sampledValues[INTERACTION_IDX][15][1]
+	// ╔══════════════════════════════════╗
+	// ║            Main Trace            ║
+	// ╚══════════════════════════════════╝
+	id_0 := traceSampledValues.Get(0)
+	mult_0 := traceSampledValues.Get(1)
+	id_1 := traceSampledValues.Get(2)
+	mult_1 := traceSampledValues.Get(3)
+	id_2 := traceSampledValues.Get(4)
+	mult_2 := traceSampledValues.Get(5)
+	id_3 := traceSampledValues.Get(6)
+	mult_3 := traceSampledValues.Get(7)
+	id_4 := traceSampledValues.Get(8)
+	mult_4 := traceSampledValues.Get(9)
+	id_5 := traceSampledValues.Get(10)
+	mult_5 := traceSampledValues.Get(11)
+	id_6 := traceSampledValues.Get(12)
+	mult_6 := traceSampledValues.Get(13)
+	id_7 := traceSampledValues.Get(14)
+	mult_7 := traceSampledValues.Get(15)
 
-	// Computation of combined values
-	columnSizeQM31 := m31.NewQM31FromM31(m31.NewM31Unchecked(c.columnSize))
+	// ╔══════════════════════════════════╗
+	// ║         Interaction Trace        ║
+	// ╚══════════════════════════════════╝
+	part0 := interactionSampledValues.Partial(c.qm31, 0, 0)
+	part1 := interactionSampledValues.Partial(c.qm31, 4, 0)
+	part2 := interactionSampledValues.Partial(c.qm31, 8, 0)
+	part3Prev := interactionSampledValues.Partial(c.qm31, 12, 0)
+	part3 := interactionSampledValues.Partial(c.qm31, 12, 1)
+
+	// ╔══════════════════════════════════╗
+	// ║       Constraint Evaluations     ║
+	// ╚══════════════════════════════════╝
+
+	columnSizeQM31 := c.columnSize
 	oneQM31 := m31.NewQM31FromM31(m31.One())
 
 	addr := c.qm31.Add(seq, oneQM31)
@@ -169,24 +154,15 @@ func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, sampledValues [][][]
 	}
 
 	// Computation of diffs (curr_sum - prev_sum)
-	diff_0 := c.qm31.FromPartialEvals(interaction_column_0, interaction_column_1, interaction_column_2, interaction_column_3)
-	diff_1 := c.qm31.Sub(
-		c.qm31.FromPartialEvals(interaction_column_4, interaction_column_5, interaction_column_6, interaction_column_7),
-		c.qm31.FromPartialEvals(interaction_column_0, interaction_column_1, interaction_column_2, interaction_column_3),
-	)
-	diff_2 := c.qm31.Sub(
-		c.qm31.FromPartialEvals(interaction_column_8, interaction_column_9, interaction_column_10, interaction_column_11),
-		c.qm31.FromPartialEvals(interaction_column_4, interaction_column_5, interaction_column_6, interaction_column_7),
-	)
+	diff_0 := part0
+	diff_1 := c.qm31.Sub(part1, part0)
+	diff_2 := c.qm31.Sub(part2, part1)
 	diff_3 := c.qm31.Add(
 		c.qm31.Sub(
-			c.qm31.Sub(
-				c.qm31.FromPartialEvals(interaction_column_12, interaction_column_13, interaction_column_14, interaction_column_15),
-				c.qm31.FromPartialEvals(interaction_column_12_neg1, interaction_column_13_neg1, interaction_column_14_neg1, interaction_column_15_neg1),
-			),
-			c.qm31.FromPartialEvals(interaction_column_8, interaction_column_9, interaction_column_10, interaction_column_11),
+			c.qm31.Sub(part3, part3Prev),
+			part2,
 		),
-		c.qm31.Mul(c.claimedSum, c.qm31.Inverse(m31.NewQM31FromM31(m31.NewM31Unchecked(c.columnSize)))),
+		c.qm31.Mul(c.claimedSum, c.qm31.Inverse(c.columnSize)),
 	)
 
 	// Evaluation (diff * denom - num = 0)

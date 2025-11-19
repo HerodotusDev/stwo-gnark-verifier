@@ -14,7 +14,7 @@ type ProofRaw struct {
 	Claim            ClaimRaw            `json:"claim"`
 	InteractionPow   uint64              `json:"interaction_pow"`
 	InteractionClaim InteractionClaimRaw `json:"interaction_claim"`
-	Proof            json.RawMessage     `json:"stark_proof"`
+	StarkProof       StarkProofRaw       `json:"stark_proof"`
 }
 
 // ╔══════════════════════════════════╗
@@ -23,81 +23,49 @@ type ProofRaw struct {
 
 // ClaimRaw contains the verifier-facing statement for the proof.
 type ClaimRaw struct {
-	PublicData        PublicDataRaw             `json:"public_data"`
-	Opcodes           OpcodeClaimRaw            `json:"opcodes"`
-	VerifyInstruction VerifyInstructionClaimRaw `json:"verify_instruction"`
-	BlakeContext      BlakeContextClaimRaw      `json:"blake_context"`
-	Builtins          BuiltinsClaimRaw          `json:"builtins"`
-	PedersenContext   PedersenContextClaimRaw   `json:"pedersen_context"`
-	PoseidonContext   PoseidonContextClaimRaw   `json:"poseidon_context"`
-	MemoryAddressToId MemoryAddressToIdClaimRaw `json:"memory_address_to_id"`
-	MemoryIDToValue   MemoryIDToValueClaimRaw   `json:"memory_id_to_value"`
-	RangeChecks       RangeChecksClaimRaw       `json:"range_checks"`
-	VerifyBitwiseXor4 VerifyBitwiseXorClaimRaw  `json:"verify_bitwise_xor_4"`
-	VerifyBitwiseXor7 VerifyBitwiseXorClaimRaw  `json:"verify_bitwise_xor_7"`
-	VerifyBitwiseXor8 VerifyBitwiseXorClaimRaw  `json:"verify_bitwise_xor_8"`
-	VerifyBitwiseXor9 VerifyBitwiseXorClaimRaw  `json:"verify_bitwise_xor_9"`
+	PublicData        PublicDataRaw               `json:"public_data"`
+	Opcodes           OpcodeClaimRaw              `json:"opcodes"`
+	VerifyInstruction VerifyInstructionClaimRaw   `json:"verify_instruction"`
+	BlakeContext      BlakeContextClaimRawWrapper `json:"blake_context"`
+	Builtins          BuiltinsClaimRaw            `json:"builtins"`
+	PedersenContext   PedersenContextClaimRaw     `json:"pedersen_context"`
+	PoseidonContext   PoseidonContextClaimRaw     `json:"poseidon_context"`
+	MemoryAddressToId MemoryAddressToIdClaimRaw   `json:"memory_address_to_id"`
+	MemoryIDToValue   MemoryIDToValueClaimRaw     `json:"memory_id_to_value"`
+	RangeChecks       RangeChecksClaimRaw         `json:"range_checks"`
+	VerifyBitwiseXor4 VerifyBitwiseXorClaimRaw    `json:"verify_bitwise_xor_4"`
+	VerifyBitwiseXor7 VerifyBitwiseXorClaimRaw    `json:"verify_bitwise_xor_7"`
+	VerifyBitwiseXor8 VerifyBitwiseXorClaimRaw    `json:"verify_bitwise_xor_8"`
+	VerifyBitwiseXor9 VerifyBitwiseXorClaimRaw    `json:"verify_bitwise_xor_9"`
 }
 
 // OpcodeClaimRaw captures log-size information for each opcode component.
 type OpcodeClaimRaw struct {
-	Add []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"add"`
-	AddSmall []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"add_small"`
-	AddAp []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"add_ap"`
-	AssertEq []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"assert_eq"`
-	AssertEqImm []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"assert_eq_imm"`
-	AssertEqDoubleDeref []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"assert_eq_double_deref"`
-	Blake []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"blake"`
-	Call []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"call"`
-	CallRelImm []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"call_rel_imm"`
-	Generic []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"generic"`
-	Jnz []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"jnz"`
-	JnzTaken []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"jnz_taken"`
-	JumpDoubleDeref []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"jump_double_deref"`
-	JumpRel []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"jump_rel"`
-	JumpRelImm []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"jump_rel_imm"`
-	Mul []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"mul"`
-	MulSmall []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"mul_small"`
-	Qm31 []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"qm31"`
-	Ret []struct {
-		LogSize uint64 `json:"log_size"`
-	} `json:"ret"`
+	Add                 []OpcodeLogSizeEntryRaw `json:"add"`
+	AddSmall            []OpcodeLogSizeEntryRaw `json:"add_small"`
+	AddAp               []OpcodeLogSizeEntryRaw `json:"add_ap"`
+	AssertEq            []OpcodeLogSizeEntryRaw `json:"assert_eq"`
+	AssertEqImm         []OpcodeLogSizeEntryRaw `json:"assert_eq_imm"`
+	AssertEqDoubleDeref []OpcodeLogSizeEntryRaw `json:"assert_eq_double_deref"`
+	Blake               []OpcodeLogSizeEntryRaw `json:"blake"`
+	Call                []OpcodeLogSizeEntryRaw `json:"call"`
+	CallRelImm          []OpcodeLogSizeEntryRaw `json:"call_rel_imm"`
+	Generic             []OpcodeLogSizeEntryRaw `json:"generic"`
+	Jnz                 []OpcodeLogSizeEntryRaw `json:"jnz"`
+	JnzTaken            []OpcodeLogSizeEntryRaw `json:"jnz_taken"`
+	Jump                []OpcodeLogSizeEntryRaw `json:"jump"`
+	JumpDoubleDeref     []OpcodeLogSizeEntryRaw `json:"jump_double_deref"`
+	JumpRel             []OpcodeLogSizeEntryRaw `json:"jump_rel"`
+	JumpRelImm          []OpcodeLogSizeEntryRaw `json:"jump_rel_imm"`
+	Mul                 []OpcodeLogSizeEntryRaw `json:"mul"`
+	MulSmall            []OpcodeLogSizeEntryRaw `json:"mul_small"`
+	Qm31                []OpcodeLogSizeEntryRaw `json:"qm31"`
+	Ret                 []OpcodeLogSizeEntryRaw `json:"ret"`
+}
+
+// OpcodeLogSizeEntryRaw stores a single opcode log size entry.
+type OpcodeLogSizeEntryRaw struct {
+	LogSize uint64 `json:"log_size"`
 }
 
 // VerifyInstructionClaimRaw stores the log size of the verify-instruction component.
@@ -106,12 +74,12 @@ type VerifyInstructionClaimRaw struct {
 }
 
 // BlakeContextClaimRaw bundles the log-size claims for the Blake2s context tables.
-type BlakeContextClaimRaw struct {
-	Claim *BlakeContextClaim `json:"claim"`
+type BlakeContextClaimRawWrapper struct {
+	Claim *BlakeContextClaimRaw `json:"claim"`
 }
 
 // BlakeContextClaim enumerates the per-table log sizes used by the prover.
-type BlakeContextClaim struct {
+type BlakeContextClaimRaw struct {
 	BlakeG             *ComponentLogSizeEntry `json:"blake_g"`
 	BlakeRound         *ComponentLogSizeEntry `json:"blake_round"`
 	BlakeSigma         *ComponentLogSizeEntry `json:"blake_sigma"`
@@ -121,19 +89,19 @@ type BlakeContextClaim struct {
 
 // PedersenContextClaimRaw mirrors the pedersen context claims.
 type PedersenContextClaimRaw struct {
-	Claim PedersenContextClaim `json:"claim"`
+	Claim PedersenContextClaimEntriesRaw `json:"claim"`
 }
 
 // PedersenContextClaim maps component names to their log-size entries.
-type PedersenContextClaim map[string]*ComponentLogSizeEntry
+type PedersenContextClaimEntriesRaw map[string]*ComponentLogSizeEntry
 
 // PoseidonContextClaimRaw bundles the log-size claims for the Poseidon context tables.
 type PoseidonContextClaimRaw struct {
-	Claim *PoseidonContextClaim `json:"claim"`
+	Claim *PoseidonContextClaimDetailsRaw `json:"claim"`
 }
 
 // PoseidonContextClaim enumerates the log sizes for each Poseidon sub-component.
-type PoseidonContextClaim struct {
+type PoseidonContextClaimDetailsRaw struct {
 	Poseidon3PartialRoundsChain *ComponentLogSizeEntry `json:"poseidon_3_partial_rounds_chain"`
 	PoseidonFullRoundChain      *ComponentLogSizeEntry `json:"poseidon_full_round_chain"`
 	Cube252                     *ComponentLogSizeEntry `json:"cube_252"`
@@ -337,3 +305,21 @@ type VerifyBitwiseXorInteractionClaimRaw struct {
 type ComponentClaimedSumEntry struct {
 	ClaimedSum [][2]uint64 `json:"claimed_sum"`
 }
+
+// ╔══════════════════════════════════╗
+// ║        Stark Proof Structures    ║
+// ╚══════════════════════════════════╝
+
+// StarkProofRaw mirrors the serialized Stark proof payload emitted by the prover.
+type StarkProofRaw struct {
+	Config        json.RawMessage  `json:"config"`
+	Commitments   json.RawMessage  `json:"commitments"`
+	Decommitments json.RawMessage  `json:"decommitments"`
+	FriProof      json.RawMessage  `json:"fri_proof"`
+	ProofOfWork   json.RawMessage  `json:"proof_of_work"`
+	QueriedValues json.RawMessage  `json:"queried_values"`
+	SampledValues SampledValuesRaw `json:"sampled_values"`
+}
+
+// SampledValuesRaw stores the sampled values grouped by table, column and evaluation.
+type SampledValuesRaw [][][][][2]uint64
