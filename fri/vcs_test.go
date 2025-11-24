@@ -1,4 +1,4 @@
-package fri_test
+package fri
 
 import (
 	"encoding/hex"
@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
@@ -19,7 +18,7 @@ import (
 type merkleTestVector struct {
 	Root           [32]uints.U8
 	ColumnLogSizes []uint8
-	Queries        []uints.U32
+	Queries        [][]int
 	Values         []m31.M31
 	HashWitness    [][32]uints.U8
 }
@@ -27,7 +26,7 @@ type merkleTestVector struct {
 type rawMerkleTestVector struct {
 	Root           string    `json:"root"`
 	ColumnLogSizes []uint8   `json:"column_log_sizes"`
-	Queries        []uint32  `json:"queries"`
+	Queries        [][]int   `json:"queries"`
 	Values         []uint32  `json:"values"`
 	HashWitness    [][]uint8 `json:"hash_witness"`
 }
@@ -39,14 +38,14 @@ type merkleDecommitCircuit struct{}
 func (c *merkleDecommitCircuit) Define(api frontend.API) error {
 	data := merkleFixture
 	columnLogSizes := append([]uint8(nil), data.ColumnLogSizes...)
-	verifier := fri.NewMerkleVerifier(api, data.Root, columnLogSizes)
+	verifier := NewMerkleVerifier(api, data.Root, columnLogSizes)
 
-	queries := append([]uints.U32(nil), data.Queries...)
+	queries := append([][]int(nil), data.Queries...)
 	values := append([]m31.M31(nil), data.Values...)
 	hashWitness := make([][32]uints.U8, len(data.HashWitness))
 	copy(hashWitness, data.HashWitness)
 
-	decommitment := &fri.MerkleDecommitment{
+	decommitment := &MerkleDecommitment{
 		HashWitness: hashWitness,
 	}
 
@@ -93,10 +92,7 @@ func mustLoadMerkleTestVector() merkleTestVector {
 		root[i] = uints.NewU8(b)
 	}
 
-	queries := make([]uints.U32, len(raw.Queries))
-	for i, q := range raw.Queries {
-		queries[i] = uints.NewU32(q)
-	}
+	queries := raw.Queries
 
 	values := make([]m31.M31, len(raw.Values))
 	for i, v := range raw.Values {

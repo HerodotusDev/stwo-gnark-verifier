@@ -48,7 +48,10 @@ func NewMerkleVerifier(api frontend.API, root [32]uints.U8, columnLogSizes []uin
 	}
 }
 
-func (v *MerkleVerifier) Verify(queries []uints.U32, queriedValues []m31.M31, decommitment *MerkleDecommitment) {
+// Verify verifies the Merkle decommitment for the given queries and queried values
+//   - queries[l] contains the queries for the layer of log size l, len(queries) should be the number of layers (from root to leaves).
+//     For all l, queries[l] is sorted ascending.
+func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decommitment *MerkleDecommitment) {
 	remainingValues := queriedValues
 	hashWitness := decommitment.HashWitness
 	hashWitnessIndex := 0
@@ -63,7 +66,7 @@ func (v *MerkleVerifier) Verify(queries []uints.U32, queriedValues []m31.M31, de
 		return hash
 	}
 
-	// find the maximum log size
+	// find the log size of the largest layer
 	maxLogSize := uint8(0)
 	for _, logSize := range v.columnLogSizes {
 		if logSize > maxLogSize {
@@ -71,65 +74,72 @@ func (v *MerkleVerifier) Verify(queries []uints.U32, queriedValues []m31.M31, de
 		}
 	}
 
-	// compute the layer queries, initialized at 2 * initial_queries so that nodeIndex yields the correct index
-	prevLayerQueries := [NQUERIES]uints.U32{}
-	for i := 0; i < NQUERIES; i++ {
-		prevLayerQueries[i] = v.uapi.Add(queries[i], queries[i])
-	}
+	// extend the queries so that for layers with no columns node hashes are still computed
+	extendedQueries := extendQueries(queries, maxLogSize)
 
-	// buffer for the previous layer hashes
-	prevLayerHashes := [NQUERIES][32]uints.U8{}
+	// storage for the hashes per layer, keyed by log size
+	layerHashes := make(map[uint8][][32]uints.U8)
 
 	// decommit layer by layer, doing all queries at once
 	for layerLog := maxLogSize; ; layerLog-- {
 		nColumnsInLayer := v.nColumnsPerLogSize[layerLog]
-		currentLayerQueries := [NQUERIES]uints.U32{}
-		currentLayerHashes := [NQUERIES][32]uints.U8{}
+		j := 0 // pointer to the previous layer query
 
-		// go through all query positions in the previous layer
-		for queryIndex, prevLayerQuery := range prevLayerQueries {
-			// derive the current query position from the previous one (divide by 2)
-			nodeIndex := v.uapi.Rshift(prevLayerQuery, 1)
-
+		// go through all query positions of the current layer
+		for _, query := range extendedQueries[layerLog] {
 			var columnValues []m31.M31
 			// note that the following if-else branches can be evaluated at compile time
-			// since the number of columns in each layer is a constant to the circuit
+			// since the number of columns and the queries in each layer are constants to the circuit
 			if nColumnsInLayer > 0 {
 				// pop the front of the queried values if any
 				columnValues = remainingValues[:nColumnsInLayer]
 				remainingValues = remainingValues[nColumnsInLayer:]
 			}
-			if layerLog == maxLogSize { // for the largest layer, there are no children to hash, just hash the columnvalues
-				// hash the column values
-				nodeHash := v.blake2sChip.HashNode(nil, nil, columnValues)
 
-				// update the current layer hashes and queries
-				currentLayerHashes[queryIndex] = nodeHash
-				currentLayerQueries[queryIndex] = nodeIndex
-			} else { // for the other layers, hash the children and the column values
-				// fetch the previous layer computed hash
-				childHash := prevLayerHashes[queryIndex]
+			if layerLog == maxLogSize {
+				// for the largest layer, there are no children to hash, just hash the column values
+				layerHashes[layerLog] = append(layerHashes[layerLog], v.blake2sChip.HashNode(nil, nil, columnValues))
+			} else {
+				// derive the children queries candidates
+				queryMulTwo := 2 * query
+				leftCandidate := queryMulTwo
+				rightCandidate := queryMulTwo + 1
+				// assert that the current query is derived from a previous one (queries are sorted ascending)
+				v.api.AssertIsEqual((extendedQueries[layerLog+1][j]-leftCandidate)*(extendedQueries[layerLog+1][j]-rightCandidate), 0)
 
-				// fetch the sibling of childHash
-				siblingHash := nextHashWitness()
+				var leftHash [32]uints.U8
+				var rightHash [32]uints.U8
+				switch extendedQueries[layerLog+1][j] {
+				case leftCandidate:
+					// if the left candidate was queried get the left hash from the previous layer
+					leftHash = layerHashes[layerLog+1][j]
+					if j+1 < len(extendedQueries[layerLog+1]) && extendedQueries[layerLog+1][j+1] == rightCandidate {
+						// if the right candidate was also queried get the right hash from the previous layer
+						rightHash = layerHashes[layerLog+1][j+1]
+						j += 2
+					} else {
+						// if the right candidate was not queried, get the right hash from the witness
+						rightHash = nextHashWitness()
+						j++
+					}
+				case rightCandidate:
+					// if the right candidate was queried get the right hash from the previous layer and the left hash from the witness
+					leftHash = nextHashWitness()
+					rightHash = layerHashes[layerLog+1][j]
+					j++
+				default:
+					panic("unexpected query candidate")
+				}
 
-				// reorder sibling and child hashes (if prevLayerQuery = 2*nodeIndex, previous layer queried the left child)
-				rightChildIndex := v.uapi.Add(v.uapi.Add(nodeIndex, nodeIndex), uints.NewU32(1))
-				isLeftQueried := v.api.Sub(v.uapi.ToValue(rightChildIndex), v.uapi.ToValue(prevLayerQuery))
-				leftHash := v.selectHash(isLeftQueried, childHash, siblingHash)
-				rightHash := v.selectHash(isLeftQueried, siblingHash, childHash)
-
-				// hash the children and the column values
-				nodeHash := v.blake2sChip.HashNode(leftHash[:], rightHash[:], columnValues)
-
-				// update the current layer hashes and queries
-				currentLayerHashes[queryIndex] = nodeHash
-				currentLayerQueries[queryIndex] = nodeIndex
+				// update the current layer hashes
+				layerHashes[layerLog] = append(layerHashes[layerLog], v.blake2sChip.HashNode(leftHash[:], rightHash[:], columnValues))
 			}
 		}
-		// update the previous layer hashes and queries
-		prevLayerHashes = currentLayerHashes
-		prevLayerQueries = currentLayerQueries
+
+		// assert no unused queries
+		if layerLog != maxLogSize {
+			v.api.AssertIsEqual(j, len(extendedQueries[layerLog+1]))
+		}
 
 		if layerLog == 0 {
 			break
@@ -137,9 +147,9 @@ func (v *MerkleVerifier) Verify(queries []uints.U32, queriedValues []m31.M31, de
 	}
 
 	// assert root match for all queries
-	for queryIndex := range prevLayerHashes {
+	for queryIndex := range layerHashes[0] {
 		for i := 0; i < 32; i++ {
-			v.uapi.AssertIsEqual(prevLayerHashes[queryIndex][i], v.root[i])
+			v.uapi.AssertIsEqual(layerHashes[0][queryIndex][i], v.root[i])
 		}
 	}
 
@@ -154,10 +164,27 @@ func (v *MerkleVerifier) Verify(queries []uints.U32, queriedValues []m31.M31, de
 
 }
 
-func (v *MerkleVerifier) selectHash(selector frontend.Variable, whenTrue, whenFalse [32]uints.U8) [32]uints.U8 {
-	var out [32]uints.U8
-	for i := 0; i < len(out); i++ {
-		out[i] = v.uapi.Select(selector, whenTrue[i], whenFalse[i])
+func extendQueries(queries [][]int, maxLogSize uint8) [][]int {
+	extendedQueries := make([][]int, maxLogSize+1)
+	for layerLog := maxLogSize; ; layerLog-- {
+		if len(queries[layerLog]) > 0 {
+			extendedQueries[layerLog] = queries[layerLog]
+			continue
+		} else {
+			childQueries := extendedQueries[layerLog+1] // layerLog+1 <= maxLogSize since len(queries[maxLogSize]) > 0
+			derivedQueries := make([]int, 0, len(childQueries))
+			for _, childQuery := range childQueries {
+				parentQuery := childQuery / 2
+				if len(derivedQueries) == 0 || derivedQueries[len(derivedQueries)-1] != parentQuery {
+					derivedQueries = append(derivedQueries, parentQuery)
+				}
+			}
+			extendedQueries[layerLog] = derivedQueries
+		}
+
+		if layerLog == 0 {
+			break
+		}
 	}
-	return out
+	return extendedQueries
 }
