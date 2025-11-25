@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"fmt"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -85,6 +87,8 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	oodsPoint := c.circle.GetRandomPoint(c.channelChip)
 	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
+
+	c.VerifyValues(proof.StarkProof)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
@@ -101,4 +105,19 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 
 	// verify OODS
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
+}
+
+func (c *VerifierChip) VerifyValues(proof variables.StarkProof) {
+	// Mix flatten sampled values into channel
+	flattenedSampledValues := make([]m31.QM31, 0)
+	for _, sampledValues := range proof.SampledValues {
+		for _, sampledValue := range sampledValues {
+			flattenedSampledValues = append(flattenedSampledValues, sampledValue...)
+		}
+	}
+	c.channelChip.MixFelts(flattenedSampledValues)
+
+	// Draw random coeff for FRI
+	randomCoeff := c.channelChip.DrawFelt()
+	fmt.Println("randomCoeff", randomCoeff)
 }
