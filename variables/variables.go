@@ -18,6 +18,7 @@ type Proof struct {
 	InteractionPow   uints.U64
 	InteractionClaim CairoInteractionClaim
 	StarkProof       StarkProof
+	CircuitHints     CircuitHints
 }
 
 type StarkProof struct {
@@ -27,6 +28,10 @@ type StarkProof struct {
 	Decommitments []MerkleDecommitment
 	FriProof      FriProof
 	ProofOfWork   uints.U64
+}
+
+type CircuitHints struct {
+	Queries [][]int
 }
 
 // ╔══════════════════════════════════╗

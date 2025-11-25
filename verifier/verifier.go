@@ -10,10 +10,12 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 type VerifierChip struct {
 	api         frontend.API `gnark:"-"`
+	uapi        *uints.BinaryField[uints.U32]
 	blake2sChip *blake2s.Blake2sChip
 	channelChip *channel.Channel
 	m31         *m31.M31Chip
@@ -22,6 +24,10 @@ type VerifierChip struct {
 }
 
 func NewVerifierChip(api frontend.API) *VerifierChip {
+	uapi, err := uints.New[uints.U32](api)
+	if err != nil {
+		panic(err)
+	}
 	blake2sChip := blake2s.NewBlake2sChip(api)
 	m31Chip := m31.NewM31Chip(api)
 	qm31Chip := m31.NewQM31Chip(m31Chip)
@@ -29,6 +35,7 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	channelChip := channel.NewChannel(api)
 	return &VerifierChip{
 		api:         api,
+		uapi:        uapi,
 		blake2sChip: blake2sChip,
 		channelChip: channelChip,
 		m31:         m31Chip,
@@ -86,7 +93,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 
-	c.VerifyValues(commitmentVerifier, proof.StarkProof)
+	c.VerifyValues(commitmentVerifier, proof.StarkProof, proof.CircuitHints.Queries)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
@@ -105,7 +112,7 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }
 
-func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof) {
+func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof, queries [][]int) {
 	// Mix flatten sampled values into channel
 	flattenedSampledValues := make([]m31.QM31, 0)
 	for _, sampledValues := range proof.SampledValues {
@@ -122,8 +129,12 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 	bounds := commitmentVerifier.bounds()
 
 	// Verification of commitment stage of FRI
-	_ = fri.NewFriVerifier(c.channelChip, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
+	friVerifier := fri.NewFriVerifier(c.api, c.channelChip, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
 
 	// Proof of work
 	c.channelChip.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.pcsConfig.PowBits))
+
+	// Generate base layer queries and verify they match the hinted queries
+	baseLayerQueries := friVerifier.GenerateBaseLayerQueries(c.channelChip, c.uapi, commitmentVerifier.pcsConfig.FriConfig.NQueries)
+	friVerifier.VerifyQueries(queries[len(queries)-1], baseLayerQueries)
 }

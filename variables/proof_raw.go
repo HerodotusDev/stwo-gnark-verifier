@@ -15,6 +15,7 @@ type ProofRaw struct {
 	InteractionPow   uint64              `json:"interaction_pow"`
 	InteractionClaim InteractionClaimRaw `json:"interaction_claim"`
 	StarkProof       StarkProofRaw       `json:"stark_proof"`
+	CircuitHints     CircuitHintsRaw     `json:"hints"`
 }
 
 // ╔══════════════════════════════════╗
@@ -355,4 +356,13 @@ type FriLayerProofRaw struct {
 type LinePolyRaw struct {
 	Coeffs  [][][]uint64 `json:"coeffs"`
 	LogSize uint8        `json:"log_size"`
+}
+
+// ╔══════════════════════════════════╗
+// ║       Circuit Hints Structure    ║
+// ╚══════════════════════════════════╝
+
+// CircuitHintsRaw stores the circuit hints for the proof.
+type CircuitHintsRaw struct {
+	QueryPositionsByLogSize map[string][]int `json:"query_positions_by_log_size"`
 }
