@@ -26,6 +26,7 @@ type StarkProof struct {
 	QueriedValues [][]m31.M31
 	Decommitments []MerkleDecommitment
 	FriProof      FriProof
+	ProofOfWork   uints.U64
 }
 
 // ╔══════════════════════════════════╗

@@ -893,6 +893,7 @@ func BuildStarkProof(starkProofRaw *StarkProofRaw) StarkProof {
 		QueriedValues: buildQueriedValues(starkProofRaw.QueriedValues),
 		Decommitments: buildDecommitments(starkProofRaw.Decommitments),
 		FriProof:      buildFriProof(starkProofRaw.FriProof),
+		ProofOfWork:   uints.NewU64(starkProofRaw.ProofOfWork),
 	}
 }
 

@@ -316,7 +316,7 @@ type StarkProofRaw struct {
 	Commitments   [][]uint8               `json:"commitments"`
 	Decommitments []MerkleDecommitmentRaw `json:"decommitments"`
 	FriProof      FriProofRaw             `json:"fri_proof"`
-	ProofOfWork   json.RawMessage         `json:"proof_of_work"`
+	ProofOfWork   uint64                  `json:"proof_of_work"`
 	QueriedValues [][]uint64              `json:"queried_values"`
 	SampledValues SampledValuesRaw        `json:"sampled_values"`
 }

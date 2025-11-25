@@ -123,4 +123,7 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 
 	// Verification of commitment stage of FRI
 	_ = fri.NewFriVerifier(c.channelChip, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
+
+	// Proof of work
+	c.channelChip.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.pcsConfig.PowBits))
 }
