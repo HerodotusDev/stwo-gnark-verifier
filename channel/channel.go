@@ -79,6 +79,13 @@ func (c *Channel) MixRoot(root Blake2sHash) {
 	c.updateDigest(c.computeDigest(msg))
 }
 
+// MixRootBytes absorbs a byte array into the running transcript digest.
+func (c *Channel) MixRootBytes(root []uints.U8) {
+	msg := c.hashToBytes(c.digest)
+	msg = append(msg, root...)
+	c.updateDigest(c.computeDigest(msg))
+}
+
 // MixFelts absorbs secure field elements into the digest.
 func (c *Channel) MixFelts(felts []m31.QM31) {
 	msg := c.hashToBytes(c.digest)

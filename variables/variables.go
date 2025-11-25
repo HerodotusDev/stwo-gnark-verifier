@@ -2,6 +2,7 @@ package variables
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
+	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/std/math/uints"
@@ -24,12 +25,7 @@ type StarkProof struct {
 	SampledValues [][][]m31.QM31
 	QueriedValues [][]m31.M31
 	Decommitments []MerkleDecommitment
-}
-
-// MerkleDecommitment stores the witness bytes and column values emitted by the prover.
-type MerkleDecommitment struct {
-	HashWitness   [][32]uints.U8
-	ColumnWitness []m31.M31
+	FriProof      FriProof
 }
 
 // ╔══════════════════════════════════╗
@@ -464,4 +460,26 @@ type RangeChecksInteractionClaim struct {
 	RC3_6_6_3   cairo_components.RangeCheck3_6_6_3InteractionClaim
 	RC4_4_4_4   cairo_components.RangeCheck4_4_4_4InteractionClaim
 	RC3_3_3_3_3 cairo_components.RangeCheck3_3_3_3_3InteractionClaim
+}
+
+// ╔══════════════════════════════════╗
+// ║            Stark Proof           ║
+// ╚══════════════════════════════════╝
+
+// MerkleDecommitment stores the witness bytes and column values emitted by the prover.
+type MerkleDecommitment struct {
+	HashWitness   [][32]uints.U8
+	ColumnWitness []m31.M31
+}
+
+type FriProof struct {
+	FirstLayerProof  FriLayerProof
+	InnerLayerProofs []FriLayerProof
+	LastLayerPoly    circle.LinePoly
+}
+
+type FriLayerProof struct {
+	FriWitness   []m31.QM31
+	Decommitment MerkleDecommitment
+	Commitment   [32]uints.U8
 }

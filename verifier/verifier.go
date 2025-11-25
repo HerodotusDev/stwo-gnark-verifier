@@ -1,8 +1,6 @@
 package verifier
 
 import (
-	"fmt"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -88,7 +86,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 
-	c.VerifyValues(proof.StarkProof)
+	c.VerifyValues(commitmentVerifier, proof.StarkProof)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
@@ -107,7 +105,7 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }
 
-func (c *VerifierChip) VerifyValues(proof variables.StarkProof) {
+func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof) {
 	// Mix flatten sampled values into channel
 	flattenedSampledValues := make([]m31.QM31, 0)
 	for _, sampledValues := range proof.SampledValues {
@@ -118,6 +116,11 @@ func (c *VerifierChip) VerifyValues(proof variables.StarkProof) {
 	c.channelChip.MixFelts(flattenedSampledValues)
 
 	// Draw random coeff for FRI
-	randomCoeff := c.channelChip.DrawFelt()
-	fmt.Println("randomCoeff", randomCoeff)
+	_ = c.channelChip.DrawFelt()
+
+	// Compute bounds (column log sizes deduped, in decreasing order and not blew up)
+	bounds := commitmentVerifier.bounds()
+
+	// Verification of commitment stage of FRI
+	_ = fri.NewFriVerifier(c.channelChip, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
 }

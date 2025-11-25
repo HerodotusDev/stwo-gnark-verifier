@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"sort"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
@@ -32,7 +34,7 @@ func (v *CommitmentSchemeVerifier) Commit(treeIndex int, root [32]uints.U8, logS
 		panic("channel must not be nil")
 	}
 
-	ch.MixRoot(byteArrayToHash(root))
+	ch.MixRootBytes(root[:])
 	columnLogSizes := v.extendLogSizes(logSizes)
 	v.trees[treeIndex] = fri.NewMerkleVerifier(v.api, root, columnLogSizes)
 }
@@ -41,7 +43,7 @@ func (v *CommitmentSchemeVerifier) extendLogSizes(logSizes []uint32) []uint8 {
 	if len(logSizes) == 0 {
 		return nil
 	}
-	blowup := byteValue(v.pcsConfig.FriConfig.LogBlowupFactor[0])
+	blowup := v.pcsConfig.FriConfig.LogBlowupFactor
 	out := make([]uint8, len(logSizes))
 	for i, size := range logSizes {
 		out[i] = uint8(size) + blowup
@@ -49,34 +51,25 @@ func (v *CommitmentSchemeVerifier) extendLogSizes(logSizes []uint32) []uint8 {
 	return out
 }
 
-// TODO: byteValue is meant to be removed once CairoClaim is updated to use uint8 instead of uints.U8
-func byteValue(value uints.U8) uint8 {
-	switch v := value.Val.(type) {
-	case uint8:
-		return v
-	case uint16:
-		return uint8(v)
-	case uint32:
-		return uint8(v)
-	case uint64:
-		return uint8(v)
-	case int:
-		return uint8(v)
-	default:
-		panic("unsupported byte representation")
+func (v *CommitmentSchemeVerifier) columnLogSizes() [][]uint8 {
+	columnLogSizes := make([][]uint8, 4)
+	for _, merkleVerifier := range v.trees {
+		columnLogSizes = append(columnLogSizes, merkleVerifier.ColumnLogSizes)
 	}
+	return columnLogSizes
 }
 
-func byteArrayToHash(bytes [32]uints.U8) channel.Blake2sHash {
-	var hash channel.Blake2sHash
-	for i := 0; i < len(hash); i++ {
-		offset := i * 4
-		b0 := uint32(byteValue(bytes[offset]))
-		b1 := uint32(byteValue(bytes[offset+1]))
-		b2 := uint32(byteValue(bytes[offset+2]))
-		b3 := uint32(byteValue(bytes[offset+3]))
-		word := b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)
-		hash[i] = uints.NewU32(word)
+func (v *CommitmentSchemeVerifier) bounds() []uint8 {
+	uniqueBounds := make(map[uint8]struct{})
+	for _, columnLogSizes := range v.columnLogSizes() {
+		for _, columnLogSize := range columnLogSizes {
+			uniqueBounds[columnLogSize-v.pcsConfig.FriConfig.LogBlowupFactor] = struct{}{}
+		}
 	}
-	return hash
+	bounds := make([]uint8, 0, len(uniqueBounds))
+	for bound := range uniqueBounds {
+		bounds = append(bounds, bound)
+	}
+	sort.Slice(bounds, func(i, j int) bool { return bounds[i] > bounds[j] })
+	return bounds
 }

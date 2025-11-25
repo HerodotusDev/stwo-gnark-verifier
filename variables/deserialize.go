@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/std/math/uints"
@@ -891,6 +892,7 @@ func BuildStarkProof(starkProofRaw *StarkProofRaw) StarkProof {
 		SampledValues: buildSampledValues(starkProofRaw.SampledValues),
 		QueriedValues: buildQueriedValues(starkProofRaw.QueriedValues),
 		Decommitments: buildDecommitments(starkProofRaw.Decommitments),
+		FriProof:      buildFriProof(starkProofRaw.FriProof),
 	}
 }
 
@@ -976,6 +978,51 @@ func buildCommitments(raw [][]uint8) [][32]uints.U8 {
 	}
 
 	return result
+}
+
+func buildFriProof(raw FriProofRaw) FriProof {
+	return FriProof{
+		FirstLayerProof:  buildFirstLayerProof(raw.FirstLayerProof),
+		InnerLayerProofs: buildInnerLayerProofs(raw.InnerLayerProofs),
+		LastLayerPoly:    buildLastLayerPoly(raw.LastLayerPoly),
+	}
+}
+
+func buildFirstLayerProof(raw FriLayerProofRaw) FriLayerProof {
+	firstLayerProof := buildInnerLayerProof(raw)
+	return firstLayerProof
+}
+
+func buildInnerLayerProofs(raw []FriLayerProofRaw) []FriLayerProof {
+	result := make([]FriLayerProof, len(raw))
+	for i, entry := range raw {
+		result[i] = buildInnerLayerProof(entry)
+	}
+	return result
+}
+
+func buildInnerLayerProof(raw FriLayerProofRaw) FriLayerProof {
+	friWitness := make([]m31.QM31, len(raw.FriWitness))
+	for i, entry := range raw.FriWitness {
+		friWitness[i], _ = qm31FromUint64Grid(entry)
+	}
+
+	decommitment := buildDecommitments([]MerkleDecommitmentRaw{raw.Decommitment})[0]
+
+	commitment := buildCommitments([][]uint8{raw.Commitment})[0]
+	return FriLayerProof{
+		FriWitness:   friWitness,
+		Decommitment: decommitment,
+		Commitment:   commitment,
+	}
+}
+
+func buildLastLayerPoly(raw LinePolyRaw) circle.LinePoly {
+	coeffs, _ := qm31FromUint64Grid(raw.Coeffs[0])
+	return circle.LinePoly{
+		Coeffs:  []m31.QM31{coeffs},
+		LogSize: uints.NewU8(raw.LogSize),
+	}
 }
 
 // ╔══════════════════════════════════╗

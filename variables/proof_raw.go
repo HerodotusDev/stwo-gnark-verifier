@@ -315,7 +315,7 @@ type StarkProofRaw struct {
 	Config        json.RawMessage         `json:"config"`
 	Commitments   [][]uint8               `json:"commitments"`
 	Decommitments []MerkleDecommitmentRaw `json:"decommitments"`
-	FriProof      json.RawMessage         `json:"fri_proof"`
+	FriProof      FriProofRaw             `json:"fri_proof"`
 	ProofOfWork   json.RawMessage         `json:"proof_of_work"`
 	QueriedValues [][]uint64              `json:"queried_values"`
 	SampledValues SampledValuesRaw        `json:"sampled_values"`
@@ -332,4 +332,27 @@ type SampledValuesRaw [][][][][2]uint64
 type MerkleDecommitmentRaw struct {
 	HashWitness   [][]uint8 `json:"hash_witness"`
 	ColumnWitness []uint64  `json:"column_witness"`
+}
+
+// ╔══════════════════════════════════╗
+// ║        FRI Proof Structure       ║
+// ╚══════════════════════════════════╝
+// FriProofRaw mirrors the serialized FRI proof payload.
+type FriProofRaw struct {
+	FirstLayerProof  FriLayerProofRaw   `json:"first_layer"`
+	InnerLayerProofs []FriLayerProofRaw `json:"inner_layers"`
+	LastLayerPoly    LinePolyRaw        `json:"last_layer_poly"`
+}
+
+// FriLayerProofRaw mirrors the serialized FRI layer proof payload.
+type FriLayerProofRaw struct {
+	FriWitness   [][][]uint64          `json:"fri_witness"`
+	Decommitment MerkleDecommitmentRaw `json:"decommitment"`
+	Commitment   []uint8               `json:"commitment"`
+}
+
+// LinePolyRaw mirrors the serialized line polynomial payload.
+type LinePolyRaw struct {
+	Coeffs  [][][]uint64 `json:"coeffs"`
+	LogSize uint8        `json:"log_size"`
 }
