@@ -111,3 +111,45 @@ func TestConstructProofNil(t *testing.T) {
 		t.Fatalf("expected nil proof from nil input")
 	}
 }
+
+func TestBuildProofAllComponentsStatic(t *testing.T) {
+	raw, err := ReadCairoProof(ProofFixturePath(AllComponentsStaticProofFixture))
+	if err != nil {
+		t.Fatalf("failed to read proof: %v", err)
+	}
+
+	proof := BuildProof(raw)
+	if proof == nil {
+		t.Fatalf("built proof is nil")
+	}
+
+	if len(proof.StarkProof.QueriedValues) == 0 {
+		t.Fatalf("expected queried values")
+	}
+	if len(proof.StarkProof.Decommitments) == 0 {
+		t.Fatalf("expected decommitments")
+	}
+
+	firstValue := proof.StarkProof.QueriedValues[0][0].Variable()
+	switch v := firstValue.(type) {
+	case uint32:
+		if v != 505308499 {
+			t.Fatalf("unexpected first queried value: got %v, want %d", v, 505308499)
+		}
+	case uint64:
+		if v != 505308499 {
+			t.Fatalf("unexpected first queried value: got %v, want %d", v, 505308499)
+		}
+	default:
+		t.Fatalf("unexpected first queried value type: %T", firstValue)
+	}
+
+	firstHashByte := proof.StarkProof.Decommitments[0].HashWitness[0][0].Val
+	byteValue, ok := firstHashByte.(uint8)
+	if !ok {
+		t.Fatalf("expected hash witness byte to be uint8, got %T", firstHashByte)
+	}
+	if byteValue != 237 {
+		t.Fatalf("unexpected hash witness byte: got %d, want %d", byteValue, 237)
+	}
+}

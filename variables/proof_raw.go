@@ -312,14 +312,24 @@ type ComponentClaimedSumEntry struct {
 
 // StarkProofRaw mirrors the serialized Stark proof payload emitted by the prover.
 type StarkProofRaw struct {
-	Config        json.RawMessage  `json:"config"`
-	Commitments   json.RawMessage  `json:"commitments"`
-	Decommitments json.RawMessage  `json:"decommitments"`
-	FriProof      json.RawMessage  `json:"fri_proof"`
-	ProofOfWork   json.RawMessage  `json:"proof_of_work"`
-	QueriedValues json.RawMessage  `json:"queried_values"`
-	SampledValues SampledValuesRaw `json:"sampled_values"`
+	Config        json.RawMessage         `json:"config"`
+	Commitments   json.RawMessage         `json:"commitments"`
+	Decommitments []MerkleDecommitmentRaw `json:"decommitments"`
+	FriProof      json.RawMessage         `json:"fri_proof"`
+	ProofOfWork   json.RawMessage         `json:"proof_of_work"`
+	QueriedValues [][]uint64              `json:"queried_values"`
+	SampledValues SampledValuesRaw        `json:"sampled_values"`
 }
 
 // SampledValuesRaw stores the sampled values grouped by table, column and evaluation.
 type SampledValuesRaw [][][][][2]uint64
+
+// ╔══════════════════════════════════╗
+// ║    Merkle Decommitment Layout    ║
+// ╚══════════════════════════════════╝
+
+// MerkleDecommitmentRaw mirrors the serialized Merkle decommitment payload.
+type MerkleDecommitmentRaw struct {
+	HashWitness   [][]uint8 `json:"hash_witness"`
+	ColumnWitness []uint64  `json:"column_witness"`
+}

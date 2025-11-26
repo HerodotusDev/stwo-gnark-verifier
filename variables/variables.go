@@ -4,6 +4,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -19,6 +20,14 @@ type Proof struct {
 
 type StarkProof struct {
 	SampledValues [][][]m31.QM31
+	QueriedValues [][]m31.M31
+	Decommitments []MerkleDecommitment
+}
+
+// MerkleDecommitment stores the witness bytes and column values emitted by the prover.
+type MerkleDecommitment struct {
+	HashWitness   [][32]uints.U8
+	ColumnWitness []m31.M31
 }
 
 // ╔══════════════════════════════════╗

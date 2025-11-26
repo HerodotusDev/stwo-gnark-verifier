@@ -3,6 +3,7 @@ package blake2s
 import (
 	"math/big"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/cmp"
@@ -86,11 +87,38 @@ func NewBlake2sChip(api frontend.API) *Blake2sChip {
 	return &Blake2sChip{api: api, uapi: uapi}
 }
 
-func (c *Blake2sChip) Blake2s(msg []uints.U8) Blake2sState {
-	S := blake2sInitialState
-	S = c.Update(S, msg)
-	S, _ = c.Finalize(S)
-	return S
+func (c *Blake2sChip) Blake2s(msg []uints.U8) (Blake2sState, [32]uints.U8) {
+	state := blake2sInitialState
+	length := len(msg)
+	if length == 0 {
+		return c.Finalize(state)
+	}
+
+	headLen := 0
+	tailLen := length
+
+	if length >= 64 {
+		tailLen = length % 64
+		if tailLen == 0 {
+			tailLen = 64
+		}
+		headLen = length - tailLen
+		if headLen > 0 {
+			state = c.Update(state, msg[:headLen])
+		}
+	}
+
+	if tailLen > 0 {
+		copy(state.Buf[:tailLen], msg[headLen:])
+	}
+	state.BufLen = tailLen
+
+	return c.Finalize(state)
+}
+
+func (c *Blake2sChip) Digest(msg []uints.U8) [32]uints.U8 {
+	_, digest := c.Blake2s(msg)
+	return digest
 }
 
 func (c *Blake2sChip) Update(state Blake2sState, msg []uints.U8) Blake2sState {
@@ -320,4 +348,27 @@ func (c *Blake2sChip) Finalize(state Blake2sState) (Blake2sState, [32]uints.U8) 
 	}
 
 	return state, out
+}
+
+// ╔══════════════════════════════════╗
+// ║           Merkle Hashing         ║
+// ╚══════════════════════════════════╝
+
+// HashNode serializes the node inputs and runs them through Blake2s.
+func (c *Blake2sChip) HashNode(left, right []uints.U8, values []m31.M31) [32]uints.U8 {
+	msgLen := len(left) + len(right) + 4*len(values)
+	msg := make([]uints.U8, 0, msgLen)
+
+	if len(left) > 0 {
+		msg = append(msg, left...)
+	}
+	if len(right) > 0 {
+		msg = append(msg, right...)
+	}
+	for _, value := range values {
+		word := c.uapi.ValueOf(value.Limb)
+		msg = append(msg, c.uapi.UnpackLSB(word)...)
+	}
+
+	return c.Digest(msg)
 }
