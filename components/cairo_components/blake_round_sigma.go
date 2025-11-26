@@ -7,8 +7,8 @@ import (
 
 const (
 	blakeRoundSigmaLogSize            = 4
-	blakeRoundSigmaTraceColumns       = 1
-	blakeRoundSigmaInteractionColumns = 4
+	BlakeRoundSigmaTraceColumns       = 1
+	BlakeRoundSigmaInteractionColumns = 4
 )
 
 type BlakeRoundSigmaClaim struct{}
@@ -47,7 +47,7 @@ func NewBlakeRoundSigma(
 }
 
 func (c *BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(blakeRoundSigmaTraceColumns, blakeRoundSigmaInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(BlakeRoundSigmaTraceColumns, BlakeRoundSigmaInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -68,11 +68,11 @@ func (claim CairoClaim) LogSizes() cairo_components.TreeLogSizes {
 	if ctx := claim.BlakeContext.Claim; ctx != nil {
 		appendOptionalClaim(&parts, ctx.BlakeRound)
 		appendOptionalClaim(&parts, ctx.BlakeG)
-		appendOptionalClaim(&parts, ctx.BlakeRoundSigma)
+		appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 4}, cairo_components.BlakeRoundSigmaTraceColumns, cairo_components.BlakeRoundSigmaInteractionColumns)
 		if ctx.TripleXor32 != nil {
 			parts = append(parts, ctx.TripleXor32.LogSizes())
 		}
-		appendSimpleClaim(&parts, ctx.VerifyBitwiseXor12, cairo_components.VerifyBitwiseXor12TraceColumns, cairo_components.VerifyBitwiseXor12InteractionColumns)
+		appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 20}, cairo_components.VerifyBitwiseXor12TraceColumns, cairo_components.VerifyBitwiseXor12InteractionColumns)
 	}
 
 	// Builtins
@@ -87,7 +87,7 @@ func (claim CairoClaim) LogSizes() cairo_components.TreeLogSizes {
 	// Pedersen context
 	if pedersen := claim.PedersenContext.Claim; pedersen != nil {
 		appendOptionalClaim(&parts, pedersen.PartialEcMul)
-		appendOptionalClaim(&parts, pedersen.PedersenPointsTable)
+		appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 23}, cairo_components.PedersenPointsTableTraceColumns, cairo_components.PedersenPointsTableInteractionColumns)
 	}
 
 	// Poseidon context
@@ -95,7 +95,7 @@ func (claim CairoClaim) LogSizes() cairo_components.TreeLogSizes {
 		appendOptionalClaim(&parts, poseidon.Poseidon3PartialRoundsChain)
 		appendOptionalClaim(&parts, poseidon.PoseidonFullRoundChain)
 		appendOptionalClaim(&parts, poseidon.Cube252)
-		appendOptionalClaim(&parts, poseidon.PoseidonRoundKeys)
+		appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 6}, cairo_components.PoseidonRoundKeysTraceColumns, cairo_components.PoseidonRoundKeysInteractionColumns)
 		appendOptionalClaim(&parts, poseidon.RangeCheckFelt252Width27)
 	}
 
@@ -105,26 +105,26 @@ func (claim CairoClaim) LogSizes() cairo_components.TreeLogSizes {
 	appendOptionalClaim(&parts, claim.MemoryIDToValue.Small)
 
 	// Range checks simple claims.
-	appendSimpleClaim(&parts, claim.RangeChecks.RC6, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC8, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC11, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC12, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC18, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC19, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC4_3, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC4_4, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC5_4, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC9_9, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC7_2_5, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC3_6_6_3, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC4_4_4_4, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.RangeChecks.RC3_3_3_3_3, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 6}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 8}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 11}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 12}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 18}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 19}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 7}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 8}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 9}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 18}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 14}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 18}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 16}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 15}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
 
 	// Verify bitwise XOR components (simple claims).
-	appendSimpleClaim(&parts, claim.VerifyBitwiseXor4, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.VerifyBitwiseXor7, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.VerifyBitwiseXor8, rangeCheckTraceColumns, rangeCheckInteractionColumns)
-	appendSimpleClaim(&parts, claim.VerifyBitwiseXor9, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 8}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 14}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 16}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
+	appendSimpleClaim(&parts, &SimpleLogSizeClaim{LogSize: 18}, rangeCheckTraceColumns, rangeCheckInteractionColumns)
 
 	return cairo_components.ConcatTreeLogSizes(parts...)
 }

@@ -9,8 +9,8 @@ import (
 const (
 	pedersenPointsTableLogSize            = 23
 	pedersenPointsTableColumns            = 56
-	pedersenPointsTableTraceColumns       = 1
-	pedersenPointsTableInteractionColumns = 4
+	PedersenPointsTableTraceColumns       = 1
+	PedersenPointsTableInteractionColumns = 4
 )
 
 type PedersenPointsTableClaim struct{}
@@ -58,7 +58,7 @@ func NewPedersenPointsTable(
 }
 
 func (c *PedersenPointsTableComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(pedersenPointsTableTraceColumns, pedersenPointsTableInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(PedersenPointsTableTraceColumns, PedersenPointsTableInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

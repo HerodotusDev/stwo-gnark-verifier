@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
@@ -45,7 +46,7 @@ func (c *merkleDecommitCircuit) Define(api frontend.API) error {
 	hashWitness := make([][32]uints.U8, len(data.HashWitness))
 	copy(hashWitness, data.HashWitness)
 
-	decommitment := &MerkleDecommitment{
+	decommitment := variables.MerkleDecommitment{
 		HashWitness: hashWitness,
 	}
 

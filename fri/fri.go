@@ -86,7 +86,7 @@ func NewFriVerifier(api frontend.API, channelChip *channel.Channel, circleChip *
 }
 
 func (f *FriVerifier) GenerateBaseLayerQueries(channelChip *channel.Channel, uapi *uints.BinaryField[uints.U32], nQueries uint8) []frontend.Variable {
-	maxLogSize := f.FirstLayerVerifier.columnBounds[0]
+	maxLogSize := f.FirstLayerVerifier.columnBounds[0] + f.friConfig.LogBlowupFactor
 	queries := make([]frontend.Variable, 0)
 	queryCount := uint8(0)
 	maxQuery := uints.NewU32((1 << maxLogSize) - 1)

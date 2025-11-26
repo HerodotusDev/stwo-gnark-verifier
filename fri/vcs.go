@@ -3,15 +3,12 @@ package fri
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 const NQUERIES = 10
-
-type MerkleDecommitment struct {
-	HashWitness [][32]uints.U8
-}
 
 type MerkleVerifier struct {
 	api         frontend.API
@@ -51,7 +48,7 @@ func NewMerkleVerifier(api frontend.API, root [32]uints.U8, columnLogSizes []uin
 // Verify verifies the Merkle decommitment for the given queries and queried values
 //   - queries[l] contains the queries for the layer of log size l, len(queries) should be the number of layers (from root to leaves).
 //     For all l, queries[l] is sorted ascending.
-func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decommitment *MerkleDecommitment) {
+func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decommitment variables.MerkleDecommitment) {
 	remainingValues := queriedValues
 	hashWitness := decommitment.HashWitness
 	hashWitnessIndex := 0

@@ -8,8 +8,8 @@ import (
 const (
 	poseidonRoundKeysLogSize            = uint32(6)
 	poseidonRoundKeysColumns            = 30
-	poseidonRoundKeysTraceColumns       = 1
-	poseidonRoundKeysInteractionColumns = 4
+	PoseidonRoundKeysTraceColumns       = 1
+	PoseidonRoundKeysInteractionColumns = 4
 )
 
 type PoseidonRoundKeysClaim struct{}
@@ -57,7 +57,7 @@ func NewPoseidonRoundKeys(
 }
 
 func (c *PoseidonRoundKeysComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(poseidonRoundKeysTraceColumns, poseidonRoundKeysInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(PoseidonRoundKeysTraceColumns, PoseidonRoundKeysInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
