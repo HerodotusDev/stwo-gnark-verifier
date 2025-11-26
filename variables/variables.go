@@ -19,6 +19,7 @@ type Proof struct {
 }
 
 type StarkProof struct {
+	Commitments   [][32]uints.U8
 	SampledValues [][][]m31.QM31
 	QueriedValues [][]m31.M31
 	Decommitments []MerkleDecommitment

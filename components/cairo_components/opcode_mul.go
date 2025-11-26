@@ -7,6 +7,11 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+const (
+	mulOpcodeTraceColumns       = 130
+	mulOpcodeInteractionColumns = 76
+)
+
 type MulOpcodeClaim struct {
 	LogSize uints.U8
 }
@@ -56,7 +61,7 @@ func NewMulOpcode(
 }
 
 func (c *MulOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(130, 76)
+	traceSampledValues, interactionSampledValues := traces.Take(mulOpcodeTraceColumns, mulOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

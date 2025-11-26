@@ -375,3 +375,38 @@ var PreprocessedColumns = []PreprocessedColumn{
 	NewPreprocessedColumnBlakeSigma(uints.NewU8(14)),
 	NewPreprocessedColumnBlakeSigma(uints.NewU8(15)),
 }
+
+// PreprocessedLogSizes returns the log size of each canonical preprocessed column.
+func PreprocessedLogSizes() []uint32 {
+	sizes := make([]uint32, len(PreprocessedColumns))
+	for i, column := range PreprocessedColumns {
+		sizes[i] = column.logSize()
+	}
+	return sizes
+}
+
+func (column PreprocessedColumn) logSize() uint32 {
+	switch column.kind {
+	case preprocessedColumnSeq:
+		return u8Value(column.seqLogSize)
+	case preprocessedColumnPedersenPoints:
+		return pedersenPointsTableLogSize
+	case preprocessedColumnBitwiseXor:
+		return 2 * u8Value(column.nTermBits)
+	case preprocessedColumnRangeCheck2,
+		preprocessedColumnRangeCheck3,
+		preprocessedColumnRangeCheck4,
+		preprocessedColumnRangeCheck5:
+		var sum uint32
+		for _, value := range column.rangeCheckValues {
+			sum += u8Value(value)
+		}
+		return sum
+	case preprocessedColumnPoseidonRoundKeys:
+		return poseidonRoundKeysLogSize
+	case preprocessedColumnBlakeSigma:
+		return blakeRoundSigmaLogSize
+	default:
+		panic("unsupported preprocessed column kind")
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
@@ -36,7 +37,13 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	// Mix PCS configuration into the channel
 	pcsConfig.MixInto(c.channelChip)
 
-	// TODO: Verify commitments
+	commitmentVerifier := NewCommitmentSchemeVerifier(c.api, pcsConfig)
+	logSizes := proof.Claim.LogSizes()
+
+	// Verify preprocessed trace commitment
+	logSizes[cairo_components.PREPROCESSED_IDX] = cairo_components.PreprocessedLogSizes()
+	preprocessedLogs := logSizes[cairo_components.PREPROCESSED_IDX]
+	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogs, c.channelChip)
 
 	// TODO: Check Proof-of-Work nonce
 

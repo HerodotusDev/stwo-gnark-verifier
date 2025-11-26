@@ -7,6 +7,11 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+const (
+	jumpDoubleDerefOpcodeTraceColumns       = 17
+	jumpDoubleDerefOpcodeInteractionColumns = 16
+)
+
 type JumpDoubleDerefOpcodeClaim struct {
 	LogSize uints.U8
 }
@@ -54,7 +59,7 @@ func NewJumpDoubleDerefOpcode(
 }
 
 func (c *JumpDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(17, 16)
+	traceSampledValues, interactionSampledValues := traces.Take(jumpDoubleDerefOpcodeTraceColumns, jumpDoubleDerefOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

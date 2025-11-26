@@ -41,8 +41,8 @@ func newLookupConstraintComponent(
 }
 
 const (
-	lookupTraceColumns       = 1
-	lookupInteractionColumns = 4
+	LookupTraceColumns       = 1
+	LookupInteractionColumns = 4
 )
 
 func (c *lookupConstraintComponent) Evaluate(
@@ -50,7 +50,7 @@ func (c *lookupConstraintComponent) Evaluate(
 	traces *Traces,
 	randomCoeff m31.QM31,
 ) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(lookupTraceColumns, lookupInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(LookupTraceColumns, LookupInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
