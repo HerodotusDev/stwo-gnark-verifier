@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"fmt"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -96,7 +98,18 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 
-	c.VerifyValues(commitmentVerifier, proof.StarkProof, proof.CircuitHints.Queries)
+	// Compute mask points
+	maskPoints := proof.Claim.MaskPoints(oodsPoint, c.circle)
+	maskPoints[cairo_components.CP_IDX] = [][]circle.Point{
+		{oodsPoint},
+		{oodsPoint},
+		{oodsPoint},
+		{oodsPoint},
+	}
+	// DEBUG: Verify that there is a point for each sampled value (no constraints enforced)
+	checkMaskPoints(maskPoints, proof.StarkProof.SampledValues)
+
+	c.VerifyValues(commitmentVerifier, proof.StarkProof, proof.CircuitHints.Queries, maskPoints)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
@@ -115,7 +128,7 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }
 
-func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof, queries [][]int) {
+func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof, queries [][]int, maskPoints cairo_components.TreeMaskPoints) {
 	// Mix flatten sampled values into channel
 	flattenedSampledValues := make([]m31.QM31, 0)
 	for _, sampledValues := range proof.SampledValues {
@@ -146,4 +159,23 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 		tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
 	}
 
+}
+
+func checkMaskPoints(maskPoints cairo_components.TreeMaskPoints, sampledValues [][][]m31.QM31) {
+	if len(maskPoints) != len(sampledValues) {
+		panic("tree length mismatch")
+	}
+	for treeIndex, tree := range maskPoints {
+		if treeIndex == 0 {
+			continue
+		}
+		if len(tree) != len(sampledValues[treeIndex]) {
+			panic(fmt.Sprintf("column length mismatch: %d != %d", len(tree), len(sampledValues[treeIndex])))
+		}
+		for columnIndex, column := range tree {
+			if len(column) != len(sampledValues[treeIndex][columnIndex]) {
+				panic(fmt.Sprintf("sample length mismatch (tree index: %d, column index: %d): %d != %d", treeIndex, columnIndex, len(column), len(sampledValues[treeIndex][columnIndex])))
+			}
+		}
+	}
 }

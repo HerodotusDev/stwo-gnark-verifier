@@ -41,8 +41,8 @@ func (claim CairoClaim) LogSizes() cairo_components.TreeLogSizes {
 
 	// Opcodes
 	appendClaimList(&parts, claim.Opcodes.Add)
-	appendClaimList(&parts, claim.Opcodes.AddAp)
 	appendClaimList(&parts, claim.Opcodes.AddSmall)
+	appendClaimList(&parts, claim.Opcodes.AddAp)
 	appendClaimList(&parts, claim.Opcodes.AssertEq)
 	appendClaimList(&parts, claim.Opcodes.AssertEqImm)
 	appendClaimList(&parts, claim.Opcodes.AssertEqDoubleDeref)
