@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
@@ -17,13 +18,13 @@ type VerifierCircuit struct {
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := NewVerifierChip(api)
-	verifierChip.Verify(c.proof)
+	verifierChip.Verify(c.proof, fri.DefaultPcsConfig())
 
 	return nil
 }
 
 func TestCairoComponentAtomicEvaluations(t *testing.T) {
-	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.HdpProofFixture))
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsStaticProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
