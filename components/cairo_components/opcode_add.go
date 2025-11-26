@@ -40,6 +40,7 @@ func NewAddOpcode(
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim AddOpcodeClaim,
 	interactionClaim AddOpcodeInteractionClaim,
 ) *AddOpcodeComponent {
@@ -54,7 +55,7 @@ func NewAddOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(), // TODO: actual vanishing evaluation.
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

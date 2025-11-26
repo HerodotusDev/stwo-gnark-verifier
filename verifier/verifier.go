@@ -83,13 +83,18 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 
 	// Verify OODS
 	oodsPoint := c.circle.GetRandomPoint(c.channelChip)
-	components := components.NewComponents(c.api, c.m31, c.qm31, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint.X)
+	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
-	// TODO: Extract CP evaluation from sampled values
-	composition_oods_eval := m31.NewQM31Unchecked(681221237, 2077141275, 236160070, 1930131422)
+	// Extract CP evaluation from sampled values
+	composition_oods_eval := c.qm31.FromPartialEvals(
+		sampledValues[cairo_components.CP_IDX][0][0],
+		sampledValues[cairo_components.CP_IDX][1][0],
+		sampledValues[cairo_components.CP_IDX][2][0],
+		sampledValues[cairo_components.CP_IDX][3][0],
+	)
 
 	// evaluate constraints using sampled values
 	constraints_oods_eval := components.Evaluate(sampledValues, randomCoeff)

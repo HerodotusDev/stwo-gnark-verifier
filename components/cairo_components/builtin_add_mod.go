@@ -40,6 +40,7 @@ func NewAddModBuiltin(
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
 	memoryIdElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim AddModBuiltinClaim,
 	interactionClaim AddModBuiltinInteractionClaim,
 ) *AddModBuiltinComponent {
@@ -58,7 +59,7 @@ func NewAddModBuiltin(
 		segmentStart:           segmentStart,
 		claimedSum:             interactionClaim.ClaimedSum,
 		columnSizeInv:          columnSizeInv,
-		vanishEvalInv:          qm31.One(), // assume vanishing polynomial evaluates to 1 at the sampled point.
+		vanishEvalInv:          vanishEvalInv,
 	}
 }
 

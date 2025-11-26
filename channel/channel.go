@@ -8,7 +8,6 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
-	"github.com/consensys/gnark/std/rangecheck"
 )
 
 type Blake2sHash [8]uints.U32
@@ -151,20 +150,17 @@ func (c *Channel) DrawRandomBytes() []uints.U8 {
 // MixAndCheckPowNonce mixes a nonce and checks the leading zero bits.
 func (c *Channel) MixAndCheckPowNonce(nonce uints.U64, interactionPowBits int) {
 	c.MixU64(nonce)
-	checkProofOfWork(c.api, c.uapi, c.digest, interactionPowBits)
+	checkProofOfWork(c.uapi, c.digest, interactionPowBits)
 }
 
 // checkProofOfWork verifies that the digest has the required leading zeros.
 // Is is assumed that InteractionPowBits is a constant less than 32.
 // Runs a 32-InteractionPowBits RC in big endian order.
-func checkProofOfWork(api frontend.API, uapi *uints.BinaryField[uints.U32], digest Blake2sHash, interactionPowBits int) {
-	rc := rangecheck.New(api)
-	msw := digest[len(digest)-1]
-	mswBytes := uapi.UnpackMSB(msw)
-	beWord := uapi.PackLSB(mswBytes[3], mswBytes[2], mswBytes[1], mswBytes[0])
-	value := uapi.ToValue(beWord)
-
-	rc.Check(value, 32-interactionPowBits)
+func checkProofOfWork(uapi *uints.BinaryField[uints.U32], digest Blake2sHash, interactionPowBits int) {
+	lsw := digest[0]
+	mask := uints.NewU32((1 << interactionPowBits) - 1)
+	masked := uapi.And(lsw, mask)
+	uapi.AssertEq(masked, uints.NewU32(0))
 }
 
 // ╔══════════════════════════════════╗

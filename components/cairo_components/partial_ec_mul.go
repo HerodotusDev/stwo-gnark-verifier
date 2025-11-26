@@ -174,6 +174,7 @@ func NewPartialEcMul(
 	rangeCheck9Elements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	partialEcMulElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim PartialEcMulClaim,
 	interactionClaim PartialEcMulInteractionClaim,
 ) *PartialEcMulComponent {
@@ -187,7 +188,7 @@ func NewPartialEcMul(
 		partialEcMulElements: partialEcMulElements,
 		claimedSum:           interactionClaim.ClaimedSum,
 		columnSizeInv:        qm31Chip.Inverse(columnSize),
-		vanishEvalInv:        qm31Chip.One(),
+		vanishEvalInv:        vanishEvalInv,
 		logSize:              claim.LogSize,
 	}
 }

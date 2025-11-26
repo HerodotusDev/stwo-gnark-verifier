@@ -40,6 +40,7 @@ func NewRangeCheck128Builtin(
 	qm31 *m31.QM31Chip,
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim RangeCheck128BuiltinClaim,
 	interactionClaim RangeCheck128BuiltinInteractionClaim,
 ) *RangeCheck128BuiltinComponent {
@@ -58,7 +59,7 @@ func NewRangeCheck128Builtin(
 		segmentStart:              segmentStart,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(), // Assume vanishing polynomial evaluates to 1.
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

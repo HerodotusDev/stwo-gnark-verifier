@@ -36,6 +36,7 @@ func NewPedersenPointsTable(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	interactionClaim PedersenPointsTableInteractionClaim,
 ) *PedersenPointsTableComponent {
 	columnSize := computeColumnSize(api, uints.NewU8(pedersenPointsTableLogSize))
@@ -50,7 +51,7 @@ func NewPedersenPointsTable(
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  qm31.Inverse(columnSize),
-		vanishEvalInv:  qm31.One(),
+		vanishEvalInv:  vanishEvalInv,
 		seqColumn:      NewPreprocessedColumnSeq(uints.NewU8(uint8(pedersenPointsTableLogSize))),
 		pointColumns:   pointColumns,
 	}

@@ -42,6 +42,7 @@ func NewMulOpcode(
 	memoryIdToBigElements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim MulOpcodeClaim,
 	interactionClaim MulOpcodeInteractionClaim,
 ) *MulOpcodeComponent {
@@ -56,7 +57,7 @@ func NewMulOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             qm31.Inverse(columnSize),
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

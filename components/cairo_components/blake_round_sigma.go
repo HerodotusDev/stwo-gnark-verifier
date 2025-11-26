@@ -29,6 +29,7 @@ type BlakeRoundSigmaComponent struct {
 func NewBlakeRoundSigma(
 	qm31 *m31.QM31Chip,
 	lookup m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim BlakeRoundSigmaClaim,
 	interactionClaim BlakeRoundSigmaInteractionClaim,
 ) *BlakeRoundSigmaComponent {
@@ -41,7 +42,7 @@ func NewBlakeRoundSigma(
 		lookupElements: lookup,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  columnSizeInv,
-		vanishEvalInv:  qm31.One(), // TODO: wire actual vanishing polynomial evaluation.
+		vanishEvalInv:  vanishEvalInv,
 	}
 }
 

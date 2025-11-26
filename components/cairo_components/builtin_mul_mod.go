@@ -59,6 +59,7 @@ func NewMulModBuiltin(
 	rangeCheck12Elements m31.InteractionElements,
 	rangeCheck3Elements m31.InteractionElements,
 	rangeCheck18Elements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim MulModBuiltinClaim,
 	interactionClaim MulModBuiltinInteractionClaim,
 ) *MulModBuiltinComponent {
@@ -80,7 +81,7 @@ func NewMulModBuiltin(
 		segmentStart:           segmentStart,
 		claimedSum:             interactionClaim.ClaimedSum,
 		columnSizeInv:          columnSizeInv,
-		vanishEvalInv:          qm31.One(),
+		vanishEvalInv:          vanishEvalInv,
 	}
 }
 

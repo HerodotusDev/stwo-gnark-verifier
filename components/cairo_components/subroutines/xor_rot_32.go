@@ -134,8 +134,8 @@ func XorRot32R8Evaluate(
 	xorSum2 := BitwiseXorNumBits8Evaluate(qm31, low1, low3, xor6, lookup)
 	xorSum3 := BitwiseXorNumBits8Evaluate(qm31, msb1, msb3, xor7, lookup)
 
-	res0 := qm31.Add(xor6, qm31.Mul(xor7, qm31Const(256)))
-	res1 := qm31.Add(xor4, qm31.Mul(xor5, qm31Const(256)))
+	res0 := qm31.Add(xor5, qm31.Mul(xor6, qm31Const(256)))
+	res1 := qm31.Add(xor7, qm31.Mul(xor4, qm31Const(256)))
 
 	return XorRot32R8Result{
 		Res0:     res0,

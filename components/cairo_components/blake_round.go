@@ -45,6 +45,7 @@ func NewBlakeRound(
 	memoryIdToBig m31.InteractionElements,
 	blakeG m31.InteractionElements,
 	blakeRound m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim BlakeRoundClaim,
 	interactionClaim BlakeRoundInteractionClaim,
 ) *BlakeRoundComponent {
@@ -61,7 +62,7 @@ func NewBlakeRound(
 		blakeRoundElements:      blakeRound,
 		claimedSum:              interactionClaim.ClaimedSum,
 		columnSizeInv:           columnSizeInv,
-		vanishEvalInv:           qm31.One(), // TODO: wire real vanishing evaluation.
+		vanishEvalInv:           vanishEvalInv,
 		logSize:                 claim.LogSize,
 	}
 }
@@ -217,12 +218,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[0], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[0], inputLimb[1], inputLimb[8], inputLimb[9],
-				inputLimb[16], inputLimb[17], inputLimb[24], inputLimb[25],
+				inputLimb[2], inputLimb[3], inputLimb[10], inputLimb[11],
+				inputLimb[18], inputLimb[19], inputLimb[26], inputLimb[27],
 				messageWords[0].low16, messageWords[0].high16,
 				messageWords[1].low16, messageWords[1].high16,
-				blakeG(0, 0), blakeG(0, 1), blakeG(1, 0), blakeG(1, 1),
-				blakeG(2, 0), blakeG(2, 1), blakeG(3, 0), blakeG(3, 1),
+				blakeG(0, 0), blakeG(0, 1), blakeG(0, 2), blakeG(0, 3),
+				blakeG(0, 4), blakeG(0, 5), blakeG(0, 6), blakeG(0, 7),
 			),
 		)
 		if err != nil {
@@ -232,12 +233,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[1], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[2], inputLimb[3], inputLimb[10], inputLimb[11],
-				inputLimb[18], inputLimb[19], inputLimb[26], inputLimb[27],
+				inputLimb[4], inputLimb[5], inputLimb[12], inputLimb[13],
+				inputLimb[20], inputLimb[21], inputLimb[28], inputLimb[29],
 				messageWords[2].low16, messageWords[2].high16,
 				messageWords[3].low16, messageWords[3].high16,
-				blakeG(0, 2), blakeG(0, 3), blakeG(1, 2), blakeG(1, 3),
-				blakeG(2, 2), blakeG(2, 3), blakeG(3, 2), blakeG(3, 3),
+				blakeG(1, 0), blakeG(1, 1), blakeG(1, 2), blakeG(1, 3),
+				blakeG(1, 4), blakeG(1, 5), blakeG(1, 6), blakeG(1, 7),
 			),
 		)
 		if err != nil {
@@ -247,12 +248,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[2], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[4], inputLimb[5], inputLimb[12], inputLimb[13],
-				inputLimb[20], inputLimb[21], inputLimb[28], inputLimb[29],
+				inputLimb[6], inputLimb[7], inputLimb[14], inputLimb[15],
+				inputLimb[22], inputLimb[23], inputLimb[30], inputLimb[31],
 				messageWords[4].low16, messageWords[4].high16,
 				messageWords[5].low16, messageWords[5].high16,
-				blakeG(0, 4), blakeG(0, 5), blakeG(1, 4), blakeG(1, 5),
-				blakeG(2, 4), blakeG(2, 5), blakeG(3, 4), blakeG(3, 5),
+				blakeG(2, 0), blakeG(2, 1), blakeG(2, 2), blakeG(2, 3),
+				blakeG(2, 4), blakeG(2, 5), blakeG(2, 6), blakeG(2, 7),
 			),
 		)
 		if err != nil {
@@ -262,12 +263,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[3], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[6], inputLimb[7], inputLimb[14], inputLimb[15],
-				inputLimb[22], inputLimb[23], inputLimb[30], inputLimb[31],
+				inputLimb[8], inputLimb[9], inputLimb[16], inputLimb[17],
+				inputLimb[24], inputLimb[25], inputLimb[32], inputLimb[33],
 				messageWords[6].low16, messageWords[6].high16,
 				messageWords[7].low16, messageWords[7].high16,
-				blakeG(0, 6), blakeG(0, 7), blakeG(1, 6), blakeG(1, 7),
-				blakeG(2, 6), blakeG(2, 7), blakeG(3, 6), blakeG(3, 7),
+				blakeG(3, 0), blakeG(3, 1), blakeG(3, 2), blakeG(3, 3),
+				blakeG(3, 4), blakeG(3, 5), blakeG(3, 6), blakeG(3, 7),
 			),
 		)
 		if err != nil {
@@ -277,12 +278,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[4], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[0], inputLimb[1], inputLimb[8], inputLimb[9],
-				inputLimb[16], inputLimb[17], inputLimb[24], inputLimb[25],
+				blakeG(0, 0), blakeG(0, 1), blakeG(1, 2), blakeG(1, 3),
+				blakeG(2, 4), blakeG(2, 5), blakeG(3, 6), blakeG(3, 7),
 				messageWords[8].low16, messageWords[8].high16,
 				messageWords[9].low16, messageWords[9].high16,
-				blakeG(4, 0), blakeG(4, 1), blakeG(5, 0), blakeG(5, 1),
-				blakeG(6, 0), blakeG(6, 1), blakeG(7, 0), blakeG(7, 1),
+				blakeG(4, 0), blakeG(4, 1), blakeG(4, 2), blakeG(4, 3),
+				blakeG(4, 4), blakeG(4, 5), blakeG(4, 6), blakeG(4, 7),
 			),
 		)
 		if err != nil {
@@ -292,12 +293,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[5], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[2], inputLimb[3], inputLimb[10], inputLimb[11],
-				inputLimb[18], inputLimb[19], inputLimb[26], inputLimb[27],
+				blakeG(1, 0), blakeG(1, 1), blakeG(2, 2), blakeG(2, 3),
+				blakeG(3, 4), blakeG(3, 5), blakeG(0, 6), blakeG(0, 7),
 				messageWords[10].low16, messageWords[10].high16,
 				messageWords[11].low16, messageWords[11].high16,
-				blakeG(4, 2), blakeG(4, 3), blakeG(5, 2), blakeG(5, 3),
-				blakeG(6, 2), blakeG(6, 3), blakeG(7, 2), blakeG(7, 3),
+				blakeG(5, 0), blakeG(5, 1), blakeG(5, 2), blakeG(5, 3),
+				blakeG(5, 4), blakeG(5, 5), blakeG(5, 6), blakeG(5, 7),
 			),
 		)
 		if err != nil {
@@ -307,12 +308,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[6], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[4], inputLimb[5], inputLimb[12], inputLimb[13],
-				inputLimb[20], inputLimb[21], inputLimb[28], inputLimb[29],
+				blakeG(2, 0), blakeG(2, 1), blakeG(3, 2), blakeG(3, 3),
+				blakeG(0, 4), blakeG(0, 5), blakeG(1, 6), blakeG(1, 7),
 				messageWords[12].low16, messageWords[12].high16,
 				messageWords[13].low16, messageWords[13].high16,
-				blakeG(4, 4), blakeG(4, 5), blakeG(5, 4), blakeG(5, 5),
-				blakeG(6, 4), blakeG(6, 5), blakeG(7, 4), blakeG(7, 5),
+				blakeG(6, 0), blakeG(6, 1), blakeG(6, 2), blakeG(6, 3),
+				blakeG(6, 4), blakeG(6, 5), blakeG(6, 6), blakeG(6, 7),
 			),
 		)
 		if err != nil {
@@ -322,12 +323,12 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		blakeGSums[7], err = qm31.Combine(
 			c.blakeGElements,
 			buildValues(
-				inputLimb[6], inputLimb[7], inputLimb[14], inputLimb[15],
-				inputLimb[22], inputLimb[23], inputLimb[30], inputLimb[31],
+				blakeG(3, 0), blakeG(3, 1), blakeG(0, 2), blakeG(0, 3),
+				blakeG(1, 4), blakeG(1, 5), blakeG(2, 6), blakeG(2, 7),
 				messageWords[14].low16, messageWords[14].high16,
 				messageWords[15].low16, messageWords[15].high16,
-				blakeG(4, 6), blakeG(4, 7), blakeG(5, 6), blakeG(5, 7),
-				blakeG(6, 6), blakeG(6, 7), blakeG(7, 6), blakeG(7, 7),
+				blakeG(7, 0), blakeG(7, 1), blakeG(7, 2), blakeG(7, 3),
+				blakeG(7, 4), blakeG(7, 5), blakeG(7, 6), blakeG(7, 7),
 			),
 		)
 		if err != nil {

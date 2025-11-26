@@ -40,6 +40,7 @@ func NewJumpOpcode(
 	memoryAddressToIdElements m31.InteractionElements,
 	memoryIdToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim JumpOpcodeClaim,
 	interactionClaim JumpOpcodeInteractionClaim,
 ) *JumpOpcodeComponent {
@@ -54,7 +55,7 @@ func NewJumpOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 

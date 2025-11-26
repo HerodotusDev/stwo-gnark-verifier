@@ -17,10 +17,11 @@ type RangeCheck4_4_4_4Component struct {
 }
 
 func NewRangeCheck4_4_4_4(
-    api frontend.API,
-    qm31 *m31.QM31Chip,
-    interactionElements m31.InteractionElements,
-    interactionClaim RangeCheck4_4_4_4InteractionClaim,
+	api frontend.API,
+	qm31 *m31.QM31Chip,
+	interactionElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
+	interactionClaim RangeCheck4_4_4_4InteractionClaim,
 ) *RangeCheck4_4_4_4Component {
 	values := []uints.U8{
 		uints.NewU8(4),
@@ -36,15 +37,16 @@ func NewRangeCheck4_4_4_4(
 	}
 
 	return &RangeCheck4_4_4_4Component{
-        inner: newLookupConstraintComponent(
-            api,
-            qm31,
-            interactionElements,
-            interactionClaim.ClaimedSum,
-            uints.NewU8(rangeCheck4_4_4_4LogSize),
-            preprocessed,
-        ),
-    }
+		inner: newLookupConstraintComponent(
+			api,
+			qm31,
+			interactionElements,
+			interactionClaim.ClaimedSum,
+			uints.NewU8(rangeCheck4_4_4_4LogSize),
+			preprocessed,
+			vanishEvalInv,
+		),
+	}
 }
 
 func (c *RangeCheck4_4_4_4Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {

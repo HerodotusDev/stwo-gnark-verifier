@@ -49,6 +49,7 @@ func NewBlakeCompressOpcode(
 	blakeRoundElements m31.InteractionElements,
 	tripleXor32Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim BlakeCompressOpcodeClaim,
 	interactionClaim BlakeCompressOpcodeInteractionClaim,
 ) *BlakeCompressOpcodeComponent {
@@ -67,7 +68,7 @@ func NewBlakeCompressOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 		logSize:                   claim.LogSize,
 	}
 }

@@ -44,6 +44,7 @@ func NewBlakeG(
 	verifyXor7 m31.InteractionElements,
 	verifyXor9 m31.InteractionElements,
 	blakeG m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim BlakeGClaim,
 	interactionClaim BlakeGInteractionClaim,
 ) *BlakeGComponent {
@@ -60,7 +61,7 @@ func NewBlakeG(
 		blakeG:        blakeG,
 		claimedSum:    interactionClaim.ClaimedSum,
 		columnSizeInv: columnSizeInv,
-		vanishEvalInv: qm31.One(),
+		vanishEvalInv: vanishEvalInv,
 	}
 }
 

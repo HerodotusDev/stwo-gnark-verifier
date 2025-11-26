@@ -69,7 +69,7 @@ type checkPowCircuit struct {
 
 func (c *checkPowCircuit) Define(api frontend.API) error {
 	uapi, _ := uints.New[uints.U32](api)
-	checkProofOfWork(api, uapi, c.Digest, 24)
+	checkProofOfWork(uapi, c.Digest, 24)
 	return nil
 }
 
@@ -301,7 +301,7 @@ func TestDrawFelts(t *testing.T) {
 // TestCheckProofOfWork mirrors the Cairo PoW success case.
 func TestCheckProofOfWork(t *testing.T) {
 	circuit := &checkPowCircuit{
-		Digest: newHash([8]uint32{0, 0, 0, 0, 0, 0, 0, 0x00000080}),
+		Digest: newHash([8]uint32{2 << (32 - 5), 0, 0, 0, 0, 0, 0, 0}),
 	}
 	runCircuit(t, circuit)
 }
@@ -309,7 +309,7 @@ func TestCheckProofOfWork(t *testing.T) {
 // TestCheckProofOfWorkInvalidBits mirrors the Cairo PoW failure case.
 func TestCheckProofOfWorkInvalidBits(t *testing.T) {
 	circuit := &checkPowCircuit{
-		Digest: newHash([8]uint32{0, 0, 0, 0, 0, 0, 0, 0x01000000}),
+		Digest: newHash([8]uint32{2 << (32 - 24), 0, 0, 0, 0, 0, 0, 0}),
 	}
 	runCircuitExpectFailure(t, circuit)
 }

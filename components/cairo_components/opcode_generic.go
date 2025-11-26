@@ -46,6 +46,7 @@ func NewGenericOpcode(
 	rangeCheck99Elements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
+	vanishEvalInv m31.QM31,
 	claim GenericOpcodeClaim,
 	interactionClaim GenericOpcodeInteractionClaim,
 ) *GenericOpcodeComponent {
@@ -62,7 +63,7 @@ func NewGenericOpcode(
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
-		vanishEvalInv:             qm31.One(),
+		vanishEvalInv:             vanishEvalInv,
 	}
 }
 
