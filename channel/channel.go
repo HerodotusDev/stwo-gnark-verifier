@@ -21,6 +21,7 @@ type ChannelTime struct {
 // incChallenges bumps the number of issued challenges.
 func (ct *ChannelTime) incChallenges(uapi *uints.BinaryField[uints.U32]) {
 	ct.nChallenges = uapi.Add(ct.nChallenges, uints.NewU32(1))
+	ct.nSent = uints.NewU32(0)
 }
 
 // incSent bumps the counter used for deriving fresh randomness.
