@@ -5,6 +5,18 @@ import "github.com/consensys/gnark/std/math/uints"
 // TreeLogSizes contains the column log sizes for each tree.
 type TreeLogSizes [][]uint32
 
+func MaxLogSize(logSizes TreeLogSizes) uint32 {
+	maxLogSize := uint32(0)
+	for _, group := range logSizes {
+		for _, size := range group {
+			if size > maxLogSize {
+				maxLogSize = size
+			}
+		}
+	}
+	return maxLogSize
+}
+
 // NewTreeLogSizesFromCounts builds a TreeLogSizes entry from the provided counts.
 func NewTreeLogSizesFromCounts(logSize uint32, traceCols, interactionCols int) TreeLogSizes {
 	logSizes := make(TreeLogSizes, N_TREES)
