@@ -99,10 +99,10 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 	claim.PoseidonContext = buildPoseidonContextClaim(claimRaw.PoseidonContext)
 	claim.MemoryIDToValue = buildMemoryIDToValueClaim(claimRaw.MemoryIDToValue)
 	claim.RangeChecks = buildRangeChecksClaim(claimRaw.RangeChecks)
-	claim.VerifyBitwiseXor4 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor4)
-	claim.VerifyBitwiseXor7 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor7)
-	claim.VerifyBitwiseXor8 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor8)
-	claim.VerifyBitwiseXor9 = buildVerifyBitwiseXorClaim(claimRaw.VerifyBitwiseXor9)
+	claim.VerifyBitwiseXor4 = &cairo_components.VerifyBitwiseXor4Claim{}
+	claim.VerifyBitwiseXor7 = &cairo_components.VerifyBitwiseXor7Claim{}
+	claim.VerifyBitwiseXor8 = &cairo_components.VerifyBitwiseXor8Claim{}
+	claim.VerifyBitwiseXor9 = &cairo_components.VerifyBitwiseXor9Claim{}
 
 	return claim
 }
@@ -201,7 +201,7 @@ func buildBlakeContextClaim(raw BlakeContextClaimRawWrapper) BlakeContextClaim {
 		hasData = true
 	}
 	if entry := raw.Claim.VerifyBitwiseXor12; entry != nil {
-		claim.VerifyBitwiseXor12 = &SimpleLogSizeClaim{LogSize: uint32FromUint64(entry.LogSize)}
+		claim.VerifyBitwiseXor12 = &cairo_components.VerifyBitwiseXor12Claim{}
 		hasData = true
 	}
 
@@ -356,37 +356,22 @@ func buildRangeChecksClaim(raw RangeChecksClaimRaw) RangeChecksClaim {
 		return claim
 	}
 
-	claim.RC6 = simpleLogSizeFromEntry(raw["rc_6"])
-	claim.RC8 = simpleLogSizeFromEntry(raw["rc_8"])
-	claim.RC11 = simpleLogSizeFromEntry(raw["rc_11"])
-	claim.RC12 = simpleLogSizeFromEntry(raw["rc_12"])
-	claim.RC18 = simpleLogSizeFromEntry(raw["rc_18"])
-	claim.RC19 = simpleLogSizeFromEntry(raw["rc_19"])
-	claim.RC4_3 = simpleLogSizeFromEntry(raw["rc_4_3"])
-	claim.RC4_4 = simpleLogSizeFromEntry(raw["rc_4_4"])
-	claim.RC5_4 = simpleLogSizeFromEntry(raw["rc_5_4"])
-	claim.RC9_9 = simpleLogSizeFromEntry(raw["rc_9_9"])
-	claim.RC7_2_5 = simpleLogSizeFromEntry(raw["rc_7_2_5"])
-	claim.RC3_6_6_3 = simpleLogSizeFromEntry(raw["rc_3_6_6_3"])
-	claim.RC4_4_4_4 = simpleLogSizeFromEntry(raw["rc_4_4_4_4"])
-	claim.RC3_3_3_3_3 = simpleLogSizeFromEntry(raw["rc_3_3_3_3_3"])
+	claim.RC6 = cairo_components.RangeCheck6Claim{}
+	claim.RC8 = cairo_components.RangeCheck8Claim{}
+	claim.RC11 = cairo_components.RangeCheck11Claim{}
+	claim.RC12 = cairo_components.RangeCheck12Claim{}
+	claim.RC18 = cairo_components.RangeCheck18Claim{}
+	claim.RC19 = cairo_components.RangeCheck19Claim{}
+	claim.RC4_3 = cairo_components.RangeCheck4_3Claim{}
+	claim.RC4_4 = cairo_components.RangeCheck4_4Claim{}
+	claim.RC5_4 = cairo_components.RangeCheck5_4Claim{}
+	claim.RC9_9 = cairo_components.RangeCheck9_9Claim{}
+	claim.RC7_2_5 = cairo_components.RangeCheck7_2_5Claim{}
+	claim.RC3_6_6_3 = cairo_components.RangeCheck3_6_6_3Claim{}
+	claim.RC4_4_4_4 = cairo_components.RangeCheck4_4_4_4Claim{}
+	claim.RC3_3_3_3_3 = cairo_components.RangeCheck3_3_3_3_3Claim{}
 
 	return claim
-}
-
-func buildVerifyBitwiseXorClaim(raw VerifyBitwiseXorClaimRaw) *SimpleLogSizeClaim {
-	// Treat zero log size as absence.
-	if raw.LogSize == 0 {
-		return nil
-	}
-	return &SimpleLogSizeClaim{LogSize: uint32FromUint64(raw.LogSize)}
-}
-
-func simpleLogSizeFromEntry(entry *ComponentLogSizeEntry) *SimpleLogSizeClaim {
-	if entry == nil {
-		return nil
-	}
-	return &SimpleLogSizeClaim{LogSize: uint32FromUint64(entry.LogSize)}
 }
 
 func mapOpcodeClaimEntries[T any](entries []OpcodeLogSizeEntryRaw, wrap func(uint32) T) []T {

@@ -1,10 +1,12 @@
 package cairo_components
 
 import (
-    "github.com/HerodotusDev/stwo-gnark-verifier/m31"
-    "github.com/consensys/gnark/frontend"
-    "github.com/consensys/gnark/std/math/uints"
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
+
+type RangeCheck7_2_5Claim struct{}
 
 type RangeCheck7_2_5InteractionClaim struct {
 	ClaimedSum m31.QM31

@@ -12,6 +12,8 @@ import (
 
 const verifyBitwiseXor4LogSize = 8
 
+type VerifyBitwiseXor4Claim struct{}
+
 type VerifyBitwiseXor4InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
@@ -49,6 +51,8 @@ func (c *VerifyBitwiseXor4Component) Evaluate(sum m31.QM31, traces *Traces, rand
 // ╚══════════════════════════════════╝
 
 const verifyBitwiseXor7LogSize = 14
+
+type VerifyBitwiseXor7Claim struct{}
 
 type VerifyBitwiseXor7InteractionClaim struct {
 	ClaimedSum m31.QM31
@@ -88,6 +92,8 @@ func (c *VerifyBitwiseXor7Component) Evaluate(sum m31.QM31, traces *Traces, rand
 
 const verifyBitwiseXor8LogSize = 16
 
+type VerifyBitwiseXor8Claim struct{}
+
 type VerifyBitwiseXor8InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
@@ -126,6 +132,8 @@ func (c *VerifyBitwiseXor8Component) Evaluate(sum m31.QM31, traces *Traces, rand
 
 const verifyBitwiseXor9LogSize = 18
 
+type VerifyBitwiseXor9Claim struct{}
+
 type VerifyBitwiseXor9InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
@@ -163,6 +171,8 @@ func (c *VerifyBitwiseXor9Component) Evaluate(sum m31.QM31, traces *Traces, rand
 // ╚══════════════════════════════════╝
 
 const verifyBitwiseXor12LogSize = 20
+
+type VerifyBitwiseXor12Claim struct{}
 
 type VerifyBitwiseXor12InteractionClaim struct {
 	ClaimedSum m31.QM31

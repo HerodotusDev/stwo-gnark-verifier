@@ -6,6 +6,8 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+type RangeCheck11Claim struct{}
+
 const rangeCheck11LogSize = 11
 
 type RangeCheck11InteractionClaim struct {

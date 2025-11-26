@@ -3,124 +3,142 @@ package variables
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 func appendMaskPointsClaimList[T interface {
-	MaskPoints(oodsPoint circle.Point, circleChip *circle.CircleChip) cairo_components.TreeMaskPoints
-}](dst *[]cairo_components.TreeMaskPoints, claims []T, oodsPoint circle.Point, circleChip *circle.CircleChip) {
+	MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) cairo_components.TreeMaskPoints
+}](api frontend.API, dst *[]cairo_components.TreeMaskPoints, claims []T, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) {
 	if len(claims) == 0 {
 		return
 	}
 	for _, claim := range claims {
-		*dst = append(*dst, claim.MaskPoints(oodsPoint, circleChip))
+		*dst = append(*dst, claim.MaskPoints(api, oodsPoint, circleChip, usedPreprocessed))
 	}
 }
 
 func appendOptionalMaskPoints[T interface {
-	MaskPoints(oodsPoint circle.Point, circleChip *circle.CircleChip) cairo_components.TreeMaskPoints
-}](dst *[]cairo_components.TreeMaskPoints, claim *T, oodsPoint circle.Point, circleChip *circle.CircleChip) {
+	MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) cairo_components.TreeMaskPoints
+}](api frontend.API, dst *[]cairo_components.TreeMaskPoints, claim *T, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) {
 	if claim == nil {
 		return
 	}
-	value := (*claim).MaskPoints(oodsPoint, circleChip)
+	value := (*claim).MaskPoints(api, oodsPoint, circleChip, usedPreprocessed)
 	*dst = append(*dst, value)
 }
 
-func appendSimpleMaskPoints(dst *[]cairo_components.TreeMaskPoints, logSize uint32, traceCols, interactionCols int, oodsPoint circle.Point, circleChip *circle.CircleChip) {
-	traceGenPoint := circleChip.Point(circleChip.NewCanonicCoset(logSize).Coset().Step())
-	traceGenPointNegOne := circleChip.BaseNeg(traceGenPoint)
-	oodsPointNegOne := circleChip.AddBasePoint(oodsPoint, traceGenPointNegOne)
-	*dst = append(*dst, cairo_components.NewTreeMaskPoints(oodsPoint, oodsPointNegOne, traceCols, interactionCols))
-}
-
 // MaskPoints returns the per-tree sample points for the Cairo claim.
-func (claim CairoClaim) MaskPoints(oodsPoint circle.Point, circleChip *circle.CircleChip) cairo_components.TreeMaskPoints {
+func (claim CairoClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) cairo_components.TreeMaskPoints {
 	var parts []cairo_components.TreeMaskPoints
+	usedPreprocessed := make(map[uints.U64]frontend.Variable, len(cairo_components.PreprocessedColumns))
 
 	// Opcodes
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Add, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.AddSmall, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.AddAp, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.AssertEq, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.AssertEqImm, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.AssertEqDoubleDeref, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Blake, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Call, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.CallRelImm, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Generic, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Jnz, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.JnzTaken, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Jump, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.JumpDoubleDeref, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.JumpRel, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.JumpRelImm, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Mul, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.MulSmall, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Qm31, oodsPoint, circleChip)
-	appendMaskPointsClaimList(&parts, claim.Opcodes.Ret, oodsPoint, circleChip)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Add, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.AddSmall, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.AddAp, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.AssertEq, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.AssertEqImm, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.AssertEqDoubleDeref, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Blake, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Call, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.CallRelImm, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Generic, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Jnz, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.JnzTaken, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Jump, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.JumpDoubleDeref, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.JumpRel, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.JumpRelImm, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Mul, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.MulSmall, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Qm31, oodsPoint, circleChip, &usedPreprocessed)
+	appendMaskPointsClaimList(api, &parts, claim.Opcodes.Ret, oodsPoint, circleChip, &usedPreprocessed)
 
 	// Verify instruction
-	appendOptionalMaskPoints(&parts, claim.VerifyInstruction, oodsPoint, circleChip)
+	appendOptionalMaskPoints(api, &parts, claim.VerifyInstruction, oodsPoint, circleChip, &usedPreprocessed)
 
 	// Blake context
 	if ctx := claim.BlakeContext.Claim; ctx != nil {
-		appendOptionalMaskPoints(&parts, ctx.BlakeRound, oodsPoint, circleChip)
-		appendOptionalMaskPoints(&parts, ctx.BlakeG, oodsPoint, circleChip)
-		appendSimpleMaskPoints(&parts, 4, cairo_components.BlakeRoundSigmaTraceColumns, cairo_components.BlakeRoundSigmaInteractionColumns, oodsPoint, circleChip)
-		appendOptionalMaskPoints(&parts, ctx.TripleXor32, oodsPoint, circleChip)
-		appendSimpleMaskPoints(&parts, 20, cairo_components.VerifyBitwiseXor12TraceColumns, cairo_components.VerifyBitwiseXor12InteractionColumns, oodsPoint, circleChip)
+		appendOptionalMaskPoints(api, &parts, ctx.BlakeRound, oodsPoint, circleChip, &usedPreprocessed)
+		appendOptionalMaskPoints(api, &parts, ctx.BlakeG, oodsPoint, circleChip, &usedPreprocessed)
+		parts = append(parts, ctx.BlakeRoundSigma.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+		appendOptionalMaskPoints(api, &parts, ctx.TripleXor32, oodsPoint, circleChip, &usedPreprocessed)
+		parts = append(parts, ctx.VerifyBitwiseXor12.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
 	}
 
 	// Builtins
-	appendOptionalMaskPoints(&parts, claim.Builtins.AddModBuiltin, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.Builtins.BitwiseBuiltin, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.Builtins.MulModBuiltin, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.Builtins.PedersenBuiltin, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.Builtins.PoseidonBuiltin, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.Builtins.RangeCheck96, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.Builtins.RangeCheck128, oodsPoint, circleChip)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.AddModBuiltin, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.BitwiseBuiltin, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.MulModBuiltin, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.PedersenBuiltin, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.PoseidonBuiltin, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.RangeCheck96, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.Builtins.RangeCheck128, oodsPoint, circleChip, &usedPreprocessed)
 
 	// Pedersen context
 	if pedersen := claim.PedersenContext.Claim; pedersen != nil {
-		appendOptionalMaskPoints(&parts, pedersen.PartialEcMul, oodsPoint, circleChip)
-		appendSimpleMaskPoints(&parts, 23, cairo_components.PedersenPointsTableTraceColumns, cairo_components.PedersenPointsTableInteractionColumns, oodsPoint, circleChip)
+		appendOptionalMaskPoints(api, &parts, pedersen.PartialEcMul, oodsPoint, circleChip, &usedPreprocessed)
+		parts = append(parts, pedersen.PedersenPointsTable.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
 	}
 
 	// Poseidon context
 	if poseidon := claim.PoseidonContext.Claim; poseidon != nil {
-		appendOptionalMaskPoints(&parts, poseidon.Poseidon3PartialRoundsChain, oodsPoint, circleChip)
-		appendOptionalMaskPoints(&parts, poseidon.PoseidonFullRoundChain, oodsPoint, circleChip)
-		appendOptionalMaskPoints(&parts, poseidon.Cube252, oodsPoint, circleChip)
-		appendSimpleMaskPoints(&parts, 6, cairo_components.PoseidonRoundKeysTraceColumns, cairo_components.PoseidonRoundKeysInteractionColumns, oodsPoint, circleChip)
-		appendOptionalMaskPoints(&parts, poseidon.RangeCheckFelt252Width27, oodsPoint, circleChip)
+		appendOptionalMaskPoints(api, &parts, poseidon.Poseidon3PartialRoundsChain, oodsPoint, circleChip, &usedPreprocessed)
+		appendOptionalMaskPoints(api, &parts, poseidon.PoseidonFullRoundChain, oodsPoint, circleChip, &usedPreprocessed)
+		appendOptionalMaskPoints(api, &parts, poseidon.Cube252, oodsPoint, circleChip, &usedPreprocessed)
+		parts = append(parts, poseidon.PoseidonRoundKeys.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+		appendOptionalMaskPoints(api, &parts, poseidon.RangeCheckFelt252Width27, oodsPoint, circleChip, &usedPreprocessed)
 	}
 
 	// Memory relations
-	parts = append(parts, claim.MemoryAddressToId.MaskPoints(oodsPoint, circleChip))
-	appendMaskPointsClaimList(&parts, claim.MemoryIDToValue.Big, oodsPoint, circleChip)
-	appendOptionalMaskPoints(&parts, claim.MemoryIDToValue.Small, oodsPoint, circleChip)
+	parts = append(parts, claim.MemoryAddressToId.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	appendMaskPointsClaimList(api, &parts, claim.MemoryIDToValue.Big, oodsPoint, circleChip, &usedPreprocessed)
+	appendOptionalMaskPoints(api, &parts, claim.MemoryIDToValue.Small, oodsPoint, circleChip, &usedPreprocessed)
 
 	// Range checks simple claims.
-	appendSimpleMaskPoints(&parts, 6, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 8, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 11, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 12, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 18, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 19, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 7, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 8, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 9, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 18, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 14, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 18, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 16, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 15, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
+	parts = append(parts, claim.RangeChecks.RC6.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC8.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC11.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC12.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC18.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC19.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC4_3.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC4_4.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC5_4.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC9_9.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC7_2_5.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC3_6_6_3.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC4_4_4_4.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.RangeChecks.RC3_3_3_3_3.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
 
 	// Verify bitwise XOR components (simple claims).
-	appendSimpleMaskPoints(&parts, 8, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 14, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 16, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
-	appendSimpleMaskPoints(&parts, 18, rangeCheckTraceColumns, rangeCheckInteractionColumns, oodsPoint, circleChip)
+	parts = append(parts, claim.VerifyBitwiseXor4.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.VerifyBitwiseXor7.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.VerifyBitwiseXor8.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
+	parts = append(parts, claim.VerifyBitwiseXor9.MaskPoints(api, oodsPoint, circleChip, &usedPreprocessed))
 
-	return cairo_components.ConcatTreeMaskPoints(parts...)
+	// Concatenate tree mask points
+	maskPoints := cairo_components.ConcatTreeMaskPoints(parts...)
+
+	// Add preprocessed mask points
+	preprocessedMaskPoints := make([][]circle.Point, len(cairo_components.PreprocessedColumns))
+	for i, column := range cairo_components.PreprocessedColumns {
+		key := column.Key(api)
+		preprocessedMaskPoints[i] = []circle.Point{}
+		if used, ok := usedPreprocessed[key]; ok && used == frontend.Variable(1) {
+			preprocessedMaskPoints[i] = []circle.Point{oodsPoint}
+		}
+	}
+	maskPoints[cairo_components.PREPROCESSED_IDX] = preprocessedMaskPoints
+
+	// Add CP mask points
+	maskPoints[cairo_components.CP_IDX] = [][]circle.Point{
+		{oodsPoint},
+		{oodsPoint},
+		{oodsPoint},
+		{oodsPoint},
+	}
+
+	return maskPoints
 }

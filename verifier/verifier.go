@@ -99,13 +99,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
 
 	// Compute mask points
-	maskPoints := proof.Claim.MaskPoints(oodsPoint, c.circle)
-	maskPoints[cairo_components.CP_IDX] = [][]circle.Point{
-		{oodsPoint},
-		{oodsPoint},
-		{oodsPoint},
-		{oodsPoint},
-	}
+	maskPoints := proof.Claim.MaskPoints(c.api, oodsPoint, c.circle)
 	// DEBUG: Verify that there is a point for each sampled value (no constraints enforced)
 	checkMaskPoints(maskPoints, proof.StarkProof.SampledValues)
 
@@ -166,9 +160,6 @@ func checkMaskPoints(maskPoints cairo_components.TreeMaskPoints, sampledValues [
 		panic("tree length mismatch")
 	}
 	for treeIndex, tree := range maskPoints {
-		if treeIndex == 0 {
-			continue
-		}
 		if len(tree) != len(sampledValues[treeIndex]) {
 			panic(fmt.Sprintf("column length mismatch: %d != %d", len(tree), len(sampledValues[treeIndex])))
 		}
