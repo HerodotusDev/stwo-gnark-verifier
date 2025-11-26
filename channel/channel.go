@@ -13,8 +13,6 @@ import (
 
 type Blake2sHash [8]uints.U32
 
-const InteractionPowBits = 24
-
 type ChannelTime struct {
 	nChallenges uints.U32
 	nSent       uints.U32
@@ -150,22 +148,22 @@ func (c *Channel) DrawRandomBytes() []uints.U8 {
 // ╚══════════════════════════════════╝
 
 // MixAndCheckPowNonce mixes a nonce and checks the leading zero bits.
-func (c *Channel) MixAndCheckPowNonce(nonce uints.U64) {
+func (c *Channel) MixAndCheckPowNonce(nonce uints.U64, interactionPowBits int) {
 	c.MixU64(nonce)
-	checkProofOfWork(c.api, c.uapi, c.digest)
+	checkProofOfWork(c.api, c.uapi, c.digest, interactionPowBits)
 }
 
 // checkProofOfWork verifies that the digest has the required leading zeros.
 // Is is assumed that InteractionPowBits is a constant less than 32.
 // Runs a 32-InteractionPowBits RC in big endian order.
-func checkProofOfWork(api frontend.API, uapi *uints.BinaryField[uints.U32], digest Blake2sHash) {
+func checkProofOfWork(api frontend.API, uapi *uints.BinaryField[uints.U32], digest Blake2sHash, interactionPowBits int) {
 	rc := rangecheck.New(api)
 	msw := digest[len(digest)-1]
 	mswBytes := uapi.UnpackMSB(msw)
 	beWord := uapi.PackLSB(mswBytes[3], mswBytes[2], mswBytes[1], mswBytes[0])
 	value := uapi.ToValue(beWord)
 
-	rc.Check(value, 32-InteractionPowBits)
+	rc.Check(value, 32-interactionPowBits)
 }
 
 // ╔══════════════════════════════════╗

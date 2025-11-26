@@ -69,7 +69,7 @@ type checkPowCircuit struct {
 
 func (c *checkPowCircuit) Define(api frontend.API) error {
 	uapi, _ := uints.New[uints.U32](api)
-	checkProofOfWork(api, uapi, c.Digest)
+	checkProofOfWork(api, uapi, c.Digest, 24)
 	return nil
 }
 
