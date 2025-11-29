@@ -154,8 +154,7 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 	}
 
 	// Verify FRI quotients
-	quotientEvaluations := friVerifier.FriQuotientEvaluations(commitmentVerifier.columnLogSizes(), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
-	fmt.Println("quotientEvaluations", quotientEvaluations)
+	_ = friVerifier.FriQuotientEvaluations(commitmentVerifier.columnLogSizes(), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
 }
 
 func checkMaskPoints(maskPoints cairo_components.TreeMaskPoints, sampledValues [][][]m31.QM31) {

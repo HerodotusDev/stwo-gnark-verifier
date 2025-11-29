@@ -1,7 +1,6 @@
 package fri
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
@@ -268,13 +267,10 @@ func (f *FriVerifier) FriQuotientEvaluations(
 	quotientEvaluations := make([][]m31.QM31, 0)
 	queriedValuesPointer := make([]int, cairo_components.N_TREES)
 	for logSize := maxLogSize; logSize >= minLogSize; logSize-- {
-		fmt.Println("\n ===== logSize", logSize, "=====")
 		samples := samplesByLogSize[logSize]
-		fmt.Println("len(samples)", len(samples))
 		circleDomain := circle.NewCanonicCoset(f.circleChip, uint32(logSize)).CircleDomain()
 		layerQuotientEvaluations := make([]m31.QM31, 0)
 		for _, queryPosition := range queries[logSize] {
-			fmt.Println("===== queryPosition", queryPosition, "=====")
 			bitReversedQueryPosition := reverseBitIndex(f.api, f.uapi, uint32(queryPosition), logSize)
 			domainPoint := circleDomain.At(bitReversedQueryPosition)
 			// get flattened (over trees) queried values at query position
@@ -287,7 +283,6 @@ func (f *FriVerifier) FriQuotientEvaluations(
 			// evaluate the quotient at the query position for the given log size
 			layerQuotientEvaluations = append(layerQuotientEvaluations, f.quotientEvaluation(samples, valuesAtQueryPosition, domainPoint, randomCoeffPowers))
 		}
-		fmt.Println("layerQuotientEvaluations", layerQuotientEvaluations)
 		quotientEvaluations = append(quotientEvaluations, layerQuotientEvaluations)
 	}
 
@@ -329,15 +324,9 @@ func (f *FriVerifier) quotientEvaluation(samples [][]SampleData, valuesAtQueryPo
 		)
 		// inverse the denominator (CM31)
 		denominatorInverse := f.qm31Chip.CM31Inverse(denominator)
-		fmt.Println("denominatorInverse", denominatorInverse)
 		// compute the numerator for the sample point (batching)
 		numerator := f.qm31Chip.Zero()
 		for _, sampleData := range samplesData {
-			fmt.Println("Point", sampleData.point)
-			fmt.Println("ColumnIndex", sampleData.columnIndex)
-			fmt.Println("Value", sampleData.value)
-			fmt.Println("LineCoefficients", sampleData.lineCoefficients)
-			fmt.Println("valuesAtQueryPosition", valuesAtQueryPosition[sampleData.columnIndex])
 			a := sampleData.lineCoefficients[0]
 			b := sampleData.lineCoefficients[1]
 			c := sampleData.lineCoefficients[2]
@@ -345,14 +334,10 @@ func (f *FriVerifier) quotientEvaluation(samples [][]SampleData, valuesAtQueryPo
 			linearTerm := f.qm31Chip.Add(f.qm31Chip.MulM31(a, domainPoint.Y), b)
 			numerator = f.qm31Chip.Add(numerator, f.qm31Chip.Sub(value, linearTerm))
 		}
-		fmt.Println("numerator", numerator)
 		// accumulate the quotient evaluation for the sample point
 		pointCoeff := randomCoeffPowers[len(samplesData)]
-		fmt.Println("pointCoeff", pointCoeff)
 		frac := f.qm31Chip.MulCM31(numerator, denominatorInverse)
-		fmt.Println("frac", frac)
 		quotientEvaluation = f.qm31Chip.Add(f.qm31Chip.Mul(quotientEvaluation, pointCoeff), frac)
-		fmt.Println("quotientEvaluation", quotientEvaluation)
 	}
 	return quotientEvaluation
 }
