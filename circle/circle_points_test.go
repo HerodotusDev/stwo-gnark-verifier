@@ -59,7 +59,7 @@ func (c *circleCanonicVanishingCircuit) Define(api frontend.API) error {
 	qm31Chip := m31.NewQM31Chip(m31Chip)
 	circleChip := NewCircleChip(api, m31Chip, qm31Chip)
 
-	canonic := circleChip.NewCanonicCoset(6)
+	canonic := NewCanonicCoset(circleChip, 6)
 	cases := []struct {
 		index           uint32
 		expectedValue   m31.QM31
@@ -78,8 +78,8 @@ func (c *circleCanonicVanishingCircuit) Define(api frontend.API) error {
 	}
 
 	for _, tc := range cases {
-		index := circleChip.newPointIndex(uints.NewU32(tc.index))
-		point := circleChip.LiftBasePoint(circleChip.Point(index))
+		index := newPointIndex(circleChip, uints.NewU32(tc.index))
+		point := circleChip.LiftBasePoint(index.Point())
 		value := circleChip.CosetVanishing(canonic.Coset(), point)
 		qm31Chip.AssertEqual(value, tc.expectedValue)
 

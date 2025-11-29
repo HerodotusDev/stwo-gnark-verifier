@@ -22,7 +22,7 @@ func NewTreeMaskPoints(point, pointNegOne circle.Point, traceCols, interactionCo
 	}
 	if interactionCols > 0 {
 		maskPoints[INTERACTION_IDX] = appendRepeatMaskPoints(maskPoints[INTERACTION_IDX], []circle.Point{point}, interactionCols-4)
-		maskPoints[INTERACTION_IDX] = appendRepeatMaskPoints(maskPoints[INTERACTION_IDX], []circle.Point{point, pointNegOne}, 4)
+		maskPoints[INTERACTION_IDX] = appendRepeatMaskPoints(maskPoints[INTERACTION_IDX], []circle.Point{pointNegOne, point}, 4)
 	}
 	return maskPoints
 }
@@ -55,7 +55,7 @@ func appendRepeatMaskPoints(base [][]circle.Point, value []circle.Point, count i
 }
 
 func oodsPointNegOne(oodsPoint circle.Point, circleChip *circle.CircleChip, logSize uint32) circle.Point {
-	traceGenPoint := circleChip.Point(circleChip.NewCanonicCoset(logSize).Coset().Step())
+	traceGenPoint := circle.NewCanonicCoset(circleChip, logSize).Coset().Step().Point()
 	traceGenPointNegOne := circleChip.BaseNeg(traceGenPoint)
 	return circleChip.AddBasePoint(oodsPoint, traceGenPointNegOne)
 }

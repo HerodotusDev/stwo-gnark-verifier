@@ -53,8 +53,8 @@ func (v *CommitmentSchemeVerifier) extendLogSizes(logSizes []uint32) []uint8 {
 
 func (v *CommitmentSchemeVerifier) columnLogSizes() [][]uint8 {
 	columnLogSizes := make([][]uint8, 4)
-	for _, merkleVerifier := range v.trees {
-		columnLogSizes = append(columnLogSizes, merkleVerifier.ColumnLogSizes)
+	for treeIndex, merkleVerifier := range v.trees {
+		columnLogSizes[treeIndex] = merkleVerifier.ColumnLogSizes
 	}
 	return columnLogSizes
 }
