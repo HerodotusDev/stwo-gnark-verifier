@@ -108,6 +108,10 @@ func NewCircleDomain(halfCoset Coset) CircleDomain {
 	}
 }
 
+func (d CircleDomain) LogSize() uint32 {
+	return d.halfCoset.logSize + 1
+}
+
 func (d CircleDomain) At(i uints.U32) BasePoint {
 	return d.IndexAt(i).Point()
 }

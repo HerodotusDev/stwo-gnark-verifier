@@ -27,13 +27,6 @@ type FriVerifier struct {
 	LastLayerPoly       circle.LinePoly
 }
 
-type FriFirstLayerVerifier struct {
-	columnBounds            []uint8
-	columnCommitmentDomains []circle.CanonicCoset
-	proof                   variables.FriLayerProof
-	foldingAlpha            m31.QM31
-}
-
 type FriInnerLayerVerifier struct {
 	degreeBound uint8
 	//domain       circle.LineDomain
@@ -47,9 +40,9 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	channelChip.MixRootBytes(friProof.FirstLayerProof.Commitment[:])
 
 	// First layer verifier
-	columncommitmentDomains := make([]circle.CanonicCoset, len(bounds))
-	for i, bound := range bounds {
-		columncommitmentDomains[i] = circle.NewCanonicCoset(circleChip, uint32(bound+friConfig.LogBlowupFactor))
+	columncommitmentDomains := make([]circle.CircleDomain, 0)
+	for _, bound := range bounds {
+		columncommitmentDomains = append(columncommitmentDomains, circle.NewCanonicCoset(circleChip, uint32(bound+friConfig.LogBlowupFactor)).CircleDomain())
 	}
 	firstLayerVerifier := FriFirstLayerVerifier{
 		columnBounds:            bounds,
@@ -92,6 +85,10 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 		InnerLayerVerifiers: innerLayerVerifiers,
 		LastLayerPoly:       friProof.LastLayerPoly,
 	}
+}
+
+func (f *FriVerifier) Verify(queries [][]int, evaluations [][]m31.QM31) {
+	f.verifyFirstLayer(queries, evaluations)
 }
 
 // ╔══════════════════════════════════╗
@@ -341,6 +338,89 @@ func (f *FriVerifier) quotientEvaluation(samples [][]SampleData, valuesAtQueryPo
 	}
 	return quotientEvaluation
 }
+
+// ╔══════════════════════════════════╗
+// ║           First Layer            ║
+// ╚══════════════════════════════════╝
+
+type FriFirstLayerVerifier struct {
+	columnBounds            []uint8
+	columnCommitmentDomains []circle.CircleDomain
+	proof                   variables.FriLayerProof
+	foldingAlpha            m31.QM31
+}
+
+func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31) {
+	friWitnessIndex := 0
+	// helper function replicating the rust api for iterator next() method
+	nextFriWitness := func() m31.QM31 {
+		if friWitnessIndex >= len(f.FirstLayerVerifier.proof.FriWitness) {
+			panic("fri witness exhausted")
+		}
+		witness := f.FirstLayerVerifier.proof.FriWitness[friWitnessIndex]
+		friWitnessIndex++
+		return witness
+	}
+
+	// compute the decommitment positions (queries and their siblings dedupped) and build the matching decommitments values
+	decommitmentPositions := make([][]int, 32)
+	sparseEvaluations := make([]m31.M31, 0)
+	for domainIndex, columnCommitmentDomain := range f.FirstLayerVerifier.columnCommitmentDomains {
+		logSize := columnCommitmentDomain.LogSize()
+		layerQueries := queries[logSize]
+
+		layerDecommitmentPositions := make([]int, 0)
+		for i := 0; i < len(layerQueries); {
+			subsetEvals := make([]m31.QM31, 2)
+			queryInitial := layerQueries[i] >> 1
+			leftCandidate := queryInitial << 1
+			rightCandidate := leftCandidate + 1
+			layerDecommitmentPositions = append(layerDecommitmentPositions, leftCandidate, rightCandidate)
+			// follow the same pattern as the merkle decommitment verifier
+			switch layerQueries[i] {
+			case leftCandidate:
+				subsetEvals[0] = evaluations[domainIndex][i]
+				if i+1 < len(layerQueries) && layerQueries[i+1] == rightCandidate {
+					subsetEvals[1] = evaluations[domainIndex][i+1]
+					i += 2
+				} else {
+					subsetEvals[1] = nextFriWitness()
+					i++
+				}
+			case rightCandidate:
+				subsetEvals[0] = nextFriWitness()
+				subsetEvals[1] = evaluations[domainIndex][i]
+				i++
+			default:
+				panic("unexpected query candidate")
+			}
+
+			// flatten the evaluations into 4 M31 elements for use in the merkle decommitment verifier
+			leftEval := subsetEvals[0].Components()
+			sparseEvaluations = append(sparseEvaluations, leftEval[0], leftEval[1], leftEval[2], leftEval[3])
+			rightEval := subsetEvals[1].Components()
+			sparseEvaluations = append(sparseEvaluations, rightEval[0], rightEval[1], rightEval[2], rightEval[3])
+		}
+		decommitmentPositions[logSize] = layerDecommitmentPositions
+	}
+
+	// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
+	columnLogSizes := make([]uint8, 0)
+	for _, columnCommitmentDomain := range f.FirstLayerVerifier.columnCommitmentDomains {
+		columnLogSizes = append(columnLogSizes, uint8(columnCommitmentDomain.LogSize()))
+		columnLogSizes = append(columnLogSizes, uint8(columnCommitmentDomain.LogSize()))
+		columnLogSizes = append(columnLogSizes, uint8(columnCommitmentDomain.LogSize()))
+		columnLogSizes = append(columnLogSizes, uint8(columnCommitmentDomain.LogSize()))
+	}
+
+	// verify the merkle decommitment
+	merkleVerifier := NewMerkleVerifier(f.api, f.FirstLayerVerifier.proof.Commitment, columnLogSizes)
+	merkleVerifier.Verify(decommitmentPositions, sparseEvaluations, f.FirstLayerVerifier.proof.Decommitment)
+}
+
+// ╔══════════════════════════════════╗
+// ║            Utilities             ║
+// ╚══════════════════════════════════╝
 
 func reverseBitIndex(api frontend.API, uapi *uints.BinaryField[uints.U32], n uint32, logSize int) uints.U32 {
 	nNative := frontend.Variable(n)

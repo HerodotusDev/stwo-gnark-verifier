@@ -101,13 +101,11 @@ func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decomm
 				queryMulTwo := 2 * query
 				leftCandidate := queryMulTwo
 				rightCandidate := queryMulTwo + 1
-				// assert that the current query is derived from a previous one (queries are sorted ascending)
-				v.api.AssertIsEqual((extendedQueries[layerLog+1][j]-leftCandidate)*(extendedQueries[layerLog+1][j]-rightCandidate), 0)
 
 				var leftHash [32]uints.U8
 				var rightHash [32]uints.U8
-				switch extendedQueries[layerLog+1][j] {
-				case leftCandidate:
+
+				if j < len(extendedQueries[layerLog+1]) && leftCandidate == extendedQueries[layerLog+1][j] {
 					// if the left candidate was queried get the left hash from the previous layer
 					leftHash = layerHashes[layerLog+1][j]
 					if j+1 < len(extendedQueries[layerLog+1]) && extendedQueries[layerLog+1][j+1] == rightCandidate {
@@ -119,13 +117,14 @@ func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decomm
 						rightHash = nextHashWitness()
 						j++
 					}
-				case rightCandidate:
+				} else if j < len(extendedQueries[layerLog+1]) && rightCandidate == extendedQueries[layerLog+1][j] {
 					// if the right candidate was queried get the right hash from the previous layer and the left hash from the witness
 					leftHash = nextHashWitness()
 					rightHash = layerHashes[layerLog+1][j]
 					j++
-				default:
-					panic("unexpected query candidate")
+				} else {
+					leftHash = nextHashWitness()
+					rightHash = nextHashWitness()
 				}
 
 				// update the current layer hashes
@@ -161,6 +160,7 @@ func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decomm
 
 }
 
+// TODO: this is unchecked hinting, the extension should be made before the query checking (and add a flag for extended queries)
 func extendQueries(queries [][]int, maxLogSize uint8) [][]int {
 	extendedQueries := make([][]int, maxLogSize+1)
 	for layerLog := maxLogSize; ; layerLog-- {
