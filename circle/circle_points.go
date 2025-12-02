@@ -211,7 +211,7 @@ func (c *CircleChip) AddPointIndex(a, b circlePointIndex) circlePointIndex {
 	return circlePointIndex{circleChip: c, value: reducedSum}
 }
 
-func subgroupGenerator(circleChip *CircleChip, logSize uint32) circlePointIndex {
+func SubgroupGenerator(circleChip *CircleChip, logSize uint32) circlePointIndex {
 	if logSize == 0 || logSize > CircleLogOrder {
 		panic("invalid subgroup generator log size")
 	}

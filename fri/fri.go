@@ -27,14 +27,6 @@ type FriVerifier struct {
 	LastLayerPoly       circle.LinePoly
 }
 
-type FriInnerLayerVerifier struct {
-	degreeBound uint8
-	//domain       circle.LineDomain
-	foldingAlpha m31.QM31
-	layerIndex   int
-	proof        variables.FriLayerProof
-}
-
 func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig FriConfig, friProof variables.FriProof, bounds []uint8) *FriVerifier {
 	// First layer commitment
 	channelChip.MixRootBytes(friProof.FirstLayerProof.Commitment[:])
@@ -52,16 +44,15 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	}
 
 	// Inner layer verifiers
-	// TODO: properly implement the line folding once the relevant circle operations are implemented
 	layerBound := bounds[0] - 1 // first bound folded
-	//layerDomain := circleChip.NewLineDomain(uint32(layerBound))
+	layerDomain := circle.NewLineDomain(circle.NewCoset(circleChip, circle.SubgroupGenerator(circleChip, uint32(layerBound+friConfig.LogBlowupFactor+2)), uint32(layerBound)))
 
 	innerLayerVerifiers := make([]FriInnerLayerVerifier, len(friProof.InnerLayerProofs))
 	for i, innerLayerProof := range friProof.InnerLayerProofs {
 		channelChip.MixRootBytes(innerLayerProof.Commitment[:])
 		innerLayerVerifiers[i] = FriInnerLayerVerifier{
-			degreeBound: layerBound,
-			//domain:       layerDomain,
+			degreeBound:  layerBound,
+			domain:       layerDomain,
 			foldingAlpha: channelChip.DrawFelt(),
 			layerIndex:   i,
 			proof:        innerLayerProof,
@@ -69,7 +60,7 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 
 		// fold layer
 		layerBound--
-		//layerDomain = layerDomain.double()
+		layerDomain = layerDomain.Double()
 	}
 
 	// Mix in the last layer
@@ -416,6 +407,17 @@ func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31
 	// verify the merkle decommitment
 	merkleVerifier := NewMerkleVerifier(f.api, f.FirstLayerVerifier.proof.Commitment, columnLogSizes)
 	merkleVerifier.Verify(decommitmentPositions, sparseEvaluations, f.FirstLayerVerifier.proof.Decommitment)
+}
+
+// ╔══════════════════════════════════╗
+// ║            Inner Layers          ║
+// ╚══════════════════════════════════╝
+type FriInnerLayerVerifier struct {
+	degreeBound  uint8
+	domain       circle.LineDomain
+	foldingAlpha m31.QM31
+	layerIndex   int
+	proof        variables.FriLayerProof
 }
 
 // ╔══════════════════════════════════╗
