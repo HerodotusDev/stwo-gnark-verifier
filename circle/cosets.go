@@ -161,6 +161,10 @@ func NewLineDomain(coset Coset) LineDomain {
 	}
 }
 
+func (d LineDomain) Coset() Coset {
+	return d.coset
+}
+
 func (d LineDomain) Double() LineDomain {
 	return NewLineDomain(d.coset.Double())
 }

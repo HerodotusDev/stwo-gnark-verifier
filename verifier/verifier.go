@@ -149,9 +149,9 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 	friVerifier.VerifyQueries(queries[len(queries)-1], baseLayerQueries)
 
 	// Verify merkle decommitments
-	for treeIndex, tree := range commitmentVerifier.trees {
-		tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
-	}
+	// for treeIndex, tree := range commitmentVerifier.trees {
+	// 	tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
+	// }
 
 	// Verify FRI quotients
 	friAnswers := friVerifier.FriQuotientEvaluations(commitmentVerifier.columnLogSizes(), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)

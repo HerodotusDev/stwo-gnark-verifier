@@ -350,68 +350,20 @@ type SparseEvaluations struct {
 }
 
 func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31) []SparseEvaluations {
-	friWitnessIndex := 0
-	// helper function replicating the rust api for iterator next() method
-	nextFriWitness := func() m31.QM31 {
-		if friWitnessIndex >= len(f.FirstLayerVerifier.proof.FriWitness) {
-			panic("fri witness exhausted")
-		}
-		witness := f.FirstLayerVerifier.proof.FriWitness[friWitnessIndex]
-		friWitnessIndex++
-		return witness
-	}
-
 	// compute the decommitment positions (queries and their siblings dedupped) and build the matching decommitments values
 	decommitmentPositions := make([][]int, 32)
 	sparseEvaluationsFlattened := make([]m31.M31, 0)
 	sparseEvaluations := make([]SparseEvaluations, 0)
+	previousFriWitnessIndex := 0
 	for domainIndex, columnCommitmentDomain := range f.FirstLayerVerifier.columnCommitmentDomains {
 		logSize := columnCommitmentDomain.LogSize()
 		layerQueries := queries[logSize]
 
-		layerDecommitmentPositions := make([]int, 0)
-		evals := make([][]m31.QM31, 0)
-		queryInitials := make([]uints.U32, 0)
-		for i := 0; i < len(layerQueries); {
-			subsetEvals := make([]m31.QM31, 2)
-			queryInitial := layerQueries[i] >> 1
-			leftCandidate := queryInitial << 1
-			rightCandidate := leftCandidate + 1
-			layerDecommitmentPositions = append(layerDecommitmentPositions, leftCandidate, rightCandidate)
-			// follow the same pattern as the merkle decommitment verifier
-			switch layerQueries[i] {
-			case leftCandidate:
-				subsetEvals[0] = evaluations[domainIndex][i]
-				if i+1 < len(layerQueries) && layerQueries[i+1] == rightCandidate {
-					subsetEvals[1] = evaluations[domainIndex][i+1]
-					i += 2
-				} else {
-					subsetEvals[1] = nextFriWitness()
-					i++
-				}
-			case rightCandidate:
-				subsetEvals[0] = nextFriWitness()
-				subsetEvals[1] = evaluations[domainIndex][i]
-				i++
-			default:
-				panic("unexpected query candidate")
-			}
-
-			// flatten the evaluations into 4 M31 elements for use in the merkle decommitment verifier
-			leftEval := subsetEvals[0].Components()
-			sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, leftEval[0], leftEval[1], leftEval[2], leftEval[3])
-			rightEval := subsetEvals[1].Components()
-			sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, rightEval[0], rightEval[1], rightEval[2], rightEval[3])
-
-			// build the sparse evaluations for the inner layer verifier
-			evals = append(evals, subsetEvals)
-			queryInitials = append(queryInitials, reverseBitIndex(f.api, f.uapi, uint32(leftCandidate), int(logSize)))
-		}
+		layerDecommitmentPositions, layerSparseEvaluationsFlattened, sparseEvaluation, friWitnessIndex := f.computeDecommitmentPositionsAndRebuildEvals(layerQueries, evaluations[domainIndex], f.FirstLayerVerifier.proof.FriWitness, previousFriWitnessIndex, int(logSize))
+		previousFriWitnessIndex = friWitnessIndex
 		decommitmentPositions[logSize] = layerDecommitmentPositions
-		sparseEvaluations = append(sparseEvaluations, SparseEvaluations{
-			queryInitials: queryInitials,
-			evals:         evals,
-		})
+		sparseEvaluations = append(sparseEvaluations, sparseEvaluation)
+		sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, layerSparseEvaluationsFlattened...)
 	}
 
 	// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
@@ -430,6 +382,66 @@ func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31
 	return sparseEvaluations
 }
 
+func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(layerQueries []int, evalAtQueries []m31.QM31, witnessEvals []m31.QM31, previousFriWitnessIndex int, logSize int) ([]int, []m31.M31, SparseEvaluations, int) {
+	friWitnessIndex := previousFriWitnessIndex
+	// helper function replicating the rust api for iterator next() method
+	nextFriWitness := func() m31.QM31 {
+		if friWitnessIndex >= len(witnessEvals) {
+			panic("fri witness exhausted")
+		}
+		witness := witnessEvals[friWitnessIndex]
+		friWitnessIndex++
+		return witness
+	}
+
+	layerDecommitmentPositions := make([]int, 0)
+	sparseEvaluationsFlattened := make([]m31.M31, 0)
+	evals := make([][]m31.QM31, 0)
+	queryInitials := make([]uints.U32, 0)
+	for i := 0; i < len(layerQueries); {
+		subsetEvals := make([]m31.QM31, 2)
+		queryInitial := layerQueries[i] >> 1
+		leftCandidate := queryInitial << 1
+		rightCandidate := leftCandidate + 1
+		layerDecommitmentPositions = append(layerDecommitmentPositions, leftCandidate, rightCandidate)
+		// follow the same pattern as the merkle decommitment verifier
+		switch layerQueries[i] {
+		case leftCandidate:
+			subsetEvals[0] = evalAtQueries[i]
+			if i+1 < len(layerQueries) && layerQueries[i+1] == rightCandidate {
+				subsetEvals[1] = evalAtQueries[i+1]
+				i += 2
+			} else {
+				subsetEvals[1] = nextFriWitness()
+				i++
+			}
+		case rightCandidate:
+			subsetEvals[0] = nextFriWitness()
+			subsetEvals[1] = evalAtQueries[i]
+			i++
+		default:
+			panic("unexpected query candidate")
+		}
+
+		// flatten the evaluations into 4 M31 elements for use in the merkle decommitment verifier
+		leftEval := subsetEvals[0].Components()
+		sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, leftEval[0], leftEval[1], leftEval[2], leftEval[3])
+		rightEval := subsetEvals[1].Components()
+		sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, rightEval[0], rightEval[1], rightEval[2], rightEval[3])
+
+		// build the sparse evaluations for the inner layer verifier
+		evals = append(evals, subsetEvals)
+		queryInitials = append(queryInitials, reverseBitIndex(f.api, f.uapi, uint32(leftCandidate), logSize))
+	}
+
+	sparseEvaluation := SparseEvaluations{
+		queryInitials: queryInitials,
+		evals:         evals,
+	}
+
+	return layerDecommitmentPositions, sparseEvaluationsFlattened, sparseEvaluation, friWitnessIndex
+}
+
 // ╔══════════════════════════════════╗
 // ║            Inner Layers          ║
 // ╚══════════════════════════════════╝
@@ -444,11 +456,21 @@ type FriInnerLayerVerifier struct {
 func (f *FriVerifier) verifyInnerLayers(queries [][]int, firstLayerEvaluations []SparseEvaluations) {
 	columnBoundsIndex := 0
 	previousAlpha := f.FirstLayerVerifier.foldingAlpha
+	//queries only contains queries for log sizes for which there exists columns of given size
+	extendedQueries := extendQueries(queries, f.FirstLayerVerifier.columnBounds[0])
+	// initialize the current layer evaluations with the first layer evaluations
+	nQueriesForFirstInnerLayer := len(extendedQueries[f.FirstLayerVerifier.columnCommitmentDomains[0].LogSize()-1])
+	currentLayerEvals := make([]m31.QM31, nQueriesForFirstInnerLayer)
+	for i := range currentLayerEvals {
+		currentLayerEvals[i] = f.qm31Chip.Zero()
+	}
+
 	for _, innerLayerVerifier := range f.InnerLayerVerifiers {
 		// check if we need to fold in fri answers to this layer
 		if columnBoundsIndex < len(f.FirstLayerVerifier.columnBounds) && f.FirstLayerVerifier.columnBounds[columnBoundsIndex]-1 == innerLayerVerifier.degreeBound {
-			// fold the evaluations over H_i on I_i
+			// fold the evaluations from H_i to I_i
 			foldedColumnEvals := make([]m31.QM31, 0)
+
 			for i, eval := range firstLayerEvaluations[columnBoundsIndex].evals {
 				// queryInitial is the index of (x_i,y_i) in H_i
 				queryInitial := firstLayerEvaluations[columnBoundsIndex].queryInitials[i]
@@ -467,8 +489,48 @@ func (f *FriVerifier) verifyInnerLayers(queries [][]int, firstLayerEvaluations [
 				foldedColumnEvals = append(foldedColumnEvals, folded)
 			}
 			columnBoundsIndex++
+
+			// build g_i(x_j) from folded column evaluations and folded g_{i-1}
+			previousAlphaSq := f.qm31Chip.Mul(previousAlpha, previousAlpha)
+			for i, eval := range foldedColumnEvals {
+				currentLayerEvals[i] = f.qm31Chip.Mul(currentLayerEvals[i], previousAlphaSq)
+				currentLayerEvals[i] = f.qm31Chip.Add(currentLayerEvals[i], eval)
+			}
 		}
+
+		// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
+		logSize := uint8(innerLayerVerifier.domain.LogSize())
+		columnLogSizes := []uint8{logSize, logSize, logSize, logSize}
+
+		// verify g_i(x_j) decommitments
+		layerDecommitmentPositions, sparseEvaluationsFlattened, sparseEvaluation, _ := f.computeDecommitmentPositionsAndRebuildEvals(extendedQueries[innerLayerVerifier.degreeBound+1], currentLayerEvals, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.FriWitness, 0, int(innerLayerVerifier.degreeBound+1))
+		decommitmentPositions := make([][]int, 32)
+		decommitmentPositions[logSize] = layerDecommitmentPositions
+
+		merkleVerifier := NewMerkleVerifier(f.api, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Commitment, columnLogSizes)
+		merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Decommitment)
+
+		// currentLayerEvals contains g_{i-1}(x_j) folded
+		currentLayerEvals = make([]m31.QM31, len(extendedQueries[innerLayerVerifier.degreeBound]))
+
+		// fold g_i evaluations from I_i to I_{i+1} (similar to folding over H_i to I_i but with line domains)
+		for i, eval := range sparseEvaluation.evals {
+			queryInitial := sparseEvaluation.queryInitials[i]
+			domain := innerLayerVerifier.domain.Coset()
+			queryInitialLE := uints.U32{queryInitial[3], queryInitial[2], queryInitial[1], queryInitial[0]}
+			P := domain.IndexAt(queryInitialLE).Point()
+			h0 := eval[0] // g_i(P) = g_i(x_i, y_i)
+			h1 := eval[1] // g_i(-P) = g_i(x_i, -y_i)
+			evenPart := f.qm31Chip.Add(h0, h1)
+			inversePx, _ := f.m31Chip.Inverse(P.X) // x instead of y since we are in the line domain
+			oddPart := f.qm31Chip.MulM31(f.qm31Chip.Sub(h0, h1), inversePx)
+			folded := f.qm31Chip.Add(evenPart, f.qm31Chip.Mul(innerLayerVerifier.foldingAlpha, oddPart))
+			currentLayerEvals[i] = folded
+		}
+
+		// update alpha
 		previousAlpha = innerLayerVerifier.foldingAlpha
+
 	}
 }
 
