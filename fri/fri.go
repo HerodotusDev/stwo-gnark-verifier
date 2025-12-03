@@ -82,7 +82,8 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 
 func (f *FriVerifier) Verify(queries [][]int, evaluations [][]m31.QM31) {
 	firstLayerEvaluations := f.verifyFirstLayer(queries, evaluations)
-	f.verifyInnerLayers(queries, firstLayerEvaluations)
+	lastEvaluations := f.verifyInnerLayers(queries, firstLayerEvaluations)
+	f.verifyLastLayer(lastEvaluations)
 }
 
 // ╔══════════════════════════════════╗
@@ -453,7 +454,7 @@ type FriInnerLayerVerifier struct {
 	proof        variables.FriLayerProof
 }
 
-func (f *FriVerifier) verifyInnerLayers(queries [][]int, firstLayerEvaluations []SparseEvaluations) {
+func (f *FriVerifier) verifyInnerLayers(queries [][]int, firstLayerEvaluations []SparseEvaluations) []m31.QM31 {
 	columnBoundsIndex := 0
 	previousAlpha := f.FirstLayerVerifier.foldingAlpha
 	//queries only contains queries for log sizes for which there exists columns of given size
@@ -531,6 +532,20 @@ func (f *FriVerifier) verifyInnerLayers(queries [][]int, firstLayerEvaluations [
 		// update alpha
 		previousAlpha = innerLayerVerifier.foldingAlpha
 
+	}
+
+	return currentLayerEvals
+}
+
+// ╔══════════════════════════════════╗
+// ║            Last Layer            ║
+// ╚══════════════════════════════════╝
+
+// Verifies that the last layer evaluations are equal to the last layer polynomial coefficients
+// This assumes the last layer is a constant polynomial
+func (f *FriVerifier) verifyLastLayer(lastEvaluations []m31.QM31) {
+	for _, eval := range lastEvaluations {
+		f.qm31Chip.AssertEqual(eval, f.LastLayerPoly.Coeffs[0])
 	}
 }
 
