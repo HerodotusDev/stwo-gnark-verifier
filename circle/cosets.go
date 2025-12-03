@@ -22,7 +22,7 @@ type Coset struct {
 
 // newCoset builds a coset whose step size is the subgroup generator of logSize.
 func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize uint32) Coset {
-	if logSize == 0 || logSize > CircleLogOrder {
+	if logSize > CircleLogOrder {
 		panic("unsupported coset log size")
 	}
 	stepSize := SubgroupGenerator(circleChip, logSize)
@@ -163,4 +163,8 @@ func NewLineDomain(coset Coset) LineDomain {
 
 func (d LineDomain) Double() LineDomain {
 	return NewLineDomain(d.coset.Double())
+}
+
+func (d LineDomain) LogSize() uint32 {
+	return d.coset.logSize
 }

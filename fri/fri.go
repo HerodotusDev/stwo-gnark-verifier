@@ -18,6 +18,7 @@ import (
 type FriVerifier struct {
 	api        frontend.API
 	uapi       *uints.BinaryField[uints.U32]
+	m31Chip    *m31.M31Chip
 	qm31Chip   *m31.QM31Chip
 	circleChip *circle.CircleChip
 
@@ -45,7 +46,7 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 
 	// Inner layer verifiers
 	layerBound := bounds[0] - 1 // first bound folded
-	layerDomain := circle.NewLineDomain(circle.NewCoset(circleChip, circle.SubgroupGenerator(circleChip, uint32(layerBound+friConfig.LogBlowupFactor+2)), uint32(layerBound)))
+	layerDomain := circle.NewLineDomain(circle.NewCoset(circleChip, circle.SubgroupGenerator(circleChip, uint32(layerBound+friConfig.LogBlowupFactor+2)), uint32(layerBound+friConfig.LogBlowupFactor)))
 
 	innerLayerVerifiers := make([]FriInnerLayerVerifier, len(friProof.InnerLayerProofs))
 	for i, innerLayerProof := range friProof.InnerLayerProofs {
@@ -69,6 +70,7 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	return &FriVerifier{
 		api:                 api,
 		uapi:                uapi,
+		m31Chip:             qm31Chip.M31Chip(),
 		qm31Chip:            qm31Chip,
 		circleChip:          circleChip,
 		friConfig:           friConfig,
@@ -79,7 +81,8 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 }
 
 func (f *FriVerifier) Verify(queries [][]int, evaluations [][]m31.QM31) {
-	f.verifyFirstLayer(queries, evaluations)
+	firstLayerEvaluations := f.verifyFirstLayer(queries, evaluations)
+	f.verifyInnerLayers(queries, firstLayerEvaluations)
 }
 
 // ╔══════════════════════════════════╗
@@ -341,7 +344,12 @@ type FriFirstLayerVerifier struct {
 	foldingAlpha            m31.QM31
 }
 
-func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31) {
+type SparseEvaluations struct {
+	queryInitials []uints.U32
+	evals         [][]m31.QM31
+}
+
+func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31) []SparseEvaluations {
 	friWitnessIndex := 0
 	// helper function replicating the rust api for iterator next() method
 	nextFriWitness := func() m31.QM31 {
@@ -355,12 +363,15 @@ func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31
 
 	// compute the decommitment positions (queries and their siblings dedupped) and build the matching decommitments values
 	decommitmentPositions := make([][]int, 32)
-	sparseEvaluations := make([]m31.M31, 0)
+	sparseEvaluationsFlattened := make([]m31.M31, 0)
+	sparseEvaluations := make([]SparseEvaluations, 0)
 	for domainIndex, columnCommitmentDomain := range f.FirstLayerVerifier.columnCommitmentDomains {
 		logSize := columnCommitmentDomain.LogSize()
 		layerQueries := queries[logSize]
 
 		layerDecommitmentPositions := make([]int, 0)
+		evals := make([][]m31.QM31, 0)
+		queryInitials := make([]uints.U32, 0)
 		for i := 0; i < len(layerQueries); {
 			subsetEvals := make([]m31.QM31, 2)
 			queryInitial := layerQueries[i] >> 1
@@ -388,11 +399,19 @@ func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31
 
 			// flatten the evaluations into 4 M31 elements for use in the merkle decommitment verifier
 			leftEval := subsetEvals[0].Components()
-			sparseEvaluations = append(sparseEvaluations, leftEval[0], leftEval[1], leftEval[2], leftEval[3])
+			sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, leftEval[0], leftEval[1], leftEval[2], leftEval[3])
 			rightEval := subsetEvals[1].Components()
-			sparseEvaluations = append(sparseEvaluations, rightEval[0], rightEval[1], rightEval[2], rightEval[3])
+			sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, rightEval[0], rightEval[1], rightEval[2], rightEval[3])
+
+			// build the sparse evaluations for the inner layer verifier
+			evals = append(evals, subsetEvals)
+			queryInitials = append(queryInitials, reverseBitIndex(f.api, f.uapi, uint32(leftCandidate), int(logSize)))
 		}
 		decommitmentPositions[logSize] = layerDecommitmentPositions
+		sparseEvaluations = append(sparseEvaluations, SparseEvaluations{
+			queryInitials: queryInitials,
+			evals:         evals,
+		})
 	}
 
 	// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
@@ -406,7 +425,9 @@ func (f *FriVerifier) verifyFirstLayer(queries [][]int, evaluations [][]m31.QM31
 
 	// verify the merkle decommitment
 	merkleVerifier := NewMerkleVerifier(f.api, f.FirstLayerVerifier.proof.Commitment, columnLogSizes)
-	merkleVerifier.Verify(decommitmentPositions, sparseEvaluations, f.FirstLayerVerifier.proof.Decommitment)
+	merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.FirstLayerVerifier.proof.Decommitment)
+
+	return sparseEvaluations
 }
 
 // ╔══════════════════════════════════╗
@@ -418,6 +439,37 @@ type FriInnerLayerVerifier struct {
 	foldingAlpha m31.QM31
 	layerIndex   int
 	proof        variables.FriLayerProof
+}
+
+func (f *FriVerifier) verifyInnerLayers(queries [][]int, firstLayerEvaluations []SparseEvaluations) {
+	columnBoundsIndex := 0
+	previousAlpha := f.FirstLayerVerifier.foldingAlpha
+	for _, innerLayerVerifier := range f.InnerLayerVerifiers {
+		// check if we need to fold in fri answers to this layer
+		if columnBoundsIndex < len(f.FirstLayerVerifier.columnBounds) && f.FirstLayerVerifier.columnBounds[columnBoundsIndex]-1 == innerLayerVerifier.degreeBound {
+			// fold the evaluations over H_i on I_i
+			foldedColumnEvals := make([]m31.QM31, 0)
+			for i, eval := range firstLayerEvaluations[columnBoundsIndex].evals {
+				// queryInitial is the index of (x_i,y_i) in H_i
+				queryInitial := firstLayerEvaluations[columnBoundsIndex].queryInitials[i]
+				// columnDomain corresponds to the circle domain H_i
+				columnDomain := f.FirstLayerVerifier.columnCommitmentDomains[columnBoundsIndex]
+				// P is the point (x_i,y_i) in H_i, we only need the y coordinate for folding
+				P := columnDomain.IndexAt(queryInitial).Point()
+				// Calculate `evenPart` and `oddPart` such that `2h(P) = evenPart + Py * oddPart`.
+				h0 := eval[0] // h(P) = h(x_i, y_i)
+				h1 := eval[1] // h(-P) = h(x_i, -y_i)
+				evenPart := f.qm31Chip.Add(h0, h1)
+				inversePy, _ := f.m31Chip.Inverse(P.Y)
+				oddPart := f.qm31Chip.MulM31(f.qm31Chip.Sub(h0, h1), inversePy)
+				// fold the evaluations with the previous alpha
+				folded := f.qm31Chip.Add(evenPart, f.qm31Chip.Mul(previousAlpha, oddPart))
+				foldedColumnEvals = append(foldedColumnEvals, folded)
+			}
+			columnBoundsIndex++
+		}
+		previousAlpha = innerLayerVerifier.foldingAlpha
+	}
 }
 
 // ╔══════════════════════════════════╗
