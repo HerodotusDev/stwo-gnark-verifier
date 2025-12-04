@@ -14,7 +14,7 @@ The entry point `main.go` loads a sample Stwo proof (from `test_data/`), compile
 go run main.go
 ```
 
-*Note: Ensure valid JSON proof fixtures exist in the `test_data` directory (e.g., `all_components_proof_with_hints.json`).*
+*Note: Ensure valid JSON proof fixtures exist in the `test_data` directory.*
 
 ### Testing
 
@@ -24,20 +24,6 @@ The project contains extensive unit tests for individual components, arithmetic 
 
 ```bash
 go test ./...
-```
-
-**Run specific component tests:**
-
-```bash
-# Example: Test the M31 arithmetic chip
-go test -v ./m31/
-```
-
-**Run Benchmarks:**
-
-```bash
-# Benchmark the M31 accumulator performance
-go test -bench=. ./m31/
 ```
 
 ## Project Structure
@@ -53,8 +39,7 @@ go test -bench=. ./m31/
 ├── m31/            # M31 and QM31 field implementations
 ├── variables/      # Data structures for Proofs, Claims, and Deserialization
 ├── verifier/       # Core Commitment Scheme and Verifier Chip
-├── main.go         # Entry point for full proof cycle
-└── compile_circuit.go # Script for circuit compilation benchmarking
+└── main.go         # Entry point for full proof cycle
 ```
 
 ## ⚠️ Disclaimer
