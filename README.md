@@ -20,26 +20,10 @@ go run main.go
 
 The project contains extensive unit tests for individual components, arithmetic fields, and the full verification flow.
 
-**Run all tests:**
+**Run tests:**
 
 ```bash
-go test ./...
-```
-
-## Project Structure
-
-```text
-├── blake2s/        # Blake2s hash implementation for the channel
-├── channel/        # Fiat-Shamir transcript channel logic
-├── circle/         # Circle curve arithmetic and domain logic
-├── components/     # Cairo AIR components (Opcodes & Builtins)
-│   └── cairo_components/
-│       └── subroutines/  # Low-level constraint evaluations
-├── fri/            # FRI protocol verification logic
-├── m31/            # M31 and QM31 field implementations
-├── variables/      # Data structures for Proofs, Claims, and Deserialization
-├── verifier/       # Core Commitment Scheme and Verifier Chip
-└── main.go         # Entry point for full proof cycle
+go test -short ./...
 ```
 
 ## ⚠️ Disclaimer
