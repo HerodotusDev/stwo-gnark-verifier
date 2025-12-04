@@ -548,12 +548,12 @@ func (acc *SmartAccumulator) flush() {
 // ╚══════════════════════════════════╝
 
 // AssertEqual constrains the circuit so that x == y.
-func (q *M31Chip) AssertEqual(x, y M31) {
-	q.api.AssertIsEqual(x.Limb, y.Limb)
+func (p *M31Chip) AssertEqual(x, y M31) {
+	p.api.AssertIsEqual(x.Limb, y.Limb)
 }
 
-func (q *M31Chip) Println(x M31) {
-	q.api.Println("x", x.Limb)
+func (p *M31Chip) Println(x M31) {
+	p.api.Println("x", x.Limb)
 }
 
 // ╔══════════════════════════════════╗
