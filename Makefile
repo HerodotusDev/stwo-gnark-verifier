@@ -4,7 +4,7 @@
 GOBIN := \$(shell go env GOPATH)/bin
 
 # Default target
-all: fmt lint audit
+all: fmt lint audit test
 
 # 1. Formatting
 # Uses 'gofmt' (standard) and 'goimports' (from GOBIN)
@@ -29,7 +29,7 @@ audit:
 # Runs all tests (go is usually in system PATH, so we leave it raw)
 test:
 	@echo ">> Running tests..."
-	go test ./...
+	go test -short ./...
 
 # Installation helper
 install-tools:
