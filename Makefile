@@ -1,4 +1,4 @@
-.PHONY: all fmt lint audit test help
+.PHONY: all fmt lint audit test
 
 # Resolve the Go binary path dynamically
 GOBIN := \$(shell go env GOPATH)/bin
