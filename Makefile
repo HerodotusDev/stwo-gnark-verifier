@@ -34,6 +34,6 @@ test:
 # Installation helper
 install-tools:
 	@echo ">> Installing tools..."
-	go install golang.org/x/tools/cmd/goimports@latest
+	go install golang.org/x/tools/cmd/goimports@v0.39.0
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.0
-	go install golang.org/x/vuln/cmd/govulncheck@latest
+	go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
