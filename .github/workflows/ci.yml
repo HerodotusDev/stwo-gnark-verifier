@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  # ------------------------------------------------------------------
+  # JOB 1: Format Check
+  # ------------------------------------------------------------------
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Install goimports
+        run: go install golang.org/x/tools/cmd/goimports@v0.39.0
+
+      - name: Run Format Check
+        run: |
+          # Check standard gofmt
+          if [ -n "$(gofmt -l .)" ]; then
+            echo ">> Error: gofmt needs to be run. The following files are unformatted:"
+            gofmt -l .
+            exit 1
+          fi
+          
+          # Check goimports
+          if [ -n "$(goimports -l .)" ]; then
+            echo ">> Error: goimports needs to be run. The following files need imports fixed:"
+            goimports -l .
+            exit 1
+          fi
+          echo ">> Format check passed."
+
+  # ------------------------------------------------------------------
+  # JOB 2: Lint Check
+  # ------------------------------------------------------------------
+  lint-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7.0
+
+      - name: Run Linter
+        run: golangci-lint run ./...
+
+  # ------------------------------------------------------------------
+  # JOB 3: Vulnerability Check
+  # ------------------------------------------------------------------
+  vulnerability-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+
+      - name: Run Vulnerability Check
+        run: govulncheck ./...
+
+  # ------------------------------------------------------------------
+  # JOB 4: Tests (Scaffolded)
+  # ------------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    if: false # <--- ENABLE THIS WHEN READY
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Run Tests
+        run: go test ./...
