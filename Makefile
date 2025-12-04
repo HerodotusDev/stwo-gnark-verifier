@@ -1,30 +1,32 @@
 .PHONY: all fmt lint audit test help
 
+# Resolve the Go binary path dynamically
+GOBIN := \$(shell go env GOPATH)/bin
+
 # Default target
-all: fmt lint audit test
+all: fmt lint audit
 
 # 1. Formatting
-# Uses 'gofmt' as specified in your config
+# Uses 'gofmt' (standard) and 'goimports' (from GOBIN)
 fmt:
 	@echo ">> Formatting Go code (gofmt)..."
 	gofmt -s -w .
-	goimports -l -w .
+	$(GOBIN)/goimports -l -w .
 
 # 2. Linting
-# Runs golangci-lint using your specific .golangci.yml config
+# Runs golangci-lint from GOBIN
 lint:
 	@echo ">> Linting code..."
-	golangci-lint run ./...
+	$(GOBIN)/golangci-lint run ./...
 
 # 3. Auditing
-# Checks for known vulnerabilities (govulncheck)
-# Note: 'gosec' is already running as part of the 'lint' target
+# Checks for vulnerabilities using govulncheck from GOBIN
 audit:
 	@echo ">> Checking for vulnerabilities..."
-	govulncheck ./...
+	$(GOBIN)/govulncheck ./...
 
 # 4. Testing
-# Runs all tests
+# Runs all tests (go is usually in system PATH, so we leave it raw)
 test:
 	@echo ">> Running tests..."
 	go test ./...
