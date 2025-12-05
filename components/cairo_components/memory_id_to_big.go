@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -19,7 +18,7 @@ const (
 // ╚══════════════════════════════════╝
 
 type MemoryIdToBigBigClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 	Offset  uint32
 }
 
@@ -37,7 +36,7 @@ type MemoryIdToBigBigComponent struct {
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
 
-	logSize   uints.U8
+	logSize   frontend.Variable
 	seqAddend m31.QM31
 }
 
@@ -49,14 +48,14 @@ func NewMemoryIdToBigBigComponent(
 	vanishEvalInv m31.QM31,
 	claim MemoryIdToBigBigClaim,
 	interactionClaim MemoryIdToBigBigInteractionClaim,
-) *MemoryIdToBigBigComponent {
+) MemoryIdToBigBigComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	offsetQM := m31.NewQM31FromM31(m31.NewM31Unchecked(claim.Offset))
 	seqAddend := qm31.Add(qm31Const(memoryIdToBigSeqShift), offsetQM)
 
-	return &MemoryIdToBigBigComponent{
+	return MemoryIdToBigBigComponent{
 		qm31:               qm31,
 		lookupElements:     lookupElements,
 		rangeCheckElements: rangeCheckElements,
@@ -68,7 +67,7 @@ func NewMemoryIdToBigBigComponent(
 	}
 }
 
-func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(memoryIdToBigBigTraceCols, memoryIdToBigBigInteractionColumns)
 
 	// ╔══════════════════════════════════╗
@@ -173,7 +172,7 @@ func (c *MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 // ╚══════════════════════════════════╝
 
 type MemoryIdToBigSmallClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type MemoryIdToBigSmallInteractionClaim struct {
@@ -190,7 +189,7 @@ type MemoryIdToBigSmallComponent struct {
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
 
-	logSize uints.U8
+	logSize frontend.Variable
 }
 
 func NewMemoryIdToBigSmallComponent(
@@ -201,11 +200,11 @@ func NewMemoryIdToBigSmallComponent(
 	vanishEvalInv m31.QM31,
 	claim MemoryIdToBigSmallClaim,
 	interactionClaim MemoryIdToBigSmallInteractionClaim,
-) *MemoryIdToBigSmallComponent {
+) MemoryIdToBigSmallComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &MemoryIdToBigSmallComponent{
+	return MemoryIdToBigSmallComponent{
 		qm31:               qm31,
 		lookupElements:     lookupElements,
 		rangeCheckElements: rangeCheckElements,
@@ -216,7 +215,7 @@ func NewMemoryIdToBigSmallComponent(
 	}
 }
 
-func (c *MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(memoryIdToBigSmallTraceCols, memoryIdToBigSmallInteractionColumns)
 
 	// ╔══════════════════════════════════╗

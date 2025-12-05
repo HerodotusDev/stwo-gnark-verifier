@@ -28,7 +28,7 @@ type FriVerifier struct {
 	LastLayerPoly       circle.LinePoly
 }
 
-func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig FriConfig, friProof variables.FriProof, bounds []uint8) *FriVerifier {
+func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig FriConfig, friProof variables.FriProof, bounds []frontend.Variable) *FriVerifier {
 	// First layer commitment
 	channelChip.MixRootBytes(friProof.FirstLayerProof.Commitment[:])
 
@@ -179,7 +179,7 @@ type SampleData struct {
 //   - queriedValues: column values queried for each tree ordered by log size then by query position (same as merkle decommitments)
 //   - randomCoeff: random coefficient used to batch lines with the same sample point and quotients with the same log size
 func (f *FriVerifier) FriQuotientEvaluations(
-	columnLogSizes [][]uint8,
+	columnLogSizes [][]frontend.Variable,
 	sampledValues [][][]m31.QM31,
 	sampledPoints cairo_components.TreeMaskPoints,
 	queries [][]int,

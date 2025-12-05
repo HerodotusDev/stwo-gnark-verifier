@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -20,8 +19,8 @@ var pedersenPartialEcMulSum10Constants = []uint64{
 }
 
 type PedersenBuiltinClaim struct {
-	LogSize                     uints.U8
-	PedersenBuiltinSegmentStart uint32
+	LogSize                     frontend.Variable
+	PedersenBuiltinSegmentStart frontend.Variable
 }
 
 type PedersenBuiltinInteractionClaim struct {
@@ -41,7 +40,7 @@ type PedersenBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewPedersenBuiltin(
@@ -55,10 +54,10 @@ func NewPedersenBuiltin(
 	vanishEvalInv m31.QM31,
 	claim PedersenBuiltinClaim,
 	interactionClaim PedersenBuiltinInteractionClaim,
-) *PedersenBuiltinComponent {
+) PedersenBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PedersenBuiltinComponent{
+	return PedersenBuiltinComponent{
 		qm31:                      qm31Chip,
 		rangeCheck54Elements:      rangeCheck54Elements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -66,14 +65,14 @@ func NewPedersenBuiltin(
 		rangeCheck8Elements:       rangeCheck8Elements,
 		partialEcMulElements:      partialEcMulElements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PedersenBuiltinSegmentStart))),
+		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(claim.PedersenBuiltinSegmentStart)),
 		columnSizeInv:             qm31Chip.Inverse(columnSize),
 		vanishEvalInv:             vanishEvalInv,
 		logSize:                   claim.LogSize,
 	}
 }
 
-func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
 
 	trace := traceSampledValues

@@ -7,15 +7,15 @@ import (
 )
 
 var (
-	preprocessedColumnBitwiseXor        = uints.NewU8(0)
-	preprocessedColumnSeq               = uints.NewU8(1)
-	preprocessedColumnRangeCheck2       = uints.NewU8(2)
-	preprocessedColumnRangeCheck3       = uints.NewU8(3)
-	preprocessedColumnRangeCheck4       = uints.NewU8(4)
-	preprocessedColumnRangeCheck5       = uints.NewU8(5)
-	preprocessedColumnPoseidonRoundKeys = uints.NewU8(6)
-	preprocessedColumnBlakeSigma        = uints.NewU8(7)
-	preprocessedColumnPedersenPoints    = uints.NewU8(8)
+	preprocessedColumnBitwiseXor        = frontend.Variable(0)
+	preprocessedColumnSeq               = frontend.Variable(1)
+	preprocessedColumnRangeCheck2       = frontend.Variable(2)
+	preprocessedColumnRangeCheck3       = frontend.Variable(3)
+	preprocessedColumnRangeCheck4       = frontend.Variable(4)
+	preprocessedColumnRangeCheck5       = frontend.Variable(5)
+	preprocessedColumnPoseidonRoundKeys = frontend.Variable(6)
+	preprocessedColumnBlakeSigma        = frontend.Variable(7)
+	preprocessedColumnPedersenPoints    = frontend.Variable(8)
 )
 
 // ╔══════════════════════════════════╗
@@ -24,17 +24,17 @@ var (
 
 // PreprocessedColumn mimics the Cairo enum variants used to index preprocessed mask values.
 type PreprocessedColumn struct {
-	kind              uints.U8   // kind of the preprocessed column encoded as a 8bit value
-	seqLogSize        uints.U8   // log size of the sequence
-	nTermBits         uints.U8   // number of bits in the term
-	term              uints.U8   // { 0 = left operand, 1 = right operand, 2 = xor result }
-	rangeCheckValues  []uints.U8 // number of bits per range checked value
-	rangeCheckIndex   uints.U8   // index of the RC column
-	simpleColumnIndex uints.U8   // round constants for hashes
+	kind              frontend.Variable   // kind of the preprocessed column encoded as a 8bit value
+	seqLogSize        frontend.Variable   // log size of the sequence
+	nTermBits         frontend.Variable   // number of bits in the term
+	term              frontend.Variable   // { 0 = left operand, 1 = right operand, 2 = xor result }
+	rangeCheckValues  []frontend.Variable // number of bits per range checked value
+	rangeCheckIndex   frontend.Variable   // index of the RC column
+	simpleColumnIndex frontend.Variable   // round constants for hashes
 }
 
 // NewPreprocessedColumnSeq builds a sequence column descriptor.
-func NewPreprocessedColumnSeq(logSize uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnSeq(logSize frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:       preprocessedColumnSeq,
 		seqLogSize: logSize,
@@ -42,7 +42,7 @@ func NewPreprocessedColumnSeq(logSize uints.U8) PreprocessedColumn {
 }
 
 // NewPreprocessedColumnPedersenPoints builds a pedersen points column descriptor.
-func NewPreprocessedColumnPedersenPoints(index uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnPedersenPoints(index frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:              preprocessedColumnPedersenPoints,
 		simpleColumnIndex: index,
@@ -50,7 +50,7 @@ func NewPreprocessedColumnPedersenPoints(index uints.U8) PreprocessedColumn {
 }
 
 // NewPreprocessedColumnBitwiseXor builds a bitwise xor column descriptor.
-func NewPreprocessedColumnBitwiseXor(nTermBits, term uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnBitwiseXor(nTermBits, term frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:      preprocessedColumnBitwiseXor,
 		nTermBits: nTermBits,
@@ -59,7 +59,7 @@ func NewPreprocessedColumnBitwiseXor(nTermBits, term uints.U8) PreprocessedColum
 }
 
 // NewPreprocessedColumnRangeCheck2 builds a range-check (2 values) column descriptor.
-func NewPreprocessedColumnRangeCheck2(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck2(values []frontend.Variable, columnIndex frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:             preprocessedColumnRangeCheck2,
 		rangeCheckValues: values,
@@ -68,7 +68,7 @@ func NewPreprocessedColumnRangeCheck2(values []uints.U8, columnIndex uints.U8) P
 }
 
 // NewPreprocessedColumnRangeCheck3 builds a range-check (3 values) column descriptor.
-func NewPreprocessedColumnRangeCheck3(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck3(values []frontend.Variable, columnIndex frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:             preprocessedColumnRangeCheck3,
 		rangeCheckValues: values,
@@ -77,7 +77,7 @@ func NewPreprocessedColumnRangeCheck3(values []uints.U8, columnIndex uints.U8) P
 }
 
 // NewPreprocessedColumnRangeCheck4 builds a range-check (4 values) column descriptor.
-func NewPreprocessedColumnRangeCheck4(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck4(values []frontend.Variable, columnIndex frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:             preprocessedColumnRangeCheck4,
 		rangeCheckValues: values,
@@ -86,7 +86,7 @@ func NewPreprocessedColumnRangeCheck4(values []uints.U8, columnIndex uints.U8) P
 }
 
 // NewPreprocessedColumnRangeCheck5 builds a range-check (5 values) column descriptor.
-func NewPreprocessedColumnRangeCheck5(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck5(values []frontend.Variable, columnIndex frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:             preprocessedColumnRangeCheck5,
 		rangeCheckValues: values,
@@ -95,7 +95,7 @@ func NewPreprocessedColumnRangeCheck5(values []uints.U8, columnIndex uints.U8) P
 }
 
 // NewPreprocessedColumnPoseidonRoundKeys builds a poseidon round keys column descriptor.
-func NewPreprocessedColumnPoseidonRoundKeys(index uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnPoseidonRoundKeys(index frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:              preprocessedColumnPoseidonRoundKeys,
 		simpleColumnIndex: index,
@@ -103,7 +103,7 @@ func NewPreprocessedColumnPoseidonRoundKeys(index uints.U8) PreprocessedColumn {
 }
 
 // NewPreprocessedColumnBlakeSigma builds a blake sigma column descriptor.
-func NewPreprocessedColumnBlakeSigma(index uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnBlakeSigma(index frontend.Variable) PreprocessedColumn {
 	return PreprocessedColumn{
 		kind:              preprocessedColumnBlakeSigma,
 		simpleColumnIndex: index,
@@ -117,7 +117,11 @@ func (column PreprocessedColumn) Key(api frontend.API) uints.U64 {
 
 // encode encodes a PreprocessedColumn as a 64-bit value.
 func (column PreprocessedColumn) encode(api frontend.API) uints.U64 {
-	uapi, err := uints.New[uints.U64](api)
+	uapi64, err := uints.New[uints.U64](api)
+	if err != nil {
+		panic(err)
+	}
+	bapi, err := uints.NewBytes(api)
 	if err != nil {
 		panic(err)
 	}
@@ -125,23 +129,23 @@ func (column PreprocessedColumn) encode(api frontend.API) uints.U64 {
 
 	switch column.kind {
 	case preprocessedColumnBitwiseXor:
-		res = uapi.PackLSB(column.kind, column.nTermBits, column.term)
+		res = uapi64.PackLSB(bapi.ValueOf(column.kind), bapi.ValueOf(column.nTermBits), bapi.ValueOf(column.term))
 	case preprocessedColumnSeq:
-		res = uapi.PackLSB(column.kind, column.seqLogSize)
+		res = uapi64.PackLSB(bapi.ValueOf(column.kind), bapi.ValueOf(column.seqLogSize))
 	case preprocessedColumnRangeCheck2:
-		res = column.rangeCheckEncode(uapi)
+		res = column.rangeCheckEncode(uapi64, bapi)
 	case preprocessedColumnRangeCheck3:
-		res = column.rangeCheckEncode(uapi)
+		res = column.rangeCheckEncode(uapi64, bapi)
 	case preprocessedColumnRangeCheck4:
-		res = column.rangeCheckEncode(uapi)
+		res = column.rangeCheckEncode(uapi64, bapi)
 	case preprocessedColumnRangeCheck5:
-		res = column.rangeCheckEncode(uapi)
+		res = column.rangeCheckEncode(uapi64, bapi)
 	case preprocessedColumnPoseidonRoundKeys:
-		res = uapi.PackLSB(column.kind, column.simpleColumnIndex)
+		res = uapi64.PackLSB(bapi.ValueOf(column.kind), bapi.ValueOf(column.simpleColumnIndex))
 	case preprocessedColumnBlakeSigma:
-		res = uapi.PackLSB(column.kind, column.simpleColumnIndex)
+		res = uapi64.PackLSB(bapi.ValueOf(column.kind), bapi.ValueOf(column.simpleColumnIndex))
 	case preprocessedColumnPedersenPoints:
-		res = uapi.PackLSB(column.kind, column.simpleColumnIndex)
+		res = uapi64.PackLSB(bapi.ValueOf(column.kind), bapi.ValueOf(column.simpleColumnIndex))
 	default:
 		panic("unsupported preprocessed column kind")
 	}
@@ -150,11 +154,15 @@ func (column PreprocessedColumn) encode(api frontend.API) uints.U64 {
 }
 
 // rangeCheckEncode encodes a range-check column as a 64-bit value.
-func (column PreprocessedColumn) rangeCheckEncode(uapi *uints.BinaryField[uints.U64]) uints.U64 {
-	args := []uints.U8{column.kind}
+func (column PreprocessedColumn) rangeCheckEncode(uapi64 *uints.BinaryField[uints.U64], bapi *uints.Bytes) uints.U64 {
+	args := []frontend.Variable{column.kind}
 	args = append(args, column.rangeCheckValues...)
 	args = append(args, column.rangeCheckIndex)
-	res := uapi.PackLSB(args...)
+	bytes := make([]uints.U8, len(args))
+	for i, arg := range args {
+		bytes[i] = bapi.ValueOf(arg)
+	}
+	res := uapi64.PackLSB(bytes...)
 	return res
 }
 
@@ -212,201 +220,334 @@ func (ps PreprocessedSampledValues) Get(column PreprocessedColumn) m31.QM31 {
 
 // PreprocessedColumns defines the ordering shared with the Cairo implementation.
 var PreprocessedColumns = []PreprocessedColumn{
-	NewPreprocessedColumnSeq(uints.NewU8(24)),
-	NewPreprocessedColumnSeq(uints.NewU8(23)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(0)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(1)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(2)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(3)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(4)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(5)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(6)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(7)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(8)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(9)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(10)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(11)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(12)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(13)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(14)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(15)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(16)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(17)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(18)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(19)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(20)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(21)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(22)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(23)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(24)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(25)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(26)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(27)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(28)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(29)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(30)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(31)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(32)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(33)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(34)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(35)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(36)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(37)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(38)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(39)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(40)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(41)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(42)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(43)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(44)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(45)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(46)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(47)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(48)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(49)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(50)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(51)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(52)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(53)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(54)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(55)),
-	NewPreprocessedColumnSeq(uints.NewU8(22)),
-	NewPreprocessedColumnSeq(uints.NewU8(21)),
-	NewPreprocessedColumnSeq(uints.NewU8(20)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(2)),
-	NewPreprocessedColumnSeq(uints.NewU8(19)),
-	NewPreprocessedColumnSeq(uints.NewU8(18)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(9), uints.NewU8(9)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(9), uints.NewU8(9)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(3)),
-	NewPreprocessedColumnSeq(uints.NewU8(17)),
-	NewPreprocessedColumnSeq(uints.NewU8(16)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(3)),
-	NewPreprocessedColumnSeq(uints.NewU8(15)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(3)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(4)),
-	NewPreprocessedColumnSeq(uints.NewU8(14)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck3([]uints.U8{uints.NewU8(7), uints.NewU8(2), uints.NewU8(5)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck3([]uints.U8{uints.NewU8(7), uints.NewU8(2), uints.NewU8(5)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck3([]uints.U8{uints.NewU8(7), uints.NewU8(2), uints.NewU8(5)}, uints.NewU8(2)),
-	NewPreprocessedColumnSeq(uints.NewU8(13)),
-	NewPreprocessedColumnSeq(uints.NewU8(12)),
-	NewPreprocessedColumnSeq(uints.NewU8(11)),
-	NewPreprocessedColumnSeq(uints.NewU8(10)),
-	NewPreprocessedColumnSeq(uints.NewU8(9)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(5), uints.NewU8(4)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(5), uints.NewU8(4)}, uints.NewU8(1)),
-	NewPreprocessedColumnSeq(uints.NewU8(8)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(1)),
-	NewPreprocessedColumnSeq(uints.NewU8(7)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(3)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(3)}, uints.NewU8(1)),
-	NewPreprocessedColumnSeq(uints.NewU8(6)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(0)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(1)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(2)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(3)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(4)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(5)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(6)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(7)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(8)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(9)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(10)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(11)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(12)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(13)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(14)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(15)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(16)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(17)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(18)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(19)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(20)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(21)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(22)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(23)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(24)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(25)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(26)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(27)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(28)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(29)),
-	NewPreprocessedColumnSeq(uints.NewU8(5)),
-	NewPreprocessedColumnSeq(uints.NewU8(4)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(0)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(1)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(2)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(3)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(4)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(5)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(6)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(7)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(8)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(9)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(10)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(11)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(12)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(13)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(14)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(15)),
+	NewPreprocessedColumnSeq(frontend.Variable(24)),
+	NewPreprocessedColumnSeq(frontend.Variable(23)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(0)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(1)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(2)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(3)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(4)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(5)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(6)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(7)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(8)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(9)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(10)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(11)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(12)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(13)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(14)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(15)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(16)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(17)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(18)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(19)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(20)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(21)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(22)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(23)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(24)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(25)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(26)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(27)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(28)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(29)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(30)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(31)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(32)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(33)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(34)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(35)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(36)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(37)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(38)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(39)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(40)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(41)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(42)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(43)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(44)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(45)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(46)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(47)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(48)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(49)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(50)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(51)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(52)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(53)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(54)),
+	NewPreprocessedColumnPedersenPoints(frontend.Variable(55)),
+	NewPreprocessedColumnSeq(frontend.Variable(22)),
+	NewPreprocessedColumnSeq(frontend.Variable(21)),
+	NewPreprocessedColumnSeq(frontend.Variable(20)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(0)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(1)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(2)),
+	NewPreprocessedColumnSeq(frontend.Variable(19)),
+	NewPreprocessedColumnSeq(frontend.Variable(18)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(9), frontend.Variable(0)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(9), frontend.Variable(1)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(9), frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(9), frontend.Variable(9)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(9), frontend.Variable(9)}, frontend.Variable(1)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(3), frontend.Variable(6), frontend.Variable(6), frontend.Variable(3)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(3), frontend.Variable(6), frontend.Variable(6), frontend.Variable(3)}, frontend.Variable(1)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(3), frontend.Variable(6), frontend.Variable(6), frontend.Variable(3)}, frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(3), frontend.Variable(6), frontend.Variable(6), frontend.Variable(3)}, frontend.Variable(3)),
+	NewPreprocessedColumnSeq(frontend.Variable(17)),
+	NewPreprocessedColumnSeq(frontend.Variable(16)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(8), frontend.Variable(0)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(8), frontend.Variable(1)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(8), frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(4), frontend.Variable(4), frontend.Variable(4), frontend.Variable(4)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(4), frontend.Variable(4), frontend.Variable(4), frontend.Variable(4)}, frontend.Variable(1)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(4), frontend.Variable(4), frontend.Variable(4), frontend.Variable(4)}, frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck4([]frontend.Variable{frontend.Variable(4), frontend.Variable(4), frontend.Variable(4), frontend.Variable(4)}, frontend.Variable(3)),
+	NewPreprocessedColumnSeq(frontend.Variable(15)),
+	NewPreprocessedColumnRangeCheck5([]frontend.Variable{frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck5([]frontend.Variable{frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3)}, frontend.Variable(1)),
+	NewPreprocessedColumnRangeCheck5([]frontend.Variable{frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3)}, frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck5([]frontend.Variable{frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3)}, frontend.Variable(3)),
+	NewPreprocessedColumnRangeCheck5([]frontend.Variable{frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3), frontend.Variable(3)}, frontend.Variable(4)),
+	NewPreprocessedColumnSeq(frontend.Variable(14)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(7), frontend.Variable(0)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(7), frontend.Variable(1)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(7), frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck3([]frontend.Variable{frontend.Variable(7), frontend.Variable(2), frontend.Variable(5)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck3([]frontend.Variable{frontend.Variable(7), frontend.Variable(2), frontend.Variable(5)}, frontend.Variable(1)),
+	NewPreprocessedColumnRangeCheck3([]frontend.Variable{frontend.Variable(7), frontend.Variable(2), frontend.Variable(5)}, frontend.Variable(2)),
+	NewPreprocessedColumnSeq(frontend.Variable(13)),
+	NewPreprocessedColumnSeq(frontend.Variable(12)),
+	NewPreprocessedColumnSeq(frontend.Variable(11)),
+	NewPreprocessedColumnSeq(frontend.Variable(10)),
+	NewPreprocessedColumnSeq(frontend.Variable(9)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(5), frontend.Variable(4)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(5), frontend.Variable(4)}, frontend.Variable(1)),
+	NewPreprocessedColumnSeq(frontend.Variable(8)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(4), frontend.Variable(0)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(4), frontend.Variable(1)),
+	NewPreprocessedColumnBitwiseXor(frontend.Variable(4), frontend.Variable(2)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(4), frontend.Variable(4)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(4), frontend.Variable(4)}, frontend.Variable(1)),
+	NewPreprocessedColumnSeq(frontend.Variable(7)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(4), frontend.Variable(3)}, frontend.Variable(0)),
+	NewPreprocessedColumnRangeCheck2([]frontend.Variable{frontend.Variable(4), frontend.Variable(3)}, frontend.Variable(1)),
+	NewPreprocessedColumnSeq(frontend.Variable(6)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(0)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(1)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(2)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(3)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(4)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(5)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(6)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(7)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(8)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(9)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(10)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(11)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(12)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(13)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(14)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(15)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(16)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(17)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(18)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(19)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(20)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(21)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(22)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(23)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(24)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(25)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(26)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(27)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(28)),
+	NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(29)),
+	NewPreprocessedColumnSeq(frontend.Variable(5)),
+	NewPreprocessedColumnSeq(frontend.Variable(4)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(0)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(1)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(2)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(3)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(4)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(5)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(6)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(7)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(8)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(9)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(10)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(11)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(12)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(13)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(14)),
+	NewPreprocessedColumnBlakeSigma(frontend.Variable(15)),
 }
 
 // PreprocessedLogSizes returns the log size of each canonical preprocessed column.
-func PreprocessedLogSizes() []uint32 {
-	sizes := make([]uint32, len(PreprocessedColumns))
-	for i, column := range PreprocessedColumns {
-		sizes[i] = column.logSize()
-	}
-	return sizes
-}
-
-func (column PreprocessedColumn) logSize() uint32 {
-	switch column.kind {
-	case preprocessedColumnSeq:
-		return u8Value(column.seqLogSize)
-	case preprocessedColumnPedersenPoints:
-		return pedersenPointsTableLogSize
-	case preprocessedColumnBitwiseXor:
-		return 2 * u8Value(column.nTermBits)
-	case preprocessedColumnRangeCheck2,
-		preprocessedColumnRangeCheck3,
-		preprocessedColumnRangeCheck4,
-		preprocessedColumnRangeCheck5:
-		var sum uint32
-		for _, value := range column.rangeCheckValues {
-			sum += u8Value(value)
-		}
-		return sum
-	case preprocessedColumnPoseidonRoundKeys:
-		return poseidonRoundKeysLogSize
-	case preprocessedColumnBlakeSigma:
-		return blakeRoundSigmaLogSize
-	default:
-		panic("unsupported preprocessed column kind")
+func PreprocessedLogSizes() []frontend.Variable {
+	return []frontend.Variable{
+		frontend.Variable(24),
+		frontend.Variable(23),
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		PedersenPointsTableLogSize,
+		frontend.Variable(22),
+		frontend.Variable(21),
+		frontend.Variable(20),
+		frontend.Variable(20),
+		frontend.Variable(20),
+		frontend.Variable(20),
+		frontend.Variable(19),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(18),
+		frontend.Variable(17),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(16),
+		frontend.Variable(15),
+		frontend.Variable(15),
+		frontend.Variable(15),
+		frontend.Variable(15),
+		frontend.Variable(15),
+		frontend.Variable(15),
+		frontend.Variable(14),
+		frontend.Variable(14),
+		frontend.Variable(14),
+		frontend.Variable(14),
+		frontend.Variable(14),
+		frontend.Variable(14),
+		frontend.Variable(14),
+		frontend.Variable(13),
+		frontend.Variable(12),
+		frontend.Variable(11),
+		frontend.Variable(10),
+		frontend.Variable(9),
+		frontend.Variable(9),
+		frontend.Variable(9),
+		frontend.Variable(8),
+		frontend.Variable(8),
+		frontend.Variable(8),
+		frontend.Variable(8),
+		frontend.Variable(8),
+		frontend.Variable(8),
+		frontend.Variable(7),
+		frontend.Variable(7),
+		frontend.Variable(7),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(5),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
+		frontend.Variable(4),
 	}
 }

@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type AssertEqOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AssertEqOpcodeInteractionClaim struct {
@@ -41,11 +40,11 @@ func NewAssertEqOpcode(
 	vanishEvalInv m31.QM31,
 	claim AssertEqOpcodeClaim,
 	interactionClaim AssertEqOpcodeInteractionClaim,
-) *AssertEqOpcodeComponent {
+) AssertEqOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AssertEqOpcodeComponent{
+	return AssertEqOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -56,7 +55,7 @@ func NewAssertEqOpcode(
 	}
 }
 
-func (c *AssertEqOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c AssertEqOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(assertEqOpcodeTraceColumns, assertEqOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗

@@ -711,3 +711,12 @@ func (q *QM31Chip) Println(x QM31) {
 	q.m31.api.Println("bReal", x.BReal.Limb)
 	q.m31.api.Println("bImag", x.BImag.Limb)
 }
+
+func (q *QM31Chip) Select(condition frontend.Variable, trueValue, falseValue QM31) QM31 {
+	return QM31{
+		AReal: NewM31Unchecked(q.m31.api.Select(condition, trueValue.AReal.Limb, falseValue.AReal.Limb)),
+		AImag: NewM31Unchecked(q.m31.api.Select(condition, trueValue.AImag.Limb, falseValue.AImag.Limb)),
+		BReal: NewM31Unchecked(q.m31.api.Select(condition, trueValue.BReal.Limb, falseValue.BReal.Limb)),
+		BImag: NewM31Unchecked(q.m31.api.Select(condition, trueValue.BImag.Limb, falseValue.BImag.Limb)),
+	}
+}

@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type BlakeCompressOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type BlakeCompressOpcodeInteractionClaim struct {
@@ -35,7 +34,7 @@ type BlakeCompressOpcodeComponent struct {
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewBlakeCompressOpcode(
@@ -52,11 +51,11 @@ func NewBlakeCompressOpcode(
 	vanishEvalInv m31.QM31,
 	claim BlakeCompressOpcodeClaim,
 	interactionClaim BlakeCompressOpcodeInteractionClaim,
-) *BlakeCompressOpcodeComponent {
+) BlakeCompressOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &BlakeCompressOpcodeComponent{
+	return BlakeCompressOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -73,7 +72,7 @@ func NewBlakeCompressOpcode(
 	}
 }
 
-func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(blakeCompressTraceColumns, blakeCompressInteractionColumns)
 
 	// Main Trace helpers

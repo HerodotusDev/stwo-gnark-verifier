@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type CallRelImmOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type CallRelImmOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewCallRelImmOpcode(
 	vanishEvalInv m31.QM31,
 	claim CallRelImmOpcodeClaim,
 	interactionClaim CallRelImmOpcodeInteractionClaim,
-) *CallRelImmOpcodeComponent {
+) CallRelImmOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &CallRelImmOpcodeComponent{
+	return CallRelImmOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,7 +58,7 @@ func NewCallRelImmOpcode(
 	}
 }
 
-func (c *CallRelImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c CallRelImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(callRelImmOpcodeTraceColumns, callRelImmOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗

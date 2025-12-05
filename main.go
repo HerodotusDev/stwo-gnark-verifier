@@ -14,12 +14,13 @@ import (
 )
 
 type VerifierCircuit struct {
-	proof variables.Proof `gnark:"-"`
+	proof       variables.Proof       `gnark:"-"`
+	circuitData variables.CircuitData `gnark:"-"`
 }
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := verifier.NewVerifierChip(api)
-	verifierChip.Verify(c.proof, fri.DefaultPcsConfig())
+	verifierChip.Verify(c.proof, fri.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }
@@ -31,9 +32,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	cairoProof := variables.BuildProof(cairoProofRaw)
+	cairoProof, circuitData := variables.BuildProof(cairoProofRaw)
 	circuit := VerifierCircuit{
-		proof: *cairoProof,
+		proof:       *cairoProof,
+		circuitData: *circuitData,
 	}
 
 	// ╔══════════════════════════════════╗

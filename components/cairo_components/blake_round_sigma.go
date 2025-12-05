@@ -2,16 +2,20 @@ package cairo_components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	blakeRoundSigmaLogSize            = 4
 	BlakeRoundSigmaTraceColumns       = 1
 	BlakeRoundSigmaInteractionColumns = 4
 )
 
-type BlakeRoundSigmaClaim struct{}
+var BlakeRoundSigmaLogSize = frontend.Variable(4)
+
+type BlakeRoundSigmaClaim struct {
+	LogSize frontend.Variable
+}
 
 type BlakeRoundSigmaInteractionClaim struct {
 	ClaimedSum m31.QM31
@@ -27,17 +31,18 @@ type BlakeRoundSigmaComponent struct {
 }
 
 func NewBlakeRoundSigma(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	lookup m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim BlakeRoundSigmaClaim,
 	interactionClaim BlakeRoundSigmaInteractionClaim,
-) *BlakeRoundSigmaComponent {
+) BlakeRoundSigmaComponent {
 
-	columnSize := m31.NewM31Unchecked(uint32(1) << blakeRoundSigmaLogSize)
-	columnSizeInv := qm31.Inverse(m31.NewQM31FromM31(columnSize))
+	columnSize := computeColumnSize(api, claim.LogSize)
+	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &BlakeRoundSigmaComponent{
+	return BlakeRoundSigmaComponent{
 		qm31:           qm31,
 		lookupElements: lookup,
 		claimedSum:     interactionClaim.ClaimedSum,
@@ -46,16 +51,16 @@ func NewBlakeRoundSigma(
 	}
 }
 
-func (c *BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+func (c BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(BlakeRoundSigmaTraceColumns, BlakeRoundSigmaInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
 	values := make([]m31.QM31, 1+16)
-	values[0] = traces.Get(sequencePreprocessedColumn(blakeRoundSigmaLogSize))
+	values[0] = traces.Get(NewPreprocessedColumnSeq(BlakeRoundSigmaLogSize))
 	for i := 0; i < 16; i++ {
-		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(uints.NewU8(uint8(i))))
+		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(uints.NewU32(uint32(i))))
 	}
 
 	// ╔══════════════════════════════════╗

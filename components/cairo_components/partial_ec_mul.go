@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -146,7 +145,7 @@ var constraintSpecs = []constraintSpec{
 }
 
 type PartialEcMulClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type PartialEcMulInteractionClaim struct {
@@ -164,7 +163,7 @@ type PartialEcMulComponent struct {
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewPartialEcMul(
@@ -177,10 +176,10 @@ func NewPartialEcMul(
 	vanishEvalInv m31.QM31,
 	claim PartialEcMulClaim,
 	interactionClaim PartialEcMulInteractionClaim,
-) *PartialEcMulComponent {
+) PartialEcMulComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PartialEcMulComponent{
+	return PartialEcMulComponent{
 		qm31:                 qm31Chip,
 		pedersenElements:     pedersenElements,
 		rangeCheck9Elements:  rangeCheck9Elements,
@@ -193,7 +192,7 @@ func NewPartialEcMul(
 	}
 }
 
-func (c *PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+func (c PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(partialEcMulTraceColumns, partialEcMulInteractionColumns)
 
 	// ╔══════════════════════════════════╗

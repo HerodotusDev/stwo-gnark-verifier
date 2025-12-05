@@ -7,7 +7,7 @@ import (
 
 // FriConfig mirrors the prover-side configuration for the FRI protocol.
 type FriConfig struct {
-	LogBlowupFactor         uint8
+	LogBlowupFactor         uints.U32
 	LogLastLayerDegreeBound uint8
 	NQueries                uint8
 }
@@ -16,7 +16,7 @@ var zero = uints.NewU8(0)
 
 // MixInto absorbs the FRI configuration words into the Fiat-Shamir channel.
 func (cfg FriConfig) MixInto(ch *channel.Channel) {
-	ch.MixU64(uints.U64{uints.NewU8(cfg.LogBlowupFactor), zero, zero, zero, zero, zero, zero, zero})
+	ch.MixU32s([]uints.U32{cfg.LogBlowupFactor, uints.NewU32(0)})
 	ch.MixU64(uints.U64{uints.NewU8(cfg.NQueries), zero, zero, zero, zero, zero, zero, zero})
 	ch.MixU64(uints.U64{uints.NewU8(cfg.LogLastLayerDegreeBound), zero, zero, zero, zero, zero, zero, zero})
 }
@@ -39,7 +39,7 @@ func DefaultPcsConfig() PcsConfig {
 	return PcsConfig{
 		PowBits: 26,
 		FriConfig: FriConfig{
-			LogBlowupFactor:         1,
+			LogBlowupFactor:         uints.NewU32(1),
 			LogLastLayerDegreeBound: 0,
 			NQueries:                10,
 		},

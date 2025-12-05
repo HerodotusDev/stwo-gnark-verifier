@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type JnzOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type JnzOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewJnzOpcode(
 	vanishEvalInv m31.QM31,
 	claim JnzOpcodeClaim,
 	interactionClaim JnzOpcodeInteractionClaim,
-) *JnzOpcodeComponent {
+) JnzOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &JnzOpcodeComponent{
+	return JnzOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,7 +58,7 @@ func NewJnzOpcode(
 	}
 }
 
-func (c *JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(jnzOpcodeTraceColumns, jnzOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗

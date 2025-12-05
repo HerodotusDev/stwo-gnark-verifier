@@ -293,18 +293,18 @@ type MemoryAddressToIdInteractionClaimRaw struct {
 
 // MemoryIDToValueInteractionClaimRaw stores the claimed sums for the memory-id-to-value component.
 type MemoryIDToValueInteractionClaimRaw struct {
-	BigClaimedSums  [][][2]uint64 `json:"big_claimed_sums"`
-	SmallClaimedSum [][2]uint64   `json:"small_claimed_sum"`
+	BigClaimedSums  [][][]uint64 `json:"big_claimed_sums"`
+	SmallClaimedSum [][]uint64   `json:"small_claimed_sum"`
 }
 
 // VerifyBitwiseXorInteractionClaimRaw carries the claimed sum for the verify_bitwise_xor components.
 type VerifyBitwiseXorInteractionClaimRaw struct {
-	ClaimedSum [][2]uint64 `json:"claimed_sum"`
+	ClaimedSum [][]uint64 `json:"claimed_sum"`
 }
 
 // ComponentClaimedSumEntry captures the claimed sum emitted for a sub-component.
 type ComponentClaimedSumEntry struct {
-	ClaimedSum [][2]uint64 `json:"claimed_sum"`
+	ClaimedSum [][]uint64 `json:"claimed_sum"`
 }
 
 // ╔══════════════════════════════════╗
@@ -323,7 +323,7 @@ type StarkProofRaw struct {
 }
 
 // SampledValuesRaw stores the sampled values grouped by table, column and evaluation.
-type SampledValuesRaw [][][][][2]uint64
+type SampledValuesRaw [][][][][]uint64
 
 // ╔══════════════════════════════════╗
 // ║    Merkle Decommitment Layout    ║

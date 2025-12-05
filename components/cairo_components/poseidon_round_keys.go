@@ -2,17 +2,21 @@ package cairo_components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	poseidonRoundKeysLogSize            = uint32(6)
 	poseidonRoundKeysColumns            = 30
 	PoseidonRoundKeysTraceColumns       = 1
 	PoseidonRoundKeysInteractionColumns = 4
 )
 
-type PoseidonRoundKeysClaim struct{}
+var PoseidonRoundKeysLogSize = frontend.Variable(6)
+
+type PoseidonRoundKeysClaim struct {
+	LogSize frontend.Variable
+}
 
 type PoseidonRoundKeysInteractionClaim struct {
 	ClaimedSum m31.QM31
@@ -32,31 +36,32 @@ type PoseidonRoundKeysComponent struct {
 }
 
 func NewPoseidonRoundKeys(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	lookupElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim PoseidonRoundKeysInteractionClaim,
-) *PoseidonRoundKeysComponent {
-	columnSize := uint32(1) << poseidonRoundKeysLogSize
+) PoseidonRoundKeysComponent {
+	columnSize := computeColumnSize(api, PoseidonRoundKeysLogSize)
 	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
 
 	keyColumns := make([]PreprocessedColumn, poseidonRoundKeysColumns)
 	for i := 0; i < poseidonRoundKeysColumns; i++ {
-		keyColumns[i] = NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(uint8(i)))
+		keyColumns[i] = NewPreprocessedColumnPoseidonRoundKeys(uints.NewU32(uint32(i)))
 	}
 
-	return &PoseidonRoundKeysComponent{
+	return PoseidonRoundKeysComponent{
 		qm31:           qm31,
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  qm31.Inverse(columnSizeQM),
 		vanishEvalInv:  vanishEvalInv,
-		seqColumn:      NewPreprocessedColumnSeq(uints.NewU8(uint8(poseidonRoundKeysLogSize))),
+		seqColumn:      NewPreprocessedColumnSeq(PoseidonRoundKeysLogSize),
 		keyColumns:     keyColumns,
 	}
 }
 
-func (c *PoseidonRoundKeysComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c PoseidonRoundKeysComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(PoseidonRoundKeysTraceColumns, PoseidonRoundKeysInteractionColumns)
 
 	// ╔══════════════════════════════════╗

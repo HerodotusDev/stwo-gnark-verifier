@@ -3,10 +3,11 @@ package cairo_components
 import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 )
 
 type TripleXor32Claim struct {
-	LogSize uint32
+	LogSize frontend.Variable
 }
 
 type TripleXor32InteractionClaim struct {
@@ -30,30 +31,27 @@ const (
 )
 
 func NewTripleXor32(
+	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyBitwiseXor8Elements m31.InteractionElements,
 	tripleXor32Elements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim TripleXor32Claim,
 	interactionClaim TripleXor32InteractionClaim,
-) *TripleXor32Component {
-	columnSize := uint32(1)
-	if claim.LogSize > 0 {
-		columnSize <<= claim.LogSize
-	}
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
+) TripleXor32Component {
+	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &TripleXor32Component{
+	return TripleXor32Component{
 		qm31:                      qm31,
 		verifyBitwiseXor8Elements: verifyBitwiseXor8Elements,
 		tripleXor32Elements:       tripleXor32Elements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		columnSizeInv:             qm31.Inverse(columnSizeQM),
+		columnSizeInv:             qm31.Inverse(columnSize),
 		vanishEvalInv:             vanishEvalInv,
 	}
 }
 
-func (c *TripleXor32Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c TripleXor32Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(tripleXor32TraceColumns, tripleXor32InteractionColumns)
 
 	// ╔══════════════════════════════════╗

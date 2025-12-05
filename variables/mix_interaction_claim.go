@@ -2,167 +2,210 @@ package variables
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
-	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 )
 
 // MixInto absorbs the Cairo interaction claim into the transcript channel.
-func (claim CairoInteractionClaim) MixInto(ch *channel.Channel) {
-	claim.Opcodes.mixInto(ch)
-	ch.MixFelts([]m31.QM31{claim.VerifyInstruction.ClaimedSum})
-	claim.BlakeContext.mixInto(ch)
-	claim.Builtins.mixInto(ch)
-	claim.PedersenContext.mixInto(ch)
-	claim.PoseidonContext.mixInto(ch)
-	ch.MixFelts([]m31.QM31{claim.MemoryAddressToId.ClaimedSum})
-	mixMemoryIdToValueInteractionClaim(ch, claim.MemoryIDToValue)
-	claim.RangeChecks.mixInto(ch)
-	ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor4.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor7.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor8.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor9.ClaimedSum})
-}
+func (claim CairoInteractionClaim) MixInto(ch *channel.Channel, circuitData CircuitData) {
 
-func (claims OpcodeInteractionClaim) mixInto(ch *channel.Channel) {
-	for _, entry := range claims.Add {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	// Mix opcodes
+	if circuitData.ComponentConfig[0] {
+		ch.MixFelts([]m31.QM31{claim.Add.ClaimedSum})
 	}
-	for _, entry := range claims.AddSmall {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[1] {
+		ch.MixFelts([]m31.QM31{claim.AddSmall.ClaimedSum})
 	}
-	for _, entry := range claims.AddAp {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[2] {
+		ch.MixFelts([]m31.QM31{claim.AddAp.ClaimedSum})
 	}
-	for _, entry := range claims.AssertEq {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[3] {
+		ch.MixFelts([]m31.QM31{claim.AssertEq.ClaimedSum})
 	}
-	for _, entry := range claims.AssertEqImm {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[4] {
+		ch.MixFelts([]m31.QM31{claim.AssertEqImm.ClaimedSum})
 	}
-	for _, entry := range claims.AssertEqDoubleDeref {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[5] {
+		ch.MixFelts([]m31.QM31{claim.AssertEqDoubleDeref.ClaimedSum})
 	}
-	for _, entry := range claims.Blake {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[6] {
+		ch.MixFelts([]m31.QM31{claim.Blake.ClaimedSum})
 	}
-	for _, entry := range claims.Call {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[7] {
+		ch.MixFelts([]m31.QM31{claim.Call.ClaimedSum})
 	}
-	for _, entry := range claims.CallRelImm {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[8] {
+		ch.MixFelts([]m31.QM31{claim.CallRelImm.ClaimedSum})
 	}
-	for _, entry := range claims.Generic {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[9] {
+		ch.MixFelts([]m31.QM31{claim.Generic.ClaimedSum})
 	}
-	for _, entry := range claims.Jnz {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[10] {
+		ch.MixFelts([]m31.QM31{claim.Jnz.ClaimedSum})
 	}
-	for _, entry := range claims.JnzTaken {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[11] {
+		ch.MixFelts([]m31.QM31{claim.JnzTaken.ClaimedSum})
 	}
-	for _, entry := range claims.Jump {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[12] {
+		ch.MixFelts([]m31.QM31{claim.Jump.ClaimedSum})
 	}
-	for _, entry := range claims.JumpDoubleDeref {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[13] {
+		ch.MixFelts([]m31.QM31{claim.JumpDoubleDeref.ClaimedSum})
 	}
-	for _, entry := range claims.JumpRel {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[14] {
+		ch.MixFelts([]m31.QM31{claim.JumpRel.ClaimedSum})
 	}
-	for _, entry := range claims.JumpRelImm {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[15] {
+		ch.MixFelts([]m31.QM31{claim.JumpRelImm.ClaimedSum})
 	}
-	for _, entry := range claims.Mul {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[16] {
+		ch.MixFelts([]m31.QM31{claim.Mul.ClaimedSum})
 	}
-	for _, entry := range claims.MulSmall {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[17] {
+		ch.MixFelts([]m31.QM31{claim.MulSmall.ClaimedSum})
 	}
-	for _, entry := range claims.Qm31 {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[18] {
+		ch.MixFelts([]m31.QM31{claim.Qm31.ClaimedSum})
 	}
-	for _, entry := range claims.Ret {
-		ch.MixFelts([]m31.QM31{entry.ClaimedSum})
+	if circuitData.ComponentConfig[19] {
+		ch.MixFelts([]m31.QM31{claim.Ret.ClaimedSum})
 	}
-}
 
-func (claim BlakeContextInteractionClaim) mixInto(ch *channel.Channel) {
-	if claim.InteractionClaim == nil {
-		return
+	// Mix verify instruction
+	if circuitData.ComponentConfig[20] {
+		ch.MixFelts([]m31.QM31{claim.VerifyInstruction.ClaimedSum})
 	}
-	sub := claim.InteractionClaim
-	ch.MixFelts([]m31.QM31{sub.BlakeRound.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.BlakeG.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.BlakeRoundSigma.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.TripleXor32.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.VerifyBitwiseXor12.ClaimedSum})
-}
 
-func (claim BuiltinsInteractionClaim) mixInto(ch *channel.Channel) {
-	if claim.AddModBuiltin != nil {
+	// Mix Blake context
+	if circuitData.ComponentConfig[21] {
+		ch.MixFelts([]m31.QM31{claim.BlakeRound.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[22] {
+		ch.MixFelts([]m31.QM31{claim.BlakeG.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[23] {
+		ch.MixFelts([]m31.QM31{claim.BlakeRoundSigma.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[24] {
+		ch.MixFelts([]m31.QM31{claim.TripleXor32.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[25] {
+		ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor12.ClaimedSum})
+	}
+
+	// Mix builtins
+	if circuitData.ComponentConfig[26] {
 		ch.MixFelts([]m31.QM31{claim.AddModBuiltin.ClaimedSum})
 	}
-	if claim.BitwiseBuiltin != nil {
+	if circuitData.ComponentConfig[27] {
 		ch.MixFelts([]m31.QM31{claim.BitwiseBuiltin.ClaimedSum})
 	}
-	if claim.MulModBuiltin != nil {
+	if circuitData.ComponentConfig[28] {
 		ch.MixFelts([]m31.QM31{claim.MulModBuiltin.ClaimedSum})
 	}
-	if claim.PedersenBuiltin != nil {
+	if circuitData.ComponentConfig[29] {
 		ch.MixFelts([]m31.QM31{claim.PedersenBuiltin.ClaimedSum})
 	}
-	if claim.PoseidonBuiltin != nil {
+	if circuitData.ComponentConfig[30] {
 		ch.MixFelts([]m31.QM31{claim.PoseidonBuiltin.ClaimedSum})
 	}
-	if claim.RangeCheck96 != nil {
+	if circuitData.ComponentConfig[31] {
 		ch.MixFelts([]m31.QM31{claim.RangeCheck96.ClaimedSum})
 	}
-	if claim.RangeCheck128 != nil {
+	if circuitData.ComponentConfig[32] {
 		ch.MixFelts([]m31.QM31{claim.RangeCheck128.ClaimedSum})
 	}
-}
 
-func (claim PedersenContextInteractionClaim) mixInto(ch *channel.Channel) {
-	if claim.InteractionClaim == nil {
-		return
+	// Mix pedersen context
+	if circuitData.ComponentConfig[33] {
+		ch.MixFelts([]m31.QM31{claim.PartialEcMul.ClaimedSum})
 	}
-	sub := claim.InteractionClaim
-	ch.MixFelts([]m31.QM31{sub.PartialEcMul.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.PedersenPointsTable.ClaimedSum})
-}
-
-func (claim PoseidonContextInteractionClaim) mixInto(ch *channel.Channel) {
-	if claim.InteractionClaim == nil {
-		return
+	if circuitData.ComponentConfig[34] {
+		ch.MixFelts([]m31.QM31{claim.PedersenPointsTable.ClaimedSum})
 	}
-	sub := claim.InteractionClaim
-	ch.MixFelts([]m31.QM31{sub.Poseidon3PartialRoundsChain.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.PoseidonFullRoundChain.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.Cube252.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.PoseidonRoundKeys.ClaimedSum})
-	ch.MixFelts([]m31.QM31{sub.RangeCheckFelt252Width27.ClaimedSum})
-}
 
-func (claim RangeChecksInteractionClaim) mixInto(ch *channel.Channel) {
-	ch.MixFelts([]m31.QM31{claim.RC6.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC8.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC11.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC12.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC18.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC19.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC4_3.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC4_4.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC5_4.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC9_9.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC7_2_5.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC3_6_6_3.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC4_4_4_4.ClaimedSum})
-	ch.MixFelts([]m31.QM31{claim.RC3_3_3_3_3.ClaimedSum})
-}
-
-func mixMemoryIdToValueInteractionClaim(ch *channel.Channel, claim cairo_components.MemoryIdToValueInteractionClaim) {
-	if len(claim.BigClaimedSums) > 0 {
-		ch.MixFelts(claim.BigClaimedSums)
+	// Mix poseidon context
+	if circuitData.ComponentConfig[35] {
+		ch.MixFelts([]m31.QM31{claim.Poseidon3PartialRoundsChain.ClaimedSum})
 	}
-	ch.MixFelts([]m31.QM31{claim.SmallClaimedSum})
+	if circuitData.ComponentConfig[36] {
+		ch.MixFelts([]m31.QM31{claim.PoseidonFullRoundChain.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[37] {
+		ch.MixFelts([]m31.QM31{claim.Cube252.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[38] {
+		ch.MixFelts([]m31.QM31{claim.PoseidonRoundKeys.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[39] {
+		ch.MixFelts([]m31.QM31{claim.RangeCheckFelt252Width27.ClaimedSum})
+	}
+
+	// Mix memory components
+	if circuitData.ComponentConfig[40] {
+		ch.MixFelts([]m31.QM31{claim.MemoryAddressToID.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[41] {
+		ch.MixFelts([]m31.QM31{claim.MemoryIDToBigBig.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[42] {
+		ch.MixFelts([]m31.QM31{claim.MemoryIDToBigSmall.ClaimedSum})
+	}
+
+	// Mix range checks
+	if circuitData.ComponentConfig[43] {
+		ch.MixFelts([]m31.QM31{claim.RC6.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[44] {
+		ch.MixFelts([]m31.QM31{claim.RC8.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[45] {
+		ch.MixFelts([]m31.QM31{claim.RC11.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[46] {
+		ch.MixFelts([]m31.QM31{claim.RC12.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[47] {
+		ch.MixFelts([]m31.QM31{claim.RC18.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[48] {
+		ch.MixFelts([]m31.QM31{claim.RC19.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[49] {
+		ch.MixFelts([]m31.QM31{claim.RC43.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[50] {
+		ch.MixFelts([]m31.QM31{claim.RC44.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[51] {
+		ch.MixFelts([]m31.QM31{claim.RC54.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[52] {
+		ch.MixFelts([]m31.QM31{claim.RC99.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[53] {
+		ch.MixFelts([]m31.QM31{claim.RC725.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[54] {
+		ch.MixFelts([]m31.QM31{claim.RC3663.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[55] {
+		ch.MixFelts([]m31.QM31{claim.RC4444.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[56] {
+		ch.MixFelts([]m31.QM31{claim.RC33333.ClaimedSum})
+	}
+
+	// Mix verify bitwise XOR components
+	if circuitData.ComponentConfig[57] {
+		ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor4.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[58] {
+		ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor7.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[59] {
+		ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor8.ClaimedSum})
+	}
+	if circuitData.ComponentConfig[60] {
+		ch.MixFelts([]m31.QM31{claim.VerifyBitwiseXor9.ClaimedSum})
+	}
 }

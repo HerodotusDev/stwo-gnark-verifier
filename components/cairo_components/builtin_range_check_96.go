@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,8 +12,8 @@ const (
 )
 
 type RangeCheck96BuiltinClaim struct {
-	LogSize                uints.U8
-	RangeCheckSegmentStart uint32
+	LogSize                frontend.Variable
+	RangeCheckSegmentStart frontend.Variable
 }
 
 type RangeCheck96BuiltinInteractionClaim struct {
@@ -24,7 +23,7 @@ type RangeCheck96BuiltinInteractionClaim struct {
 type RangeCheck96BuiltinComponent struct {
 	qm31 *m31.QM31Chip
 
-	logSize uints.U8
+	logSize frontend.Variable
 
 	memoryAddressToIdElements m31.InteractionElements
 	rangeCheck6Elements       m31.InteractionElements
@@ -45,15 +44,15 @@ func NewRangeCheck96Builtin(
 	vanishEvalInv m31.QM31,
 	claim RangeCheck96BuiltinClaim,
 	interactionClaim RangeCheck96BuiltinInteractionClaim,
-) *RangeCheck96BuiltinComponent {
+) RangeCheck96BuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
-		m31.NewM31Unchecked(uint64(claim.RangeCheckSegmentStart)),
+		m31.NewM31Unchecked(claim.RangeCheckSegmentStart),
 	)
 
-	return &RangeCheck96BuiltinComponent{
+	return RangeCheck96BuiltinComponent{
 		qm31:                      qm31,
 		logSize:                   claim.LogSize,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -66,7 +65,7 @@ func NewRangeCheck96Builtin(
 	}
 }
 
-func (c *RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(rangeCheck96BuiltinTraceColumns, rangeCheck96BuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗

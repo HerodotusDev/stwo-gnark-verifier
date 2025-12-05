@@ -17,19 +17,15 @@ type MerkleVerifier struct {
 	blake2sChip *blake2s.Blake2sChip
 
 	root               [32]uints.U8
-	ColumnLogSizes     []uint8
+	ColumnLogSizes     []frontend.Variable
 	nColumnsPerLogSize map[uint8]int
 }
 
-func NewMerkleVerifier(api frontend.API, root [32]uints.U8, columnLogSizes []uint8) *MerkleVerifier {
+func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], root [32]uints.U8, columnLogSizes []frontend.Variable) *MerkleVerifier {
 	m31Chip := m31.NewM31Chip(api)
-	uapi, err := uints.New[uints.U32](api)
 	blake2sChip := blake2s.NewBlake2sChip(api)
-	if err != nil {
-		panic(err)
-	}
 
-	nColumnsPerLogSize := make(map[uint8]int)
+	nColumnsPerLogSize := make(map[frontend.Variable]int)
 	for _, logSize := range columnLogSizes {
 		nColumnsPerLogSize[logSize]++
 	}

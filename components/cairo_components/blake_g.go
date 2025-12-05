@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type BlakeGClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type BlakeGInteractionClaim struct {
@@ -47,11 +46,11 @@ func NewBlakeG(
 	vanishEvalInv m31.QM31,
 	claim BlakeGClaim,
 	interactionClaim BlakeGInteractionClaim,
-) *BlakeGComponent {
+) BlakeGComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &BlakeGComponent{
+	return BlakeGComponent{
 		qm31:          qm31,
 		verifyXor8:    verifyXor8,
 		verifyXor12:   verifyXor12,
@@ -65,7 +64,7 @@ func NewBlakeG(
 	}
 }
 
-func (c *BlakeGComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+func (c BlakeGComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
 	traceSampledValues, interactionSampledValues := traces.Take(blakeGTraceColumns, blakeGInteractionColumns)
 
 	// ╔══════════════════════════════════╗

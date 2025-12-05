@@ -3,7 +3,6 @@ package variables
 import (
 	"encoding/json"
 	"io"
-	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -53,20 +53,38 @@ func ReadCairoProofFromReader(r io.Reader) (*ProofRaw, error) {
 // ╚══════════════════════════════════╝
 
 // BuildProof builds a Proof (used in circuits) from a ProofRaw (from json)
-func BuildProof(proofRaw *ProofRaw) *Proof {
+func BuildProof(proofRaw *ProofRaw) (*Proof, *CircuitData) {
 	if proofRaw == nil {
-		return nil
+		return nil, nil
 	}
 
 	var proof Proof
 
-	proof.Claim = BuildClaim(&proofRaw.Claim)
+	claim, componentConfig := BuildClaim(&proofRaw.Claim)
+	proof.Claim = claim
 	proof.InteractionPow = uints.NewU64(proofRaw.InteractionPow)
 	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
 	proof.StarkProof = BuildStarkProof(&proofRaw.StarkProof)
 	proof.CircuitHints = buildCircuitHints(proofRaw.CircuitHints)
 
-	return &proof
+	circuitData := BuildCircuitData(proofRaw, componentConfig)
+
+	return &proof, &circuitData
+}
+
+// ╔══════════════════════════════════╗
+// ║       Circuit Data Building      ║
+// ╚══════════════════════════════════╝
+
+// BuildCircuitData builds a CircuitData from a ProofRaw
+func BuildCircuitData(proofRaw *ProofRaw, componentConfig [61]bool) CircuitData {
+	if proofRaw == nil {
+		return CircuitData{}
+	}
+
+	return CircuitData{
+		ComponentConfig: componentConfig,
+	}
 }
 
 // ╔══════════════════════════════════╗
@@ -74,352 +92,269 @@ func BuildProof(proofRaw *ProofRaw) *Proof {
 // ╚══════════════════════════════════╝
 
 // BuildClaim builds a CairoClaim from a ClaimRaw
-func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
+func BuildClaim(claimRaw *ClaimRaw) (CairoClaim, ComponentConfig) {
 	if claimRaw == nil {
-		return CairoClaim{}
+		return CairoClaim{}, ComponentConfig{}
 	}
 
-	memAddrLogSize := uint8FromUint64(claimRaw.MemoryAddressToId.LogSize)
-	claim := CairoClaim{
-		PublicData: ConstructPublicData(&claimRaw.PublicData),
-		MemoryAddressToId: cairo_components.MemoryAddressToIdClaim{
-			LogSize: uints.NewU8(memAddrLogSize),
-		},
+	claim := CairoClaim{}
+
+	// Set all components presence to false
+	componentConfig := ComponentConfig{}
+	for i := range componentConfig {
+		componentConfig[i] = false
 	}
 
-	claim.Opcodes = buildOpcodeClaims(claimRaw.Opcodes)
-	if verifyInstructionLogSize := claimRaw.VerifyInstruction.LogSize; verifyInstructionLogSize > 0 {
-		claim.VerifyInstruction = &cairo_components.VerifyInstructionClaim{
-			LogSize: uints.NewU8(uint8FromUint64(verifyInstructionLogSize)),
+	// Build public data
+	claim.PublicData = BuildPublicData(&claimRaw.PublicData)
+
+	// Build opcodes
+	if len(claimRaw.Opcodes.Add) > 0 {
+		componentConfig[0] = true
+		claim.Add = cairo_components.AddOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Add[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.AddSmall) > 0 {
+		componentConfig[1] = true
+		claim.AddSmall = cairo_components.AddSmallOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AddSmall[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.AddAp) > 0 {
+		componentConfig[2] = true
+		claim.AddAp = cairo_components.AddApOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AddAp[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.AssertEq) > 0 {
+		componentConfig[3] = true
+		claim.AssertEq = cairo_components.AssertEqOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AssertEq[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.AssertEqImm) > 0 {
+		componentConfig[4] = true
+		claim.AssertEqImm = cairo_components.AssertEqImmOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AssertEqImm[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.AssertEqDoubleDeref) > 0 {
+		componentConfig[5] = true
+		claim.AssertEqDoubleDeref = cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AssertEqDoubleDeref[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Blake) > 0 {
+		componentConfig[6] = true
+		claim.Blake = cairo_components.BlakeCompressOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Blake[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Call) > 0 {
+		componentConfig[7] = true
+		claim.Call = cairo_components.CallOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Call[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.CallRelImm) > 0 {
+		componentConfig[8] = true
+		claim.CallRelImm = cairo_components.CallRelImmOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.CallRelImm[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Generic) > 0 {
+		componentConfig[9] = true
+		claim.Generic = cairo_components.GenericOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Generic[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Jnz) > 0 {
+		componentConfig[10] = true
+		claim.Jnz = cairo_components.JnzOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Jnz[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.JnzTaken) > 0 {
+		componentConfig[11] = true
+		claim.JnzTaken = cairo_components.JnzTakenOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JnzTaken[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Jump) > 0 {
+		componentConfig[12] = true
+		claim.Jump = cairo_components.JumpOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Jump[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.JumpDoubleDeref) > 0 {
+		componentConfig[13] = true
+		claim.JumpDoubleDeref = cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JumpDoubleDeref[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.JumpRel) > 0 {
+		componentConfig[14] = true
+		claim.JumpRel = cairo_components.JumpRelOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JumpRel[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.JumpRelImm) > 0 {
+		componentConfig[15] = true
+		claim.JumpRelImm = cairo_components.JumpRelImmOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JumpRelImm[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Mul) > 0 {
+		componentConfig[16] = true
+		claim.Mul = cairo_components.MulOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Mul[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.MulSmall) > 0 {
+		componentConfig[17] = true
+		claim.MulSmall = cairo_components.MulSmallOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.MulSmall[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Qm31) > 0 {
+		componentConfig[18] = true
+		claim.Qm31 = cairo_components.Qm31OpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Qm31[0].LogSize)}
+	}
+	if len(claimRaw.Opcodes.Ret) > 0 {
+		componentConfig[19] = true
+		claim.Ret = cairo_components.RetOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Ret[0].LogSize)}
+	}
+
+	// Build verify instruction
+	componentConfig[20] = true
+	claim.VerifyInstruction = cairo_components.VerifyInstructionClaim{LogSize: frontend.Variable(claimRaw.VerifyInstruction.LogSize)}
+
+	// Build Blake context
+	if claimRaw.BlakeContext.Claim != nil {
+		componentConfig[21] = true
+		claim.BlakeRound = cairo_components.BlakeRoundClaim{LogSize: frontend.Variable(claimRaw.BlakeContext.Claim.BlakeRound.LogSize)}
+		componentConfig[22] = true
+		claim.BlakeG = cairo_components.BlakeGClaim{LogSize: frontend.Variable(claimRaw.BlakeContext.Claim.BlakeG.LogSize)}
+		componentConfig[23] = true
+		claim.BlakeRoundSigma = cairo_components.BlakeRoundSigmaClaim{LogSize: cairo_components.BlakeRoundSigmaLogSize}
+		componentConfig[24] = true
+		claim.TripleXor32 = cairo_components.TripleXor32Claim{LogSize: frontend.Variable(claimRaw.BlakeContext.Claim.TripleXor32.LogSize)}
+		componentConfig[25] = true
+		claim.VerifyBitwiseXor12 = cairo_components.VerifyBitwiseXor12Claim{LogSize: cairo_components.VerifyBitwiseXor12LogSize}
+	}
+
+	// Build builtins
+	if claimRaw.Builtins["add_mod_builtin"] != nil {
+		componentConfig[26] = true
+		claim.AddModBuiltin = cairo_components.AddModBuiltinClaim{
+			LogSize:                   frontend.Variable(claimRaw.Builtins["add_mod_builtin"].LogSize),
+			AddModBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["add_mod_builtin"].AddModBuiltinSegmentStart),
 		}
 	}
-	claim.BlakeContext = buildBlakeContextClaim(claimRaw.BlakeContext)
-	claim.Builtins = buildBuiltinsClaim(claimRaw.Builtins)
-	claim.PedersenContext = buildPedersenContextClaim(claimRaw.PedersenContext)
-	claim.PoseidonContext = buildPoseidonContextClaim(claimRaw.PoseidonContext)
-	claim.MemoryIDToValue = buildMemoryIDToValueClaim(claimRaw.MemoryIDToValue)
-	claim.RangeChecks = buildRangeChecksClaim(claimRaw.RangeChecks)
-	claim.VerifyBitwiseXor4 = &cairo_components.VerifyBitwiseXor4Claim{}
-	claim.VerifyBitwiseXor7 = &cairo_components.VerifyBitwiseXor7Claim{}
-	claim.VerifyBitwiseXor8 = &cairo_components.VerifyBitwiseXor8Claim{}
-	claim.VerifyBitwiseXor9 = &cairo_components.VerifyBitwiseXor9Claim{}
-
-	return claim
-}
-
-func buildOpcodeClaims(raw OpcodeClaimRaw) OpcodeClaims {
-	var claims OpcodeClaims
-
-	claims.Add = mapOpcodeClaimEntries(raw.Add, func(logSize uint32) cairo_components.AddOpcodeClaim {
-		return cairo_components.AddOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.AddSmall = mapOpcodeClaimEntries(raw.AddSmall, func(logSize uint32) cairo_components.AddSmallOpcodeClaim {
-		return cairo_components.AddSmallOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.AddAp = mapOpcodeClaimEntries(raw.AddAp, func(logSize uint32) cairo_components.AddApOpcodeClaim {
-		return cairo_components.AddApOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.AssertEq = mapOpcodeClaimEntries(raw.AssertEq, func(logSize uint32) cairo_components.AssertEqOpcodeClaim {
-		return cairo_components.AssertEqOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.AssertEqImm = mapOpcodeClaimEntries(raw.AssertEqImm, func(logSize uint32) cairo_components.AssertEqImmOpcodeClaim {
-		return cairo_components.AssertEqImmOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.AssertEqDoubleDeref = mapOpcodeClaimEntries(raw.AssertEqDoubleDeref, func(logSize uint32) cairo_components.AssertEqDoubleDerefOpcodeClaim {
-		return cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Blake = mapOpcodeClaimEntries(raw.Blake, func(logSize uint32) cairo_components.BlakeCompressOpcodeClaim {
-		return cairo_components.BlakeCompressOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Call = mapOpcodeClaimEntries(raw.Call, func(logSize uint32) cairo_components.CallOpcodeClaim {
-		return cairo_components.CallOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.CallRelImm = mapOpcodeClaimEntries(raw.CallRelImm, func(logSize uint32) cairo_components.CallRelImmOpcodeClaim {
-		return cairo_components.CallRelImmOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Generic = mapOpcodeClaimEntries(raw.Generic, func(logSize uint32) cairo_components.GenericOpcodeClaim {
-		return cairo_components.GenericOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Jnz = mapOpcodeClaimEntries(raw.Jnz, func(logSize uint32) cairo_components.JnzOpcodeClaim {
-		return cairo_components.JnzOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.JnzTaken = mapOpcodeClaimEntries(raw.JnzTaken, func(logSize uint32) cairo_components.JnzTakenOpcodeClaim {
-		return cairo_components.JnzTakenOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Jump = mapOpcodeClaimEntries(raw.Jump, func(logSize uint32) cairo_components.JumpOpcodeClaim {
-		return cairo_components.JumpOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.JumpDoubleDeref = mapOpcodeClaimEntries(raw.JumpDoubleDeref, func(logSize uint32) cairo_components.JumpDoubleDerefOpcodeClaim {
-		return cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.JumpRel = mapOpcodeClaimEntries(raw.JumpRel, func(logSize uint32) cairo_components.JumpRelOpcodeClaim {
-		return cairo_components.JumpRelOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.JumpRelImm = mapOpcodeClaimEntries(raw.JumpRelImm, func(logSize uint32) cairo_components.JumpRelImmOpcodeClaim {
-		return cairo_components.JumpRelImmOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Mul = mapOpcodeClaimEntries(raw.Mul, func(logSize uint32) cairo_components.MulOpcodeClaim {
-		return cairo_components.MulOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.MulSmall = mapOpcodeClaimEntries(raw.MulSmall, func(logSize uint32) cairo_components.MulSmallOpcodeClaim {
-		return cairo_components.MulSmallOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Qm31 = mapOpcodeClaimEntries(raw.Qm31, func(logSize uint32) cairo_components.Qm31OpcodeClaim {
-		return cairo_components.Qm31OpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-	claims.Ret = mapOpcodeClaimEntries(raw.Ret, func(logSize uint32) cairo_components.RetOpcodeClaim {
-		return cairo_components.RetOpcodeClaim{LogSize: uints.NewU8(uint8(logSize))}
-	})
-
-	return claims
-}
-
-func buildBlakeContextClaim(raw BlakeContextClaimRawWrapper) BlakeContextClaim {
-	if raw.Claim == nil {
-		return BlakeContextClaim{}
-	}
-
-	var (
-		claim   BlakeClaim
-		hasData bool
-	)
-
-	if entry := raw.Claim.BlakeRound; entry != nil {
-		claim.BlakeRound = &cairo_components.BlakeRoundClaim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
-	}
-	if entry := raw.Claim.BlakeG; entry != nil {
-		claim.BlakeG = &cairo_components.BlakeGClaim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
-	}
-	if raw.Claim.BlakeSigma != nil {
-		claim.BlakeRoundSigma = &cairo_components.BlakeRoundSigmaClaim{}
-		hasData = true
-	}
-	if entry := raw.Claim.TripleXor32; entry != nil {
-		claim.TripleXor32 = &cairo_components.TripleXor32Claim{LogSize: uint32FromUint64(entry.LogSize)}
-		hasData = true
-	}
-	if entry := raw.Claim.VerifyBitwiseXor12; entry != nil {
-		claim.VerifyBitwiseXor12 = &cairo_components.VerifyBitwiseXor12Claim{}
-		hasData = true
-	}
-
-	if !hasData {
-		return BlakeContextClaim{}
-	}
-
-	return BlakeContextClaim{Claim: &claim}
-}
-
-func buildBuiltinsClaim(raw BuiltinsClaimRaw) BuiltinsClaim {
-	var claim BuiltinsClaim
-	if raw == nil {
-		return claim
-	}
-
-	if entry := raw["add_mod_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.AddModBuiltin = &cairo_components.AddModBuiltinClaim{
-			LogSize:                   uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			AddModBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.AddModBuiltinSegmentStart)),
+	if claimRaw.Builtins["bitwise_builtin"] != nil {
+		componentConfig[27] = true
+		claim.BitwiseBuiltin = cairo_components.BitwiseBuiltinClaim{
+			LogSize:                    frontend.Variable(claimRaw.Builtins["bitwise_builtin"].LogSize),
+			BitwiseBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["bitwise_builtin"].BitwiseBuiltinSegmentStart),
 		}
 	}
-	if entry := raw["bitwise_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.BitwiseBuiltin = &cairo_components.BitwiseBuiltinClaim{
-			LogSize:                    uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			BitwiseBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.BitwiseBuiltinSegmentStart)),
+	if claimRaw.Builtins["mul_mod_builtin"] != nil {
+		componentConfig[28] = true
+		claim.MulModBuiltin = cairo_components.MulModBuiltinClaim{
+			LogSize:                   frontend.Variable(claimRaw.Builtins["mul_mod_builtin"].LogSize),
+			MulModBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["mul_mod_builtin"].MulModBuiltinSegmentStart),
 		}
 	}
-	if entry := raw["mul_mod_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.MulModBuiltin = &cairo_components.MulModBuiltinClaim{
-			LogSize:                   uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			MulModBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.MulModBuiltinSegmentStart)),
+	if claimRaw.Builtins["pedersen_builtin"] != nil {
+		componentConfig[29] = true
+		claim.PedersenBuiltin = cairo_components.PedersenBuiltinClaim{
+			LogSize:                     frontend.Variable(claimRaw.Builtins["pedersen_builtin"].LogSize),
+			PedersenBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["pedersen_builtin"].PedersenBuiltinSegmentStart),
 		}
 	}
-	if entry := raw["pedersen_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.PedersenBuiltin = &cairo_components.PedersenBuiltinClaim{
-			LogSize:                     uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			PedersenBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.PedersenBuiltinSegmentStart)),
+	if claimRaw.Builtins["poseidon_builtin"] != nil {
+		componentConfig[30] = true
+		claim.PoseidonBuiltin = cairo_components.PoseidonBuiltinClaim{
+			LogSize:                     frontend.Variable(claimRaw.Builtins["poseidon_builtin"].LogSize),
+			PoseidonBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["poseidon_builtin"].PoseidonBuiltinSegmentStart),
 		}
 	}
-	if entry := raw["poseidon_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.PoseidonBuiltin = &cairo_components.PoseidonBuiltinClaim{
-			LogSize:                     uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			PoseidonBuiltinSegmentStart: uint32FromUint64(ptrUint64(entry.PoseidonBuiltinSegmentStart)),
+	if claimRaw.Builtins["range_check_96_builtin"] != nil {
+		componentConfig[31] = true
+		claim.RangeCheck96 = cairo_components.RangeCheck96BuiltinClaim{
+			LogSize:                frontend.Variable(claimRaw.Builtins["range_check_96_builtin"].LogSize),
+			RangeCheckSegmentStart: frontend.Variable(claimRaw.Builtins["range_check_96_builtin"].RangeCheckBuiltinSegmentStart),
 		}
 	}
-	if entry := raw["range_check_96_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.RangeCheck96 = &cairo_components.RangeCheck96BuiltinClaim{
-			LogSize:                uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			RangeCheckSegmentStart: uint32FromUint64(ptrUint64(entry.RangeCheckBuiltinSegmentStart)),
-		}
-	}
-	if entry := raw["range_check_128_builtin"]; entry != nil && entry.LogSize != nil {
-		claim.RangeCheck128 = &cairo_components.RangeCheck128BuiltinClaim{
-			LogSize:                uints.NewU8(uint8FromUint64(ptrUint64(entry.LogSize))),
-			RangeCheckSegmentStart: uint32FromUint64(ptrUint64(entry.RangeCheckBuiltinSegmentStart)),
+	if claimRaw.Builtins["range_check_128_builtin"] != nil {
+		componentConfig[32] = true
+		claim.RangeCheck128 = cairo_components.RangeCheck128BuiltinClaim{
+			LogSize:                frontend.Variable(claimRaw.Builtins["range_check_128_builtin"].LogSize),
+			RangeCheckSegmentStart: frontend.Variable(claimRaw.Builtins["range_check_128_builtin"].RangeCheckBuiltinSegmentStart),
 		}
 	}
 
-	return claim
-}
-
-func buildPedersenContextClaim(raw PedersenContextClaimRaw) PedersenContextClaim {
-	if raw.Claim == nil {
-		return PedersenContextClaim{}
+	// Build pedersen context
+	if claimRaw.PedersenContext.Claim != nil {
+		componentConfig[33] = true
+		claim.PartialEcMul = cairo_components.PartialEcMulClaim{LogSize: frontend.Variable(claimRaw.PedersenContext.Claim["partial_ec_mul"].LogSize)}
+		componentConfig[34] = true
+		claim.PedersenPointsTable = cairo_components.PedersenPointsTableClaim{LogSize: cairo_components.PedersenPointsTableLogSize}
 	}
 
-	var (
-		claim   PedersenClaim
-		hasData bool
-	)
-
-	if entry := raw.Claim["partial_ec_mul"]; entry != nil {
-		claim.PartialEcMul = &cairo_components.PartialEcMulClaim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
-	}
-	if entry := raw.Claim["pedersen_points_table"]; entry != nil {
-		claim.PedersenPointsTable = &cairo_components.PedersenPointsTableClaim{}
-		hasData = true
-	}
-
-	if !hasData {
-		return PedersenContextClaim{}
+	// Build poseidon context
+	if claimRaw.PoseidonContext.Claim != nil {
+		componentConfig[35] = true
+		claim.Poseidon3PartialRoundsChain = cairo_components.Poseidon3PartialRoundsChainClaim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize)}
+		componentConfig[36] = true
+		claim.PoseidonFullRoundChain = cairo_components.PoseidonFullRoundChainClaim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize)}
+		componentConfig[37] = true
+		claim.Cube252 = cairo_components.Cube252Claim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.Cube252.LogSize)}
+		componentConfig[38] = true
+		claim.PoseidonRoundKeys = cairo_components.PoseidonRoundKeysClaim{LogSize: cairo_components.PoseidonRoundKeysLogSize}
+		componentConfig[39] = true
+		claim.RangeCheckFelt252Width27 = cairo_components.RangeCheckFelt252Width27Claim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize)}
 	}
 
-	return PedersenContextClaim{Claim: &claim}
-}
+	// Build memory address to id component
+	componentConfig[40] = true
+	claim.MemoryAddressToID = cairo_components.MemoryAddressToIDClaim{LogSize: frontend.Variable(claimRaw.MemoryAddressToId.LogSize)}
 
-func buildPoseidonContextClaim(raw PoseidonContextClaimRaw) PoseidonContextClaim {
-	if raw.Claim == nil {
-		return PoseidonContextClaim{}
+	// Build ID to Big Big memory components
+	// TODO: Handle multiple id to big tables
+	componentConfig[41] = true
+	claim.MemoryIDToBigBig = cairo_components.MemoryIdToBigBigClaim{
+		LogSize: frontend.Variable(claimRaw.MemoryIDToValue.BigLogSizes[0]),
+		Offset:  uint32(0),
 	}
 
-	var (
-		claim   PoseidonClaim
-		hasData bool
-	)
-
-	if entry := raw.Claim.Poseidon3PartialRoundsChain; entry != nil {
-		claim.Poseidon3PartialRoundsChain = &cairo_components.Poseidon3PartialRoundsChainClaim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
-	}
-	if entry := raw.Claim.PoseidonFullRoundChain; entry != nil {
-		claim.PoseidonFullRoundChain = &cairo_components.PoseidonFullRoundChainClaim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
-	}
-	if entry := raw.Claim.Cube252; entry != nil {
-		claim.Cube252 = &cairo_components.Cube252Claim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
-	}
-	if raw.Claim.PoseidonRoundKeys != nil {
-		claim.PoseidonRoundKeys = &cairo_components.PoseidonRoundKeysClaim{}
-		hasData = true
-	}
-	if entry := raw.Claim.RangeCheckFelt252Width27; entry != nil {
-		claim.RangeCheckFelt252Width27 = &cairo_components.RangeCheckFelt252Width27Claim{LogSize: uints.NewU8(uint8FromUint64(entry.LogSize))}
-		hasData = true
+	// Build ID to Big Small memory components
+	componentConfig[42] = true
+	claim.MemoryIDToBigSmall = cairo_components.MemoryIdToBigSmallClaim{
+		LogSize: frontend.Variable(claimRaw.MemoryIDToValue.SmallLogSize),
 	}
 
-	if !hasData {
-		return PoseidonContextClaim{}
-	}
+	// Build range checks
+	componentConfig[43] = true
+	claim.RC6 = cairo_components.RangeCheck6Claim{LogSize: cairo_components.RangeCheck6LogSize}
+	componentConfig[44] = true
+	claim.RC8 = cairo_components.RangeCheck8Claim{LogSize: cairo_components.RangeCheck8LogSize}
+	componentConfig[45] = true
+	claim.RC11 = cairo_components.RangeCheck11Claim{LogSize: cairo_components.RangeCheck11LogSize}
+	componentConfig[46] = true
+	claim.RC12 = cairo_components.RangeCheck12Claim{LogSize: cairo_components.RangeCheck12LogSize}
+	componentConfig[47] = true
+	claim.RC18 = cairo_components.RangeCheck18Claim{LogSize: cairo_components.RangeCheck18LogSize}
+	componentConfig[48] = true
+	claim.RC19 = cairo_components.RangeCheck19Claim{LogSize: cairo_components.RangeCheck19LogSize}
+	componentConfig[49] = true
+	claim.RC43 = cairo_components.RangeCheck43Claim{LogSize: cairo_components.RangeCheck43LogSize}
+	componentConfig[50] = true
+	claim.RC44 = cairo_components.RangeCheck44Claim{LogSize: cairo_components.RangeCheck44LogSize}
+	componentConfig[51] = true
+	claim.RC54 = cairo_components.RangeCheck54Claim{LogSize: cairo_components.RangeCheck54LogSize}
+	componentConfig[52] = true
+	claim.RC99 = cairo_components.RangeCheck99Claim{LogSize: cairo_components.RangeCheck99LogSize}
+	componentConfig[53] = true
+	claim.RC725 = cairo_components.RangeCheck725Claim{LogSize: cairo_components.RangeCheck725LogSize}
+	componentConfig[54] = true
+	claim.RC3663 = cairo_components.RangeCheck3663Claim{LogSize: cairo_components.RangeCheck3663LogSize}
+	componentConfig[55] = true
+	claim.RC4444 = cairo_components.RangeCheck4444Claim{LogSize: cairo_components.RangeCheck4444LogSize}
+	componentConfig[56] = true
+	claim.RC33333 = cairo_components.RangeCheck33333Claim{LogSize: cairo_components.RangeCheck33333LogSize}
 
-	return PoseidonContextClaim{Claim: &claim}
-}
+	// Build bitwise XOR
+	componentConfig[57] = true
+	claim.VerifyBitwiseXor4 = cairo_components.VerifyBitwiseXor4Claim{LogSize: cairo_components.VerifyBitwiseXor4LogSize}
+	componentConfig[58] = true
+	claim.VerifyBitwiseXor7 = cairo_components.VerifyBitwiseXor7Claim{LogSize: cairo_components.VerifyBitwiseXor7LogSize}
+	componentConfig[59] = true
+	claim.VerifyBitwiseXor8 = cairo_components.VerifyBitwiseXor8Claim{LogSize: cairo_components.VerifyBitwiseXor8LogSize}
+	componentConfig[60] = true
+	claim.VerifyBitwiseXor9 = cairo_components.VerifyBitwiseXor9Claim{LogSize: cairo_components.VerifyBitwiseXor9LogSize}
 
-func buildMemoryIDToValueClaim(raw MemoryIDToValueClaimRaw) MemoryIDToValueClaim {
-	var claim MemoryIDToValueClaim
-
-	if len(raw.BigLogSizes) > 0 {
-		claim.Big = make([]cairo_components.MemoryIdToBigBigClaim, 0, len(raw.BigLogSizes))
-		for idx, entry := range raw.BigLogSizes {
-			claim.Big = append(claim.Big, cairo_components.MemoryIdToBigBigClaim{
-				LogSize: uints.NewU8(uint8FromUint64(entry)),
-				Offset:  uint32(idx),
-			})
-		}
-	}
-
-	if raw.SmallLogSize > 0 {
-		claim.Small = &cairo_components.MemoryIdToBigSmallClaim{
-			LogSize: uints.NewU8(uint8FromUint64(raw.SmallLogSize)),
-		}
-	}
-
-	return claim
-}
-
-func buildRangeChecksClaim(raw RangeChecksClaimRaw) RangeChecksClaim {
-	var claim RangeChecksClaim
-	if raw == nil {
-		return claim
-	}
-
-	claim.RC6 = cairo_components.RangeCheck6Claim{}
-	claim.RC8 = cairo_components.RangeCheck8Claim{}
-	claim.RC11 = cairo_components.RangeCheck11Claim{}
-	claim.RC12 = cairo_components.RangeCheck12Claim{}
-	claim.RC18 = cairo_components.RangeCheck18Claim{}
-	claim.RC19 = cairo_components.RangeCheck19Claim{}
-	claim.RC4_3 = cairo_components.RangeCheck4_3Claim{}
-	claim.RC4_4 = cairo_components.RangeCheck4_4Claim{}
-	claim.RC5_4 = cairo_components.RangeCheck5_4Claim{}
-	claim.RC9_9 = cairo_components.RangeCheck9_9Claim{}
-	claim.RC7_2_5 = cairo_components.RangeCheck7_2_5Claim{}
-	claim.RC3_6_6_3 = cairo_components.RangeCheck3_6_6_3Claim{}
-	claim.RC4_4_4_4 = cairo_components.RangeCheck4_4_4_4Claim{}
-	claim.RC3_3_3_3_3 = cairo_components.RangeCheck3_3_3_3_3Claim{}
-
-	return claim
-}
-
-func mapOpcodeClaimEntries[T any](entries []OpcodeLogSizeEntryRaw, wrap func(uint32) T) []T {
-	if len(entries) == 0 {
-		return nil
-	}
-
-	result := make([]T, 0, len(entries))
-	for _, entry := range entries {
-		result = append(result, wrap(uint32FromUint64(entry.LogSize)))
-	}
-	return result
-}
-
-func ptrUint64(value *uint64) uint64 {
-	if value == nil {
-		return 0
-	}
-	return *value
-}
-
-func uint32FromUint64(value uint64) uint32 {
-	if value > math.MaxUint32 {
-		panic("log size exceeds uint32 capacity")
-	}
-	return uint32(value)
-}
-
-func uint8FromUint64(value uint64) uint8 {
-	if value > math.MaxUint8 {
-		panic("log size exceeds uint8 capacity")
-	}
-	return uint8(value)
+	return claim, componentConfig
 }
 
 // ╔══════════════════════════════════╗
 // ║     Public Data ClaimBuilding    ║
 // ╚══════════════════════════════════╝
 
-// ConstructPublicData builds a PublicData from its raw representation.
-func ConstructPublicData(publicDataRaw *PublicDataRaw) PublicData {
+// BuildPublicData builds a PublicData from its raw representation.
+func BuildPublicData(publicDataRaw *PublicDataRaw) PublicData {
 	if publicDataRaw == nil {
 		return PublicData{}
 	}
 
-	publicMemory := constructPublicMemory(publicDataRaw.PublicMemory)
-	initialState := constructCasmState(publicDataRaw.InitialState)
-	finalState := constructCasmState(publicDataRaw.FinalState)
+	publicMemory := buildPublicMemory(publicDataRaw.PublicMemory)
+	initialState := buildCasmState(publicDataRaw.InitialState)
+	finalState := buildCasmState(publicDataRaw.FinalState)
 
 	return PublicData{
 		PublicMemory: publicMemory,
@@ -428,7 +363,7 @@ func ConstructPublicData(publicDataRaw *PublicDataRaw) PublicData {
 	}
 }
 
-func constructCasmState(raw RegisterStateRaw) CasmState {
+func buildCasmState(raw RegisterStateRaw) CasmState {
 	return CasmState{
 		PC: m31.NewM31Unchecked(raw.PC),
 		AP: m31.NewM31Unchecked(raw.AP),
@@ -436,10 +371,10 @@ func constructCasmState(raw RegisterStateRaw) CasmState {
 	}
 }
 
-func constructPublicMemory(raw PublicMemoryRaw) PublicMemory {
+func buildPublicMemory(raw PublicMemoryRaw) PublicMemory {
 	return PublicMemory{
 		Program:        convertMemorySection(raw.Program),
-		PublicSegments: constructPublicSegmentRanges(raw.PublicSegments),
+		PublicSegments: buildPublicSegmentRanges(raw.PublicSegments),
 		Output:         convertMemorySection(raw.Output),
 		SafeCall:       convertMemorySection(raw.SafeCall),
 	}
@@ -460,61 +395,61 @@ func convertMemorySection(cells []MemoryCellRaw) []PubMemoryValue {
 	return section
 }
 
-func constructPublicSegmentRanges(raw map[string]*SegmentRangeRaw) PublicSegmentRanges {
+func buildPublicSegmentRanges(raw map[string]*SegmentRangeRaw) PublicSegmentRanges {
 	if raw == nil {
 		return PublicSegmentRanges{}
 	}
 
 	var ranges PublicSegmentRanges
 
-	ranges.Output = constructSegmentRange(raw["output"])
+	ranges.Output = buildSegmentRange(raw["output"])
 
 	if segment := raw["pedersen"]; segment != nil {
-		ranges.Pedersen = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.Pedersen = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["range_check_128"]; segment != nil {
-		ranges.RangeCheck128 = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.RangeCheck128 = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["ecdsa"]; segment != nil {
-		ranges.Ecdsa = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.Ecdsa = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["bitwise"]; segment != nil {
-		ranges.Bitwise = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.Bitwise = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["ec_op"]; segment != nil {
-		ranges.EcOp = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.EcOp = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["keccak"]; segment != nil {
-		ranges.Keccak = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.Keccak = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["poseidon"]; segment != nil {
-		ranges.Poseidon = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.Poseidon = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["range_check_96"]; segment != nil {
-		ranges.RangeCheck96 = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.RangeCheck96 = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["add_mod"]; segment != nil {
-		ranges.AddMod = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.AddMod = ptrSegmentRange(buildSegmentRange(segment))
 	}
 	if segment := raw["mul_mod"]; segment != nil {
-		ranges.MulMod = ptrSegmentRange(constructSegmentRange(segment))
+		ranges.MulMod = ptrSegmentRange(buildSegmentRange(segment))
 	}
 
 	return ranges
 }
 
-func constructSegmentRange(raw *SegmentRangeRaw) SegmentRange {
+func buildSegmentRange(raw *SegmentRangeRaw) SegmentRange {
 	if raw == nil {
 		return SegmentRange{}
 	}
 
 	return SegmentRange{
-		StartPtr: constructSegmentPointer(raw.StartPtr),
-		StopPtr:  constructSegmentPointer(raw.StopPtr),
+		StartPtr: buildSegmentPointer(raw.StartPtr),
+		StopPtr:  buildSegmentPointer(raw.StopPtr),
 	}
 }
 
-func constructSegmentPointer(raw *SegmentPointerRaw) SegmentPointer {
+func buildSegmentPointer(raw *SegmentPointerRaw) SegmentPointer {
 	if raw == nil {
 		return SegmentPointer{}
 	}
@@ -544,324 +479,162 @@ func BuildInteractionClaim(interactionClaimRaw *InteractionClaimRaw) CairoIntera
 	var interactionClaim CairoInteractionClaim
 
 	// Opcode interaction claim
-	interactionClaim.Opcodes = buildOpcodeInteractionClaim(interactionClaimRaw.Opcodes)
+	if len(interactionClaimRaw.Opcodes["add"]) > 0 {
+		interactionClaim.Add = cairo_components.AddOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["add"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["add_small"]) > 0 {
+		interactionClaim.AddSmall = cairo_components.AddSmallOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["add_small"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["add_ap"]) > 0 {
+		interactionClaim.AddAp = cairo_components.AddApOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["add_ap"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["assert_eq"]) > 0 {
+		interactionClaim.AssertEq = cairo_components.AssertEqOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["assert_eq"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["assert_eq_imm"]) > 0 {
+		interactionClaim.AssertEqImm = cairo_components.AssertEqImmOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["assert_eq_imm"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["assert_eq_double_deref"]) > 0 {
+		interactionClaim.AssertEqDoubleDeref = cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["assert_eq_double_deref"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["blake"]) > 0 {
+		interactionClaim.Blake = cairo_components.BlakeCompressOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["blake"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["call"]) > 0 {
+		interactionClaim.Call = cairo_components.CallOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["call"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["call_rel_imm"]) > 0 {
+		interactionClaim.CallRelImm = cairo_components.CallRelImmOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["call_rel_imm"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["generic"]) > 0 {
+		interactionClaim.Generic = cairo_components.GenericOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["generic"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["jnz"]) > 0 {
+		interactionClaim.Jnz = cairo_components.JnzOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["jnz"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["jnz_taken"]) > 0 {
+		interactionClaim.JnzTaken = cairo_components.JnzTakenOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["jnz_taken"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["jump"]) > 0 {
+		interactionClaim.Jump = cairo_components.JumpOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["jump"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["jump_double_deref"]) > 0 {
+		interactionClaim.JumpDoubleDeref = cairo_components.JumpDoubleDerefOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["jump_double_deref"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["jump_rel"]) > 0 {
+		interactionClaim.JumpRel = cairo_components.JumpRelOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["jump_rel"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["jump_rel_imm"]) > 0 {
+		interactionClaim.JumpRelImm = cairo_components.JumpRelImmOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["jump_rel_imm"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["mul"]) > 0 {
+		interactionClaim.Mul = cairo_components.MulOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["mul"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["mul_small"]) > 0 {
+		interactionClaim.MulSmall = cairo_components.MulSmallOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["mul_small"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["qm31"]) > 0 {
+		interactionClaim.Qm31 = cairo_components.Qm31OpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["qm31"][0].ClaimedSum)}
+	}
+	if len(interactionClaimRaw.Opcodes["ret"]) > 0 {
+		interactionClaim.Ret = cairo_components.RetOpcodeInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Opcodes["ret"][0].ClaimedSum)}
+	}
 
 	// Verify instruction interaction claim
-	if sum, ok := qm31FromUint64Grid(interactionClaimRaw.VerifyInstruction.ClaimedSum); ok {
-		interactionClaim.VerifyInstruction = cairo_components.VerifyInstructionInteractionClaim{ClaimedSum: sum}
-	}
+	interactionClaim.VerifyInstruction = cairo_components.VerifyInstructionInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.VerifyInstruction.ClaimedSum)}
 
 	// Blake context interaction claim
-	interactionClaim.BlakeContext = buildBlakeContextInteractionClaim(interactionClaimRaw.BlakeContext)
+	if interactionClaimRaw.BlakeContext.Claim != nil {
+		interactionClaim.BlakeG = cairo_components.BlakeGInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.BlakeContext.Claim.BlakeG.ClaimedSum)}
+		interactionClaim.BlakeRound = cairo_components.BlakeRoundInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.BlakeContext.Claim.BlakeRound.ClaimedSum)}
+		interactionClaim.BlakeRoundSigma = cairo_components.BlakeRoundSigmaInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.BlakeContext.Claim.BlakeSigma.ClaimedSum)}
+		interactionClaim.TripleXor32 = cairo_components.TripleXor32InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.BlakeContext.Claim.TripleXor32.ClaimedSum)}
+		interactionClaim.VerifyBitwiseXor12 = cairo_components.VerifyBitwiseXor12InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.BlakeContext.Claim.VerifyBitwiseXor12.ClaimedSum)}
+	}
 
 	// Builtins interaction claim
-	interactionClaim.Builtins = buildBuiltinsInteractionClaim(interactionClaimRaw.Builtins)
+	if interactionClaimRaw.Builtins["add_mod_builtin"] != nil {
+		interactionClaim.AddModBuiltin = cairo_components.AddModBuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["add_mod_builtin"].ClaimedSum)}
+	}
+	if interactionClaimRaw.Builtins["bitwise_builtin"] != nil {
+		interactionClaim.BitwiseBuiltin = cairo_components.BitwiseBuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["bitwise_builtin"].ClaimedSum)}
+	}
+	if interactionClaimRaw.Builtins["mul_mod_builtin"] != nil {
+		interactionClaim.MulModBuiltin = cairo_components.MulModBuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["mul_mod_builtin"].ClaimedSum)}
+	}
+	if interactionClaimRaw.Builtins["pedersen_builtin"] != nil {
+		interactionClaim.PedersenBuiltin = cairo_components.PedersenBuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["pedersen_builtin"].ClaimedSum)}
+	}
+	if interactionClaimRaw.Builtins["poseidon_builtin"] != nil {
+		interactionClaim.PoseidonBuiltin = cairo_components.PoseidonBuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["poseidon_builtin"].ClaimedSum)}
+	}
+	if interactionClaimRaw.Builtins["range_check_96_builtin"] != nil {
+		interactionClaim.RangeCheck96 = cairo_components.RangeCheck96BuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["range_check_96_builtin"].ClaimedSum)}
+	}
+	if interactionClaimRaw.Builtins["range_check_128_builtin"] != nil {
+		interactionClaim.RangeCheck128 = cairo_components.RangeCheck128BuiltinInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.Builtins["range_check_128_builtin"].ClaimedSum)}
+	}
 
 	// Pedersen context interaction claim
-	interactionClaim.PedersenContext = buildPedersenContextInteractionClaim(interactionClaimRaw.PedersenContext)
-
-	// Poseidon context interaction claim
-	interactionClaim.PoseidonContext = buildPoseidonContextInteractionClaim(interactionClaimRaw.PoseidonContext)
-
-	// Memory address to id interaction claim
-	if sum, ok := qm31FromUint64Grid(interactionClaimRaw.MemoryAddressToId.ClaimedSum); ok {
-		interactionClaim.MemoryAddressToId = cairo_components.MemoryAddressToIdInteractionClaim{ClaimedSum: sum}
-	}
-
-	// Memory ID to value interaction claim
-	interactionClaim.MemoryIDToValue = buildMemoryIdToValueInteractionClaim(interactionClaimRaw.MemoryIDToValue)
-
-	// Range checks interaction claim
-	interactionClaim.RangeChecks = buildRangeChecksInteractionClaim(interactionClaimRaw.RangeChecks)
-
-	// Verify Bitwise Xor interaction claims
-	if sum, ok := qm31FromUint64Pairs(interactionClaimRaw.VerifyBitwiseXor4.ClaimedSum); ok {
-		interactionClaim.VerifyBitwiseXor4 = cairo_components.VerifyBitwiseXor4InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := qm31FromUint64Pairs(interactionClaimRaw.VerifyBitwiseXor7.ClaimedSum); ok {
-		interactionClaim.VerifyBitwiseXor7 = cairo_components.VerifyBitwiseXor7InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := qm31FromUint64Pairs(interactionClaimRaw.VerifyBitwiseXor8.ClaimedSum); ok {
-		interactionClaim.VerifyBitwiseXor8 = cairo_components.VerifyBitwiseXor8InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := qm31FromUint64Pairs(interactionClaimRaw.VerifyBitwiseXor9.ClaimedSum); ok {
-		interactionClaim.VerifyBitwiseXor9 = cairo_components.VerifyBitwiseXor9InteractionClaim{ClaimedSum: sum}
-	}
-
-	return interactionClaim
-}
-
-func buildOpcodeInteractionClaim(raw map[string][]OpcodeInteractionEntryRaw) OpcodeInteractionClaim {
-	var claim OpcodeInteractionClaim
-	if raw == nil {
-		return claim
-	}
-
-	claim.Add = mapOpcodeEntries(raw["add"], func(sum m31.QM31) cairo_components.AddOpcodeInteractionClaim {
-		return cairo_components.AddOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.AddSmall = mapOpcodeEntries(raw["add_small"], func(sum m31.QM31) cairo_components.AddSmallOpcodeInteractionClaim {
-		return cairo_components.AddSmallOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.AddAp = mapOpcodeEntries(raw["add_ap"], func(sum m31.QM31) cairo_components.AddApOpcodeInteractionClaim {
-		return cairo_components.AddApOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.AssertEq = mapOpcodeEntries(raw["assert_eq"], func(sum m31.QM31) cairo_components.AssertEqOpcodeInteractionClaim {
-		return cairo_components.AssertEqOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.AssertEqImm = mapOpcodeEntries(raw["assert_eq_imm"], func(sum m31.QM31) cairo_components.AssertEqImmOpcodeInteractionClaim {
-		return cairo_components.AssertEqImmOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.AssertEqDoubleDeref = mapOpcodeEntries(raw["assert_eq_double_deref"], func(sum m31.QM31) cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim {
-		return cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Blake = mapOpcodeEntries(raw["blake"], func(sum m31.QM31) cairo_components.BlakeCompressOpcodeInteractionClaim {
-		return cairo_components.BlakeCompressOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Call = mapOpcodeEntries(raw["call"], func(sum m31.QM31) cairo_components.CallOpcodeInteractionClaim {
-		return cairo_components.CallOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.CallRelImm = mapOpcodeEntries(raw["call_rel_imm"], func(sum m31.QM31) cairo_components.CallRelImmOpcodeInteractionClaim {
-		return cairo_components.CallRelImmOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Generic = mapOpcodeEntries(raw["generic"], func(sum m31.QM31) cairo_components.GenericOpcodeInteractionClaim {
-		return cairo_components.GenericOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Jnz = mapOpcodeEntries(raw["jnz"], func(sum m31.QM31) cairo_components.JnzOpcodeInteractionClaim {
-		return cairo_components.JnzOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.JnzTaken = mapOpcodeEntries(raw["jnz_taken"], func(sum m31.QM31) cairo_components.JnzTakenOpcodeInteractionClaim {
-		return cairo_components.JnzTakenOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Jump = mapOpcodeEntries(raw["jump"], func(sum m31.QM31) cairo_components.JumpOpcodeInteractionClaim {
-		return cairo_components.JumpOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.JumpDoubleDeref = mapOpcodeEntries(raw["jump_double_deref"], func(sum m31.QM31) cairo_components.JumpDoubleDerefOpcodeInteractionClaim {
-		return cairo_components.JumpDoubleDerefOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.JumpRel = mapOpcodeEntries(raw["jump_rel"], func(sum m31.QM31) cairo_components.JumpRelOpcodeInteractionClaim {
-		return cairo_components.JumpRelOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.JumpRelImm = mapOpcodeEntries(raw["jump_rel_imm"], func(sum m31.QM31) cairo_components.JumpRelImmOpcodeInteractionClaim {
-		return cairo_components.JumpRelImmOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Mul = mapOpcodeEntries(raw["mul"], func(sum m31.QM31) cairo_components.MulOpcodeInteractionClaim {
-		return cairo_components.MulOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.MulSmall = mapOpcodeEntries(raw["mul_small"], func(sum m31.QM31) cairo_components.MulSmallOpcodeInteractionClaim {
-		return cairo_components.MulSmallOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Qm31 = mapOpcodeEntries(raw["qm31"], func(sum m31.QM31) cairo_components.Qm31OpcodeInteractionClaim {
-		return cairo_components.Qm31OpcodeInteractionClaim{ClaimedSum: sum}
-	})
-	claim.Ret = mapOpcodeEntries(raw["ret"], func(sum m31.QM31) cairo_components.RetOpcodeInteractionClaim {
-		return cairo_components.RetOpcodeInteractionClaim{ClaimedSum: sum}
-	})
-
-	return claim
-}
-
-func buildBlakeContextInteractionClaim(raw BlakeContextInteractionClaimRaw) BlakeContextInteractionClaim {
-	if raw.Claim == nil {
-		return BlakeContextInteractionClaim{}
-	}
-
-	var (
-		interaction BlakeInteractionClaim
-		hasData     bool
-	)
-
-	if sum, ok := componentClaimToQM31(raw.Claim.BlakeRound); ok {
-		interaction.BlakeRound = cairo_components.BlakeRoundInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.BlakeG); ok {
-		interaction.BlakeG = cairo_components.BlakeGInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.BlakeSigma); ok {
-		interaction.BlakeRoundSigma = cairo_components.BlakeRoundSigmaInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.TripleXor32); ok {
-		interaction.TripleXor32 = cairo_components.TripleXor32InteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.VerifyBitwiseXor12); ok {
-		interaction.VerifyBitwiseXor12 = cairo_components.VerifyBitwiseXor12InteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-
-	if !hasData {
-		return BlakeContextInteractionClaim{}
-	}
-
-	return BlakeContextInteractionClaim{
-		InteractionClaim: &interaction,
-	}
-}
-
-func buildBuiltinsInteractionClaim(raw BuiltinsInteractionClaimRaw) BuiltinsInteractionClaim {
-	var claim BuiltinsInteractionClaim
-	if raw == nil {
-		return claim
-	}
-
-	if sum, ok := componentClaimToQM31(raw["add_mod_builtin"]); ok {
-		claim.AddModBuiltin = &cairo_components.AddModBuiltinInteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["bitwise_builtin"]); ok {
-		claim.BitwiseBuiltin = &cairo_components.BitwiseBuiltinInteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["mul_mod_builtin"]); ok {
-		claim.MulModBuiltin = &cairo_components.MulModBuiltinInteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["pedersen_builtin"]); ok {
-		claim.PedersenBuiltin = &cairo_components.PedersenBuiltinInteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["poseidon_builtin"]); ok {
-		claim.PoseidonBuiltin = &cairo_components.PoseidonBuiltinInteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["range_check_96_builtin"]); ok {
-		claim.RangeCheck96 = &cairo_components.RangeCheck96BuiltinInteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["range_check_128_builtin"]); ok {
-		claim.RangeCheck128 = &cairo_components.RangeCheck128BuiltinInteractionClaim{ClaimedSum: sum}
-	}
-
-	return claim
-}
-
-func buildPedersenContextInteractionClaim(raw PedersenContextInteractionClaimRaw) PedersenContextInteractionClaim {
-	if raw.Claim == nil {
-		return PedersenContextInteractionClaim{}
-	}
-
-	var (
-		interaction PedersenInteractionClaim
-		hasData     bool
-	)
-
-	if sum, ok := componentClaimToQM31(raw.Claim["partial_ec_mul"]); ok {
-		interaction.PartialEcMul = cairo_components.PartialEcMulInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim["pedersen_points_table"]); ok {
-		interaction.PedersenPointsTable = cairo_components.PedersenPointsTableInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-
-	if !hasData {
-		return PedersenContextInteractionClaim{}
-	}
-
-	return PedersenContextInteractionClaim{InteractionClaim: &interaction}
-}
-
-func buildPoseidonContextInteractionClaim(raw PoseidonContextInteractionClaimRaw) PoseidonContextInteractionClaim {
-	if raw.Claim == nil {
-		return PoseidonContextInteractionClaim{}
-	}
-
-	var (
-		interaction PoseidonInteractionClaim
-		hasData     bool
-	)
-
-	if sum, ok := componentClaimToQM31(raw.Claim.Poseidon3PartialRoundsChain); ok {
-		interaction.Poseidon3PartialRoundsChain = cairo_components.Poseidon3PartialRoundsChainInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.PoseidonFullRoundChain); ok {
-		interaction.PoseidonFullRoundChain = cairo_components.PoseidonFullRoundChainInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.Cube252); ok {
-		interaction.Cube252 = cairo_components.Cube252InteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.PoseidonRoundKeys); ok {
-		interaction.PoseidonRoundKeys = cairo_components.PoseidonRoundKeysInteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-	if sum, ok := componentClaimToQM31(raw.Claim.RangeCheckFelt252Width27); ok {
-		interaction.RangeCheckFelt252Width27 = cairo_components.RangeCheckFelt252Width27InteractionClaim{ClaimedSum: sum}
-		hasData = true
-	}
-
-	if !hasData {
-		return PoseidonContextInteractionClaim{}
-	}
-
-	return PoseidonContextInteractionClaim{InteractionClaim: &interaction}
-}
-
-func buildMemoryIdToValueInteractionClaim(raw MemoryIDToValueInteractionClaimRaw) cairo_components.MemoryIdToValueInteractionClaim {
-	bigSums := make([]m31.QM31, 0, len(raw.BigClaimedSums))
-	for _, entry := range raw.BigClaimedSums {
-		if sum, ok := qm31FromUint64Pairs(entry); ok {
-			bigSums = append(bigSums, sum)
+	if pedersenCtx := interactionClaimRaw.PedersenContext.Claim; pedersenCtx != nil {
+		if partialEcMulClaim := pedersenCtx["partial_ec_mul"]; partialEcMulClaim != nil {
+			interactionClaim.PartialEcMul = cairo_components.PartialEcMulInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(partialEcMulClaim.ClaimedSum)}
+		}
+		if pedersenTableClaim := pedersenCtx["pedersen_points_table"]; pedersenTableClaim != nil {
+			interactionClaim.PedersenPointsTable = cairo_components.PedersenPointsTableInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(pedersenTableClaim.ClaimedSum)}
 		}
 	}
 
-	var smallSum m31.QM31
-	if sum, ok := qm31FromUint64Pairs(raw.SmallClaimedSum); ok {
-		smallSum = sum
+	// Poseidon context interaction claim
+	if poseidonCtx := interactionClaimRaw.PoseidonContext.Claim; poseidonCtx != nil {
+		if poseidonCtx.Poseidon3PartialRoundsChain != nil {
+			interactionClaim.Poseidon3PartialRoundsChain = cairo_components.Poseidon3PartialRoundsChainInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(poseidonCtx.Poseidon3PartialRoundsChain.ClaimedSum)}
+		}
+		if poseidonCtx.PoseidonFullRoundChain != nil {
+			interactionClaim.PoseidonFullRoundChain = cairo_components.PoseidonFullRoundChainInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(poseidonCtx.PoseidonFullRoundChain.ClaimedSum)}
+		}
+		if poseidonCtx.Cube252 != nil {
+			interactionClaim.Cube252 = cairo_components.Cube252InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(poseidonCtx.Cube252.ClaimedSum)}
+		}
+		if poseidonCtx.PoseidonRoundKeys != nil {
+			interactionClaim.PoseidonRoundKeys = cairo_components.PoseidonRoundKeysInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(poseidonCtx.PoseidonRoundKeys.ClaimedSum)}
+		}
+		if poseidonCtx.RangeCheckFelt252Width27 != nil {
+			interactionClaim.RangeCheckFelt252Width27 = cairo_components.RangeCheckFelt252Width27InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(poseidonCtx.RangeCheckFelt252Width27.ClaimedSum)}
+		}
 	}
 
-	return cairo_components.MemoryIdToValueInteractionClaim{
-		BigClaimedSums:  bigSums,
-		SmallClaimedSum: smallSum,
-	}
-}
+	// Memory address to id interaction claim
+	interactionClaim.MemoryAddressToID = cairo_components.MemoryAddressToIDInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryAddressToId.ClaimedSum)}
 
-func buildRangeChecksInteractionClaim(raw RangeChecksInteractionClaimRaw) RangeChecksInteractionClaim {
-	var claim RangeChecksInteractionClaim
+	// Memory ID to value interaction claim
+	// TODO: handle multiple big claims
+	interactionClaim.MemoryIDToBigBig = cairo_components.MemoryIdToBigBigInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryIDToValue.BigClaimedSums[0])}
+	interactionClaim.MemoryIDToBigSmall = cairo_components.MemoryIdToBigSmallInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryIDToValue.SmallClaimedSum)}
 
-	if sum, ok := componentClaimToQM31(raw["rc_6"]); ok {
-		claim.RC6 = cairo_components.RangeCheck6InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_8"]); ok {
-		claim.RC8 = cairo_components.RangeCheck8InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_11"]); ok {
-		claim.RC11 = cairo_components.RangeCheck11InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_12"]); ok {
-		claim.RC12 = cairo_components.RangeCheck12InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_18"]); ok {
-		claim.RC18 = cairo_components.RangeCheck18InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_19"]); ok {
-		claim.RC19 = cairo_components.RangeCheck19InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_4_3"]); ok {
-		claim.RC4_3 = cairo_components.RangeCheck4_3InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_4_4"]); ok {
-		claim.RC4_4 = cairo_components.RangeCheck4_4InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_5_4"]); ok {
-		claim.RC5_4 = cairo_components.RangeCheck5_4InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_9_9"]); ok {
-		claim.RC9_9 = cairo_components.RangeCheck9_9InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_7_2_5"]); ok {
-		claim.RC7_2_5 = cairo_components.RangeCheck7_2_5InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_3_6_6_3"]); ok {
-		claim.RC3_6_6_3 = cairo_components.RangeCheck3_6_6_3InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_4_4_4_4"]); ok {
-		claim.RC4_4_4_4 = cairo_components.RangeCheck4_4_4_4InteractionClaim{ClaimedSum: sum}
-	}
-	if sum, ok := componentClaimToQM31(raw["rc_3_3_3_3_3"]); ok {
-		claim.RC3_3_3_3_3 = cairo_components.RangeCheck3_3_3_3_3InteractionClaim{ClaimedSum: sum}
-	}
+	// Range checks interaction claim
+	interactionClaim.RC6 = cairo_components.RangeCheck6InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_6"].ClaimedSum)}
+	interactionClaim.RC8 = cairo_components.RangeCheck8InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_8"].ClaimedSum)}
+	interactionClaim.RC11 = cairo_components.RangeCheck11InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_11"].ClaimedSum)}
+	interactionClaim.RC12 = cairo_components.RangeCheck12InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_12"].ClaimedSum)}
+	interactionClaim.RC18 = cairo_components.RangeCheck18InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_18"].ClaimedSum)}
+	interactionClaim.RC19 = cairo_components.RangeCheck19InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_19"].ClaimedSum)}
+	interactionClaim.RC43 = cairo_components.RangeCheck43InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_4_3"].ClaimedSum)}
+	interactionClaim.RC44 = cairo_components.RangeCheck44InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_4_4"].ClaimedSum)}
+	interactionClaim.RC54 = cairo_components.RangeCheck54InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_5_4"].ClaimedSum)}
+	interactionClaim.RC99 = cairo_components.RangeCheck99InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_9_9"].ClaimedSum)}
+	interactionClaim.RC725 = cairo_components.RangeCheck725InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_7_2_5"].ClaimedSum)}
+	interactionClaim.RC3663 = cairo_components.RangeCheck3663InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_3_6_6_3"].ClaimedSum)}
+	interactionClaim.RC4444 = cairo_components.RangeCheck4444InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_4_4_4_4"].ClaimedSum)}
+	interactionClaim.RC33333 = cairo_components.RangeCheck33333InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_3_3_3_3_3"].ClaimedSum)}
 
-	return claim
+	// Verify Bitwise Xor interaction claims
+	interactionClaim.VerifyBitwiseXor4 = cairo_components.VerifyBitwiseXor4InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.VerifyBitwiseXor4.ClaimedSum)}
+	interactionClaim.VerifyBitwiseXor7 = cairo_components.VerifyBitwiseXor7InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.VerifyBitwiseXor7.ClaimedSum)}
+	interactionClaim.VerifyBitwiseXor8 = cairo_components.VerifyBitwiseXor8InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.VerifyBitwiseXor8.ClaimedSum)}
+	interactionClaim.VerifyBitwiseXor9 = cairo_components.VerifyBitwiseXor9InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.VerifyBitwiseXor9.ClaimedSum)}
+
+	return interactionClaim
 }
 
 // ╔══════════════════════════════════╗
@@ -884,6 +657,26 @@ func BuildStarkProof(starkProofRaw *StarkProofRaw) StarkProof {
 	}
 }
 
+func buildCommitments(raw [][]uint8) [][32]uints.U8 {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	result := make([][32]uints.U8, len(raw))
+	for i, entry := range raw {
+		if len(entry) != 32 {
+			panic("commitment root must be 32 bytes")
+		}
+		var root [32]uints.U8
+		for j, b := range entry {
+			root[j] = uints.NewU8(b)
+		}
+		result[i] = root
+	}
+
+	return result
+}
+
 func buildSampledValues(raw SampledValuesRaw) [][][]m31.QM31 {
 	if len(raw) == 0 {
 		return nil
@@ -903,9 +696,7 @@ func buildSampledValues(raw SampledValuesRaw) [][][]m31.QM31 {
 
 			columnValues := make([]m31.QM31, 0, len(evaluations))
 			for _, entry := range evaluations {
-				if value, ok := qm31FromUint64Pairs(entry); ok {
-					columnValues = append(columnValues, value)
-				}
+				columnValues = append(columnValues, m31.NewQM31FromArrays(entry))
 			}
 			domainValues[columnIdx] = columnValues
 		}
@@ -948,24 +739,21 @@ func buildDecommitments(raw []MerkleDecommitmentRaw) []MerkleDecommitment {
 	return result
 }
 
-func buildCommitments(raw [][]uint8) [][32]uints.U8 {
+func buildHashWitness(raw [][]uint8) [][32]uints.U8 {
 	if len(raw) == 0 {
 		return nil
 	}
 
-	result := make([][32]uints.U8, len(raw))
-	for i, entry := range raw {
-		if len(entry) != 32 {
-			panic("commitment root must be 32 bytes")
+	hashes := make([][32]uints.U8, len(raw))
+	for i, bytes := range raw {
+		var hash [32]uints.U8
+		for j := 0; j < len(hash) && j < len(bytes); j++ {
+			hash[j] = uints.NewU8(bytes[j])
 		}
-		var root [32]uints.U8
-		for j, b := range entry {
-			root[j] = uints.NewU8(b)
-		}
-		result[i] = root
+		hashes[i] = hash
 	}
 
-	return result
+	return hashes
 }
 
 func buildFriProof(raw FriProofRaw) FriProof {
@@ -992,7 +780,7 @@ func buildInnerLayerProofs(raw []FriLayerProofRaw) []FriLayerProof {
 func buildInnerLayerProof(raw FriLayerProofRaw) FriLayerProof {
 	friWitness := make([]m31.QM31, len(raw.FriWitness))
 	for i, entry := range raw.FriWitness {
-		friWitness[i], _ = qm31FromUint64Grid(entry)
+		friWitness[i] = m31.NewQM31FromArrays(entry)
 	}
 
 	decommitment := buildDecommitments([]MerkleDecommitmentRaw{raw.Decommitment})[0]
@@ -1006,131 +794,12 @@ func buildInnerLayerProof(raw FriLayerProofRaw) FriLayerProof {
 }
 
 func buildLastLayerPoly(raw LinePolyRaw) circle.LinePoly {
-	coeffs, _ := qm31FromUint64Grid(raw.Coeffs[0])
+	coeffs := m31.NewQM31FromArrays(raw.Coeffs[0])
 	return circle.LinePoly{
 		Coeffs:  []m31.QM31{coeffs},
 		LogSize: uints.NewU8(raw.LogSize),
 	}
 }
-
-// ╔══════════════════════════════════╗
-// ║         Helper functions         ║
-// ╚══════════════════════════════════╝
-
-// SplitFeltWords converts eight 32-bit limbs into NM31InFelt252 M31 limbs with N_BITS_PER_FELT bits each.
-func SplitFeltWords(words [8]uint32) Felt252Value {
-	// Build the big integer from the limbs
-	acc := big.NewInt(0)
-	tmp := new(big.Int)
-	for i := len(words) - 1; i >= 0; i-- {
-		acc.Lsh(acc, 32)
-		tmp.SetUint64(uint64(words[i]))
-		acc.Or(acc, tmp)
-	}
-
-	mask := new(big.Int).Lsh(big.NewInt(1), BitsPerFelt252)
-	mask.Sub(mask, big.NewInt(1))
-
-	// Split the big integer into NM31InFelt252 M31 limbs
-	var result Felt252Value
-	for i := 0; i < NM31InFelt252; i++ {
-		tmp.And(acc, mask)
-		result[i] = m31.NewM31Unchecked(tmp.Uint64())
-		acc.Rsh(acc, BitsPerFelt252)
-	}
-
-	return result
-}
-
-// qm31FromUint64Grid converts a 2x2 uint64 grid into a QM31 if the layout is valid.
-func qm31FromUint64Grid(grid [][]uint64) (m31.QM31, bool) {
-	if len(grid) < 2 {
-		return m31.QM31{}, false
-	}
-	if len(grid[0]) < 2 || len(grid[1]) < 2 {
-		return m31.QM31{}, false
-	}
-	return m31.NewQM31FromArrays(grid), true
-}
-
-// qm31FromUint64Pairs converts an array of two limb pairs into a QM31 element.
-func qm31FromUint64Pairs(pairs [][2]uint64) (m31.QM31, bool) {
-	if len(pairs) < 2 {
-		return m31.QM31{}, false
-	}
-
-	grid := make([][]uint64, 2)
-	for i := 0; i < 2; i++ {
-		grid[i] = []uint64{pairs[i][0], pairs[i][1]}
-	}
-
-	return m31.NewQM31FromArrays(grid), true
-}
-
-// componentClaimToQM31 safely unpacks a nullable component claim entry.
-func componentClaimToQM31(entry *ComponentClaimedSumEntry) (m31.QM31, bool) {
-	if entry == nil {
-		return m31.QM31{}, false
-	}
-	return qm31FromUint64Pairs(entry.ClaimedSum)
-}
-
-// mapOpcodeEntries decodes raw opcode claimed sums and wraps them in the supplied struct factory.
-func mapOpcodeEntries[T any](entries []OpcodeInteractionEntryRaw, wrap func(m31.QM31) T) []T {
-	if len(entries) == 0 {
-		return nil
-	}
-
-	result := make([]T, 0, len(entries))
-	for _, entry := range entries {
-		if sum, ok := qm31FromUint64Grid(entry.ClaimedSum); ok {
-			result = append(result, wrap(sum))
-		}
-	}
-
-	return result
-}
-
-func buildHashWitness(raw [][]uint8) [][32]uints.U8 {
-	if len(raw) == 0 {
-		return nil
-	}
-
-	hashes := make([][32]uints.U8, len(raw))
-	for i, bytes := range raw {
-		var hash [32]uints.U8
-		for j := 0; j < len(hash) && j < len(bytes); j++ {
-			hash[j] = uints.NewU8(bytes[j])
-		}
-		hashes[i] = hash
-	}
-
-	return hashes
-}
-
-func convertUintSliceToM31(values []uint64) []m31.M31 {
-	if len(values) == 0 {
-		return nil
-	}
-
-	result := make([]m31.M31, len(values))
-	for i, v := range values {
-		result[i] = m31.NewM31Unchecked(v)
-	}
-	return result
-}
-
-func ProofFixturePath(name string) string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "..", "test_data", name)
-}
-
-const (
-	HdpProofFixture                 = "hdp_proof.json"
-	AllComponentsProofFixture       = "all_components_proof.json"
-	AllComponentsStaticProofFixture = "all_components_proof_static.json"
-	AllComponentsHintsProofFixture  = "all_components_proof_with_hints.json"
-)
 
 // ╔══════════════════════════════════╗
 // ║      Circuit Hints Building      ║
@@ -1164,4 +833,51 @@ func buildCircuitHints(raw CircuitHintsRaw) CircuitHints {
 
 	hints.Queries = queries
 	return hints
+}
+
+// ╔══════════════════════════════════╗
+// ║         Helper functions         ║
+// ╚══════════════════════════════════╝
+
+// SplitFeltWords converts eight 32-bit limbs into NM31InFelt252 M31 limbs with N_BITS_PER_FELT bits each.
+func SplitFeltWords(words [8]uint32) Felt252Value {
+	// Build the big integer from the limbs
+	acc := big.NewInt(0)
+	tmp := new(big.Int)
+	for i := len(words) - 1; i >= 0; i-- {
+		acc.Lsh(acc, 32)
+		tmp.SetUint64(uint64(words[i]))
+		acc.Or(acc, tmp)
+	}
+
+	mask := new(big.Int).Lsh(big.NewInt(1), BitsPerM31)
+	mask.Sub(mask, big.NewInt(1))
+
+	// Split the big integer into NM31InFelt252 M31 limbs
+	var result Felt252Value
+	for i := 0; i < NM31InFelt252; i++ {
+		tmp.And(acc, mask)
+		result[i] = m31.NewM31Unchecked(tmp.Uint64())
+		acc.Rsh(acc, BitsPerM31)
+	}
+
+	return result
+}
+
+func convertUintSliceToM31(values []uint64) []m31.M31 {
+	if len(values) == 0 {
+		return nil
+	}
+
+	result := make([]m31.M31, len(values))
+	for i, v := range values {
+		result[i] = m31.NewM31Unchecked(v)
+	}
+	return result
+}
+
+// ProofFixturePath returns the path to the proof fixture with the given name.
+func ProofFixturePath(name string) string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "..", "test_data", name)
 }

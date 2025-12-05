@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -12,7 +11,7 @@ const (
 )
 
 type RangeCheckFelt252Width27Claim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type RangeCheckFelt252Width27InteractionClaim struct {
@@ -22,9 +21,9 @@ type RangeCheckFelt252Width27InteractionClaim struct {
 type RangeCheckFelt252Width27Component struct {
 	qm31 *m31.QM31Chip
 
-	logSize uints.U8
+	logSize frontend.Variable
 
-	rangeCheck9_9Elements            m31.InteractionElements
+	rangeCheck99Elements             m31.InteractionElements
 	rangeCheck18Elements             m31.InteractionElements
 	rangeCheckFelt252Width27Elements m31.InteractionElements
 
@@ -36,20 +35,20 @@ type RangeCheckFelt252Width27Component struct {
 func NewRangeCheckFelt252Width27(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
-	rangeCheck9_9Elements m31.InteractionElements,
+	rangeCheck99Elements m31.InteractionElements,
 	rangeCheck18Elements m31.InteractionElements,
 	rangeCheckFelt252Width27Elements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim RangeCheckFelt252Width27Claim,
 	interactionClaim RangeCheckFelt252Width27InteractionClaim,
-) *RangeCheckFelt252Width27Component {
+) RangeCheckFelt252Width27Component {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &RangeCheckFelt252Width27Component{
+	return RangeCheckFelt252Width27Component{
 		qm31:                             qm31,
 		logSize:                          claim.LogSize,
-		rangeCheck9_9Elements:            rangeCheck9_9Elements,
+		rangeCheck99Elements:             rangeCheck99Elements,
 		rangeCheck18Elements:             rangeCheck18Elements,
 		rangeCheckFelt252Width27Elements: rangeCheckFelt252Width27Elements,
 		claimedSum:                       interactionClaim.ClaimedSum,
@@ -58,7 +57,7 @@ func NewRangeCheckFelt252Width27(
 	}
 }
 
-func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(rangeCheckFelt252Width27TraceColumns, rangeCheckFelt252Width27InteractionColumns)
 
 	// ╔══════════════════════════════════╗
@@ -111,7 +110,7 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
-	rc9_9sum0, err := c.qm31.Combine(c.rangeCheck9_9Elements, []m31.QM31{limb0High, limb1Low})
+	rc99sum0, err := c.qm31.Combine(c.rangeCheck99Elements, []m31.QM31{limb0High, limb1Low})
 	if err != nil {
 		panic(err)
 	}
@@ -131,7 +130,7 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 		panic(err)
 	}
 
-	rc9_9sum3, err := c.qm31.Combine(c.rangeCheck9_9Elements, []m31.QM31{limb2High, limb3Low})
+	rc99sum3, err := c.qm31.Combine(c.rangeCheck99Elements, []m31.QM31{limb2High, limb3Low})
 	if err != nil {
 		panic(err)
 	}
@@ -148,7 +147,7 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 		panic(err)
 	}
 
-	rc9_9sum6, err := c.qm31.Combine(c.rangeCheck9_9Elements, []m31.QM31{limb4High, limb5Low})
+	rc99sum6, err := c.qm31.Combine(c.rangeCheck99Elements, []m31.QM31{limb4High, limb5Low})
 	if err != nil {
 		panic(err)
 	}
@@ -165,7 +164,7 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 		panic(err)
 	}
 
-	rc9_9sum9, err := c.qm31.Combine(c.rangeCheck9_9Elements, []m31.QM31{limb6High, limb7Low})
+	rc99sum9, err := c.qm31.Combine(c.rangeCheck99Elements, []m31.QM31{limb6High, limb7Low})
 	if err != nil {
 		panic(err)
 	}
@@ -182,7 +181,7 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 		panic(err)
 	}
 
-	rc9_9sum12, err := c.qm31.Combine(c.rangeCheck9_9Elements, []m31.QM31{limb8High, inputLimb9})
+	rc99sum12, err := c.qm31.Combine(c.rangeCheck99Elements, []m31.QM31{limb8High, inputLimb9})
 	if err != nil {
 		panic(err)
 	}
@@ -210,14 +209,14 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 		panic(err)
 	}
 
-	constraint = c.qm31.Mul(block0, c.qm31.Mul(rc9_9sum0, rc18sum1))
-	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc9_9sum0, rc18sum1))
+	constraint = c.qm31.Mul(block0, c.qm31.Mul(rc99sum0, rc18sum1))
+	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc99sum0, rc18sum1))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(block1, block0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(rc18sum2, rc9_9sum3))
-	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc18sum2, rc9_9sum3))
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(rc18sum2, rc99sum3))
+	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc18sum2, rc99sum3))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
@@ -228,14 +227,14 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff3 := c.qm31.Sub(block3, block2)
-	constraint = c.qm31.Mul(diff3, c.qm31.Mul(rc9_9sum6, rc18sum7))
-	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc9_9sum6, rc18sum7))
+	constraint = c.qm31.Mul(diff3, c.qm31.Mul(rc99sum6, rc18sum7))
+	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc99sum6, rc18sum7))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff4 := c.qm31.Sub(block4, block3)
-	constraint = c.qm31.Mul(diff4, c.qm31.Mul(rc18sum8, rc9_9sum9))
-	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc18sum8, rc9_9sum9))
+	constraint = c.qm31.Mul(diff4, c.qm31.Mul(rc18sum8, rc99sum9))
+	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc18sum8, rc99sum9))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
@@ -246,8 +245,8 @@ func (c *RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Trace
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff6 := c.qm31.Sub(block6, block5)
-	constraint = c.qm31.Mul(diff6, c.qm31.Mul(rc9_9sum12, rc18sum13))
-	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc9_9sum12, rc18sum13))
+	constraint = c.qm31.Mul(diff6, c.qm31.Mul(rc99sum12, rc18sum13))
+	constraint = c.qm31.Sub(constraint, c.qm31.Add(rc99sum12, rc18sum13))
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 

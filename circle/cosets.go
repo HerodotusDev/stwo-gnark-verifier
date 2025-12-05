@@ -3,6 +3,7 @@ package circle
 import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/conversion"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -17,14 +18,11 @@ type Coset struct {
 
 	initial circlePointIndex
 	step    circlePointIndex
-	logSize uint32
+	logSize frontend.Variable
 }
 
 // newCoset builds a coset whose step size is the subgroup generator of logSize.
-func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize uint32) Coset {
-	if logSize > CircleLogOrder {
-		panic("unsupported coset log size")
-	}
+func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize frontend.Variable) Coset {
 	stepSize := SubgroupGenerator(circleChip, logSize)
 	return Coset{
 		circleChip: circleChip,
@@ -34,12 +32,15 @@ func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize uint32) 
 	}
 }
 
-func (c Coset) halfOdds(logSize uint32) Coset {
-	return NewCoset(c.circleChip, SubgroupGenerator(c.circleChip, logSize+2), logSize)
+// halfOdds returns the odds half of the coset.
+func (c Coset) halfOdds(logSize frontend.Variable) Coset {
+	return NewCoset(c.circleChip, SubgroupGenerator(c.circleChip, c.circleChip.api.Add(c.logSize, frontend.Variable(2))), logSize)
 }
 
+// Double returns the double of the coset.
+// Coset {initial, step, logSize} -> Coset {initial, step * 2, logSize - 1}
 func (c Coset) Double() Coset {
-	return NewCoset(c.circleChip, c.initial.Mul(uints.NewU32(2)), c.logSize-1)
+	return NewCoset(c.circleChip, c.initial.Mul(frontend.Variable(2)), c.circleChip.api.Sub(c.logSize, frontend.Variable(1)))
 }
 
 func (c Coset) IndexAt(i uints.U32) circlePointIndex {
@@ -47,16 +48,29 @@ func (c Coset) IndexAt(i uints.U32) circlePointIndex {
 }
 
 // LogSize returns the coset log size.
-func (c Coset) LogSize() uint32 {
+func (c Coset) LogSize() frontend.Variable {
 	return c.logSize
 }
 
-func (c Coset) Size() uint32 {
-	return uint32(1) << c.logSize
+func (c Coset) Size() frontend.Variable {
+	return pow(c.circleChip.api, c.circleChip.comparator, frontend.Variable(2), c.logSize)
 }
 
 func (c Coset) Step() circlePointIndex {
 	return c.step
+}
+
+// pow computes base^exponent using the binary decomposition of the exponent. (util should be elsewhere)
+func pow(api frontend.API, cmp *cmp.BoundedComparator, base, exponent frontend.Variable) frontend.Variable {
+	one := frontend.Variable(1)
+	result := one
+
+	for i := 0; i < CircleLogOrder; i++ {
+		isLess := cmp.IsLess(frontend.Variable(i), exponent)
+		result = api.Select(isLess, api.Mul(result, base), one)
+	}
+
+	return result
 }
 
 // ╔══════════════════════════════════╗
@@ -69,11 +83,8 @@ type CanonicCoset struct {
 }
 
 // NewCanonicCoset creates a canonic coset of size 2^logSize.
-func NewCanonicCoset(circleChip *CircleChip, logSize uint32) CanonicCoset {
-	if logSize == 0 || logSize >= CircleLogOrder {
-		panic("invalid canonic coset log size")
-	}
-	initial := SubgroupGenerator(circleChip, logSize+1)
+func NewCanonicCoset(circleChip *CircleChip, logSize frontend.Variable) CanonicCoset {
+	initial := SubgroupGenerator(circleChip, circleChip.api.Add(logSize, frontend.Variable(1)))
 	return CanonicCoset{
 		coset: NewCoset(circleChip, initial, logSize),
 	}
@@ -81,7 +92,7 @@ func NewCanonicCoset(circleChip *CircleChip, logSize uint32) CanonicCoset {
 
 // halfCoset returns half of coset.
 func (c CanonicCoset) HalfCoset() Coset {
-	return c.coset.halfOdds(c.LogSize() - 1)
+	return c.coset.halfOdds(c.coset.circleChip.api.Sub(c.coset.logSize, frontend.Variable(1)))
 }
 
 // CircleDomain returns the corresponding circle domain.
@@ -95,7 +106,7 @@ func (c CanonicCoset) Coset() Coset {
 }
 
 // LogSize returns the coset log size.
-func (c CanonicCoset) LogSize() uint32 {
+func (c CanonicCoset) LogSize() frontend.Variable {
 	return c.coset.logSize
 }
 
@@ -112,8 +123,8 @@ func NewCircleDomain(halfCoset Coset) CircleDomain {
 	}
 }
 
-func (d CircleDomain) LogSize() uint32 {
-	return d.halfCoset.logSize + 1
+func (d CircleDomain) LogSize() frontend.Variable {
+	return d.halfCoset.circleChip.api.Add(d.halfCoset.logSize, frontend.Variable(1))
 }
 
 func (d CircleDomain) At(i uints.U32) BasePoint {
@@ -169,6 +180,6 @@ func (d LineDomain) Double() LineDomain {
 	return NewLineDomain(d.coset.Double())
 }
 
-func (d LineDomain) LogSize() uint32 {
+func (d LineDomain) LogSize() frontend.Variable {
 	return d.coset.logSize
 }

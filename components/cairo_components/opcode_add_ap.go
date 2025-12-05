@@ -4,7 +4,6 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 type AddApOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AddApOpcodeInteractionClaim struct {
@@ -47,11 +46,11 @@ func NewAddApOpcode(
 	vanishEvalInv m31.QM31,
 	claim AddApOpcodeClaim,
 	interactionClaim AddApOpcodeInteractionClaim,
-) *AddApOpcodeComponent {
+) AddApOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AddApOpcodeComponent{
+	return AddApOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -65,7 +64,7 @@ func NewAddApOpcode(
 	}
 }
 
-func (c *AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(addApOpcodeTraceColumns, addApOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
