@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	blakeGTraceColumns       = 53
-	blakeGInteractionColumns = 36
+	BlakeGTraceColumns       = 53
+	BlakeGInteractionColumns = 36
 )
 
 type BlakeGClaim struct {
@@ -64,8 +64,8 @@ func NewBlakeG(
 	}
 }
 
-func (c BlakeGComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(blakeGTraceColumns, blakeGInteractionColumns)
+func (c BlakeGComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(BlakeGTraceColumns, BlakeGInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

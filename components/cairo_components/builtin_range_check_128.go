@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	rangeCheck128BuiltinTraceColumns       = 17
-	rangeCheck128BuiltinInteractionColumns = 4
+	RangeCheck128BuiltinTraceColumns       = 17
+	RangeCheck128BuiltinInteractionColumns = 4
 )
 
 type RangeCheck128BuiltinClaim struct {
@@ -63,7 +63,7 @@ func NewRangeCheck128Builtin(
 }
 
 func (c RangeCheck128BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(rangeCheck128BuiltinTraceColumns, rangeCheck128BuiltinInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(RangeCheck128BuiltinTraceColumns, RangeCheck128BuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

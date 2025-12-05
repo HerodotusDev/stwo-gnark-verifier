@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	jumpDoubleDerefOpcodeTraceColumns       = 17
-	jumpDoubleDerefOpcodeInteractionColumns = 16
+	JumpDoubleDerefOpcodeTraceColumns       = 17
+	JumpDoubleDerefOpcodeInteractionColumns = 16
 )
 
 type JumpDoubleDerefOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewJumpDoubleDerefOpcode(
 }
 
 func (c JumpDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jumpDoubleDerefOpcodeTraceColumns, jumpDoubleDerefOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(JumpDoubleDerefOpcodeTraceColumns, JumpDoubleDerefOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	assertEqOpcodeTraceColumns       = 12
-	assertEqOpcodeInteractionColumns = 12
+	AssertEqOpcodeTraceColumns       = 12
+	AssertEqOpcodeInteractionColumns = 12
 )
 
 type AssertEqOpcodeClaim struct {
@@ -56,7 +56,7 @@ func NewAssertEqOpcode(
 }
 
 func (c AssertEqOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(assertEqOpcodeTraceColumns, assertEqOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(AssertEqOpcodeTraceColumns, AssertEqOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

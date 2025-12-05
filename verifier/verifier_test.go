@@ -31,14 +31,15 @@ func TestVerifier(t *testing.T) {
 		os.Exit(1)
 	}
 
-	cairoProof, circuitData := variables.BuildProof(cairoProofRaw)
+	cairoProof := variables.BuildProof(*cairoProofRaw)
+	circuitData := variables.BuildCircuitData(cairoProofRaw)
 	witness := VerifierCircuit{
-		proof:       *cairoProof,
-		circuitData: *circuitData,
+		proof:       cairoProof,
+		circuitData: circuitData,
 	}
 	circuit := VerifierCircuit{
-		proof:       *cairoProof,
-		circuitData: *circuitData,
+		proof:       cairoProof,
+		circuitData: circuitData,
 	}
 	assert := test.NewAssert(t)
 

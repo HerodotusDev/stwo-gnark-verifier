@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	jnzOpcodeTraceColumns       = 37
-	jnzOpcodeInteractionColumns = 12
+	JnzOpcodeTraceColumns       = 37
+	JnzOpcodeInteractionColumns = 12
 )
 
 type JnzOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewJnzOpcode(
 }
 
 func (c JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jnzOpcodeTraceColumns, jnzOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(JnzOpcodeTraceColumns, JnzOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

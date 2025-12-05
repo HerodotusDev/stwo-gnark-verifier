@@ -64,13 +64,8 @@ func TestBuildProofHDP(t *testing.T) {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	proof, circuitData := BuildProof(raw)
-	if proof == nil {
-		t.Fatalf("built proof is nil")
-	}
-	if circuitData == nil {
-		t.Fatalf("built circuit data is nil")
-	}
+	_ = BuildProof(*raw)
+	_ = BuildCircuitData(raw)
 }
 
 func TestBuildProofAllComponentsHints(t *testing.T) {
@@ -79,21 +74,6 @@ func TestBuildProofAllComponentsHints(t *testing.T) {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	proof, circuitData := BuildProof(raw)
-	if proof == nil {
-		t.Fatalf("built proof is nil")
-	}
-	if circuitData == nil {
-		t.Fatalf("built circuit data is nil")
-	}
-}
-
-func TestConstructProofNil(t *testing.T) {
-	proof, circuitData := BuildProof(nil)
-	if proof != nil {
-		t.Fatalf("expected nil proof from nil input")
-	}
-	if circuitData != nil {
-		t.Fatalf("expected nil circuit data from nil input")
-	}
+	_ = BuildProof(*raw)
+	_ = BuildCircuitData(raw)
 }

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	mulModBuiltinTraceColumns       = 410
-	mulModBuiltinInteractionColumns = 376
+	MulModBuiltinTraceColumns       = 410
+	MulModBuiltinInteractionColumns = 376
 )
 
 type MulModBuiltinClaim struct {
@@ -84,8 +84,8 @@ func NewMulModBuiltin(
 	}
 }
 
-func (c MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(mulModBuiltinTraceColumns, mulModBuiltinInteractionColumns)
+func (c MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(MulModBuiltinTraceColumns, MulModBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 

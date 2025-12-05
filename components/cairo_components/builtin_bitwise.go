@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	bitwiseBuiltinTraceColumns       = 89
-	bitwiseBuiltinInteractionColumns = 76
+	BitwiseBuiltinTraceColumns       = 89
+	BitwiseBuiltinInteractionColumns = 76
 )
 
 type BitwiseBuiltinClaim struct {
@@ -63,7 +63,7 @@ func NewBitwiseBuiltin(
 }
 
 func (c BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(bitwiseBuiltinTraceColumns, bitwiseBuiltinInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(BitwiseBuiltinTraceColumns, BitwiseBuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

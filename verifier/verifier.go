@@ -10,6 +10,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
@@ -57,7 +58,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, ci
 	pcsConfig.MixInto(c.channel)
 
 	// Initialize commitment verifier
-	commitmentVerifier := NewCommitmentSchemeVerifier(c.api, c.uapi, pcsConfig, circuitData)
+	commitmentVerifier := fri.NewCommitmentSchemeVerifier(c.api, c.uapi, pcsConfig, circuitData)
 	logSizes := proof.Claim.LogSizes(circuitData)
 
 	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
@@ -109,7 +110,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, ci
 	// DEBUG: Verify that there is a point for each sampled value (no constraints enforced)
 	checkMaskPoints(maskPoints, proof.StarkProof.SampledValues)
 
-	c.VerifyValues(commitmentVerifier, proof.StarkProof, proof.CircuitHints.Queries, maskPoints)
+	c.VerifyValues(commitmentVerifier, proof.StarkProof, maskPoints, circuitData)
 }
 
 func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31, circuitData variables.CircuitData) {
@@ -128,39 +129,35 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }
 
-func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof, queries [][]int, maskPoints cairo_components.TreeMaskPoints) {
+func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVerifier, proof variables.StarkProof, maskPoints cairo_components.TreeMaskPoints, circuitData variables.CircuitData) {
 	// Mix flatten sampled values into channel
-	flattenedSampledValues := make([]m31.QM31, 0)
-	for _, sampledValues := range proof.SampledValues {
-		for _, sampledValue := range sampledValues {
-			flattenedSampledValues = append(flattenedSampledValues, sampledValue...)
-		}
-	}
+	flattenedSampledValues := utils.FlattenTree(utils.FlattenTree(proof.SampledValues))
 	c.channel.MixFelts(flattenedSampledValues)
 
 	// Draw random coeff for FRI
 	randomCoeff := c.channel.DrawFelt()
 
 	// Compute bounds (column log sizes deduped, in decreasing order and not blew up)
-	bounds := commitmentVerifier.bounds()
+	bounds := commitmentVerifier.Bounds()
 
 	// Verification of commitment stage of FRI
-	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
+	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.FriProof, bounds)
 
 	// Proof of work
-	c.channel.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.pcsConfig.PowBits))
+	c.channel.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
 
 	// Generate base layer queries and verify they match the hinted queries
-	baseLayerQueries := friVerifier.GenerateBaseLayerQueries(c.channel, c.uapi, commitmentVerifier.pcsConfig.FriConfig.NQueries)
-	friVerifier.VerifyQueries(queries[len(queries)-1], baseLayerQueries)
+	maxLogSize := c.api.Add(bounds[0], commitmentVerifier.PcsConfig.FriConfig.LogBlowupFactor)
+	baseLayerQueries := c.channel.GenerateBaseLayerQueries(maxLogSize, commitmentVerifier.PcsConfig.FriConfig.NQueries)
+	queries := utils.GenerateQueries(c.api, baseLayerQueries, commitmentVerifier.PcsConfig.FriConfig.NQueries, circuitData.DedupedQueriesShape, circuitData.MaxLogSize)
 
 	// Verify merkle decommitments
-	for treeIndex, tree := range commitmentVerifier.trees {
+	for treeIndex, tree := range commitmentVerifier.Trees {
 		tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
 	}
 
 	// Verify FRI quotients
-	friAnswers := friVerifier.FriQuotientEvaluations(commitmentVerifier.columnLogSizes(false), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
+	friAnswers := friVerifier.FriQuotientEvaluations(commitmentVerifier.ColumnLogSizes(false), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
 	friVerifier.Verify(queries, friAnswers)
 }
 

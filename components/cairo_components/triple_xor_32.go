@@ -26,8 +26,8 @@ type TripleXor32Component struct {
 }
 
 const (
-	tripleXor32TraceColumns       = 21
-	tripleXor32InteractionColumns = 20
+	TripleXor32TraceColumns       = 21
+	TripleXor32InteractionColumns = 20
 )
 
 func NewTripleXor32(
@@ -52,7 +52,7 @@ func NewTripleXor32(
 }
 
 func (c TripleXor32Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(tripleXor32TraceColumns, tripleXor32InteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(TripleXor32TraceColumns, TripleXor32InteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

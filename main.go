@@ -32,10 +32,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	cairoProof, circuitData := variables.BuildProof(cairoProofRaw)
+	cairoProof := variables.BuildProof(*cairoProofRaw)
+	circuitData := variables.BuildCircuitData(cairoProofRaw)
 	circuit := VerifierCircuit{
-		proof:       *cairoProof,
-		circuitData: *circuitData,
+		proof:       cairoProof,
+		circuitData: circuitData,
 	}
 
 	// ╔══════════════════════════════════╗

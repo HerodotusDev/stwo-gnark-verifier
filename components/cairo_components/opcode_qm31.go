@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	qm31OpcodeTraceColumns       = 73
-	qm31OpcodeInteractionColumns = 24
+	Qm31OpcodeTraceColumns       = 73
+	Qm31OpcodeInteractionColumns = 24
 )
 
 type Qm31OpcodeClaim struct {
@@ -62,7 +62,7 @@ func NewQm31Opcode(
 }
 
 func (c Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(qm31OpcodeTraceColumns, qm31OpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(Qm31OpcodeTraceColumns, Qm31OpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

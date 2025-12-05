@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	addSmallOpcodeTraceColumns       = 33
-	addSmallOpcodeInteractionColumns = 20
+	AddSmallOpcodeTraceColumns       = 33
+	AddSmallOpcodeInteractionColumns = 20
 )
 
 type AddSmallOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewAddSmallOpcode(
 }
 
 func (c AddSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addSmallOpcodeTraceColumns, addSmallOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(AddSmallOpcodeTraceColumns, AddSmallOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -7,27 +7,6 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
-func appendMaskPointsClaimList[T interface {
-	MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) cairo_components.TreeMaskPoints
-}](api frontend.API, dst *[]cairo_components.TreeMaskPoints, claims []T, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) {
-	if len(claims) == 0 {
-		return
-	}
-	for _, claim := range claims {
-		*dst = append(*dst, claim.MaskPoints(api, oodsPoint, circleChip, usedPreprocessed))
-	}
-}
-
-func appendOptionalMaskPoints[T interface {
-	MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) cairo_components.TreeMaskPoints
-}](api frontend.API, dst *[]cairo_components.TreeMaskPoints, claim *T, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) {
-	if claim == nil {
-		return
-	}
-	value := (*claim).MaskPoints(api, oodsPoint, circleChip, usedPreprocessed)
-	*dst = append(*dst, value)
-}
-
 // MaskPoints returns the per-tree sample points for the Cairo claim.
 func (claim CairoClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, circuitData CircuitData) cairo_components.TreeMaskPoints {
 	var parts []cairo_components.TreeMaskPoints

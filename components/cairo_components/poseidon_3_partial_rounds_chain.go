@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	poseidon3PartialRoundsTraceColumns       = 169
-	poseidon3PartialRoundsInteractionColumns = 36
+	Poseidon3PartialRoundsTraceColumns       = 169
+	Poseidon3PartialRoundsInteractionColumns = 36
 )
 
 type Poseidon3PartialRoundsChainClaim struct {
@@ -64,7 +64,7 @@ func NewPoseidon3PartialRoundsChain(
 }
 
 func (c Poseidon3PartialRoundsChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(poseidon3PartialRoundsTraceColumns, poseidon3PartialRoundsInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(Poseidon3PartialRoundsTraceColumns, Poseidon3PartialRoundsInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

@@ -53,23 +53,17 @@ func ReadCairoProofFromReader(r io.Reader) (*ProofRaw, error) {
 // ╚══════════════════════════════════╝
 
 // BuildProof builds a Proof (used in circuits) from a ProofRaw (from json)
-func BuildProof(proofRaw *ProofRaw) (*Proof, *CircuitData) {
-	if proofRaw == nil {
-		return nil, nil
-	}
-
+func BuildProof(proofRaw ProofRaw) Proof {
 	var proof Proof
 
-	claim, componentConfig := BuildClaim(&proofRaw.Claim)
+	claim := BuildClaim(&proofRaw.Claim)
 	proof.Claim = claim
 	proof.InteractionPow = uints.NewU64(proofRaw.InteractionPow)
 	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
 	proof.StarkProof = BuildStarkProof(&proofRaw.StarkProof)
 	proof.CircuitHints = buildCircuitHints(proofRaw.CircuitHints)
 
-	circuitData := BuildCircuitData(proofRaw, componentConfig)
-
-	return &proof, &circuitData
+	return proof
 }
 
 // ╔══════════════════════════════════╗
@@ -77,13 +71,324 @@ func BuildProof(proofRaw *ProofRaw) (*Proof, *CircuitData) {
 // ╚══════════════════════════════════╝
 
 // BuildCircuitData builds a CircuitData from a ProofRaw
-func BuildCircuitData(proofRaw *ProofRaw, componentConfig [61]bool) CircuitData {
+func BuildCircuitData(proofRaw *ProofRaw) CircuitData {
 	if proofRaw == nil {
 		return CircuitData{}
 	}
 
+	// Set all components presence to false
+	componentConfig := ComponentConfig{}
+	for i := range componentConfig {
+		componentConfig[i] = false
+	}
+
+	nColumnsPerLogSize := make([][]int, 4)
+	for i := range nColumnsPerLogSize {
+		nColumnsPerLogSize[i] = make([]int, 32)
+	}
+
+	// Build opcodes
+	if len(proofRaw.Claim.Opcodes.Add) > 0 {
+		componentConfig[0] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Add[0].LogSize)] += cairo_components.AddOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Add[0].LogSize)] += cairo_components.AddOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.AddSmall) > 0 {
+		componentConfig[1] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AddSmall[0].LogSize)] += cairo_components.AddSmallOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AddSmall[0].LogSize)] += cairo_components.AddSmallOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.AddAp) > 0 {
+		componentConfig[2] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AddAp[0].LogSize)] += cairo_components.AddApOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AddAp[0].LogSize)] += cairo_components.AddApOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.AssertEq) > 0 {
+		componentConfig[3] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AssertEq[0].LogSize)] += cairo_components.AssertEqOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AssertEq[0].LogSize)] += cairo_components.AssertEqOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.AssertEqImm) > 0 {
+		componentConfig[4] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AssertEqImm[0].LogSize)] += cairo_components.AssertEqImmOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AssertEqImm[0].LogSize)] += cairo_components.AssertEqImmOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.AssertEqDoubleDeref) > 0 {
+		componentConfig[5] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AssertEqDoubleDeref[0].LogSize)] += cairo_components.AssertEqDoubleDerefOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AssertEqDoubleDeref[0].LogSize)] += cairo_components.AssertEqDoubleDerefOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Blake) > 0 {
+		componentConfig[6] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Blake[0].LogSize)] += cairo_components.BlakeCompressTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Blake[0].LogSize)] += cairo_components.BlakeCompressInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Call) > 0 {
+		componentConfig[7] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Call[0].LogSize)] += cairo_components.CallOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Call[0].LogSize)] += cairo_components.CallOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.CallRelImm) > 0 {
+		componentConfig[8] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.CallRelImm[0].LogSize)] += cairo_components.CallRelImmOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.CallRelImm[0].LogSize)] += cairo_components.CallRelImmOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Generic) > 0 {
+		componentConfig[9] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Generic[0].LogSize)] += cairo_components.GenericOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Generic[0].LogSize)] += cairo_components.GenericOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Jnz) > 0 {
+		componentConfig[10] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Jnz[0].LogSize)] += cairo_components.JnzOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Jnz[0].LogSize)] += cairo_components.JnzOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.JnzTaken) > 0 {
+		componentConfig[11] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JnzTaken[0].LogSize)] += cairo_components.JnzTakenOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JnzTaken[0].LogSize)] += cairo_components.JnzTakenOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Jump) > 0 {
+		componentConfig[12] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Jump[0].LogSize)] += cairo_components.JumpOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Jump[0].LogSize)] += cairo_components.JumpOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.JumpDoubleDeref) > 0 {
+		componentConfig[13] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JumpDoubleDeref[0].LogSize)] += cairo_components.JumpDoubleDerefOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JumpDoubleDeref[0].LogSize)] += cairo_components.JumpDoubleDerefOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.JumpRel) > 0 {
+		componentConfig[14] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JumpRel[0].LogSize)] += cairo_components.JumpRelOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JumpRel[0].LogSize)] += cairo_components.JumpRelOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.JumpRelImm) > 0 {
+		componentConfig[15] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JumpRelImm[0].LogSize)] += cairo_components.JumpRelImmOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JumpRelImm[0].LogSize)] += cairo_components.JumpRelImmOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Mul) > 0 {
+		componentConfig[16] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Mul[0].LogSize)] += cairo_components.MulOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Mul[0].LogSize)] += cairo_components.MulOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.MulSmall) > 0 {
+		componentConfig[17] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.MulSmall[0].LogSize)] += cairo_components.MulSmallOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.MulSmall[0].LogSize)] += cairo_components.MulSmallOpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Qm31) > 0 {
+		componentConfig[18] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Qm31[0].LogSize)] += cairo_components.Qm31OpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Qm31[0].LogSize)] += cairo_components.Qm31OpcodeInteractionColumns
+	}
+	if len(proofRaw.Claim.Opcodes.Ret) > 0 {
+		componentConfig[19] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Ret[0].LogSize)] += cairo_components.RetOpcodeTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Ret[0].LogSize)] += cairo_components.RetOpcodeInteractionColumns
+	}
+
+	// Build verify instruction
+	componentConfig[20] = true
+	nColumnsPerLogSize[1][int(proofRaw.Claim.VerifyInstruction.LogSize)] += cairo_components.VerifyInstructionTraceColumns
+	nColumnsPerLogSize[2][int(proofRaw.Claim.VerifyInstruction.LogSize)] += cairo_components.VerifyInstructionInteractionColumns
+
+	// Build Blake context
+	if proofRaw.Claim.BlakeContext.Claim != nil {
+		componentConfig[21] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.BlakeContext.Claim.BlakeRound.LogSize)] += cairo_components.BlakeRoundTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.BlakeContext.Claim.BlakeRound.LogSize)] += cairo_components.BlakeRoundInteractionColumns
+		componentConfig[22] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.BlakeContext.Claim.BlakeG.LogSize)] += cairo_components.BlakeGTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.BlakeContext.Claim.BlakeG.LogSize)] += cairo_components.BlakeGInteractionColumns
+		componentConfig[23] = true
+		nColumnsPerLogSize[1][cairo_components.BlakeRoundSigmaLogSize] += cairo_components.BlakeRoundSigmaTraceColumns
+		nColumnsPerLogSize[2][cairo_components.BlakeRoundSigmaLogSize] += cairo_components.BlakeRoundSigmaInteractionColumns
+		componentConfig[24] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.BlakeContext.Claim.TripleXor32.LogSize)] += cairo_components.TripleXor32TraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.BlakeContext.Claim.TripleXor32.LogSize)] += cairo_components.TripleXor32InteractionColumns
+		componentConfig[25] = true
+		nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor12LogSize] += cairo_components.VerifyBitwiseXor12TraceColumns
+		nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor12LogSize] += cairo_components.VerifyBitwiseXor12InteractionColumns
+	}
+
+	// Build builtins
+	if proofRaw.Claim.Builtins["add_mod_builtin"] != nil {
+		componentConfig[26] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["add_mod_builtin"].LogSize)] += cairo_components.AddModBuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["add_mod_builtin"].LogSize)] += cairo_components.AddModBuiltinInteractionColumns
+	}
+	if proofRaw.Claim.Builtins["bitwise_builtin"] != nil {
+		componentConfig[27] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["bitwise_builtin"].LogSize)] += cairo_components.BitwiseBuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["bitwise_builtin"].LogSize)] += cairo_components.BitwiseBuiltinInteractionColumns
+	}
+	if proofRaw.Claim.Builtins["mul_mod_builtin"] != nil {
+		componentConfig[28] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["mul_mod_builtin"].LogSize)] += cairo_components.MulModBuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["mul_mod_builtin"].LogSize)] += cairo_components.MulModBuiltinInteractionColumns
+	}
+	if proofRaw.Claim.Builtins["pedersen_builtin"] != nil {
+		componentConfig[29] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["pedersen_builtin"].LogSize)] += cairo_components.PedersenBuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["pedersen_builtin"].LogSize)] += cairo_components.PedersenBuiltinInteractionColumns
+	}
+	if proofRaw.Claim.Builtins["poseidon_builtin"] != nil {
+		componentConfig[30] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["poseidon_builtin"].LogSize)] += cairo_components.PoseidonBuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["poseidon_builtin"].LogSize)] += cairo_components.PoseidonBuiltinInteractionColumns
+	}
+	if proofRaw.Claim.Builtins["range_check_96_builtin"] != nil {
+		componentConfig[31] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["range_check_96_builtin"].LogSize)] += cairo_components.RangeCheck96BuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["range_check_96_builtin"].LogSize)] += cairo_components.RangeCheck96BuiltinInteractionColumns
+	}
+	if proofRaw.Claim.Builtins["range_check_128_builtin"] != nil {
+		componentConfig[32] = true
+		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["range_check_128_builtin"].LogSize)] += cairo_components.RangeCheck128BuiltinTraceColumns
+		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["range_check_128_builtin"].LogSize)] += cairo_components.RangeCheck128BuiltinInteractionColumns
+	}
+
+	// Build pedersen context
+	if proofRaw.Claim.PedersenContext.Claim != nil {
+		componentConfig[33] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.PedersenContext.Claim["partial_ec_mul"].LogSize)] += cairo_components.PartialEcMulTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.PedersenContext.Claim["partial_ec_mul"].LogSize)] += cairo_components.PartialEcMulInteractionColumns
+		componentConfig[34] = true
+		nColumnsPerLogSize[1][cairo_components.PedersenPointsTableLogSize] += cairo_components.PedersenPointsTableTraceColumns
+		nColumnsPerLogSize[2][cairo_components.PedersenPointsTableLogSize] += cairo_components.PedersenPointsTableInteractionColumns
+	}
+
+	// Build poseidon context
+	if proofRaw.Claim.PoseidonContext.Claim != nil {
+		componentConfig[35] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize)] += cairo_components.Poseidon3PartialRoundsTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize)] += cairo_components.Poseidon3PartialRoundsInteractionColumns
+		componentConfig[36] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize)] += cairo_components.PoseidonFullRoundTraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize)] += cairo_components.PoseidonFullRoundInteractionColumns
+		componentConfig[37] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.Cube252.LogSize)] += cairo_components.Cube252TraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.Cube252.LogSize)] += cairo_components.Cube252InteractionColumns
+		componentConfig[38] = true
+		nColumnsPerLogSize[1][cairo_components.PoseidonRoundKeysLogSize] += cairo_components.PoseidonRoundKeysTraceColumns
+		nColumnsPerLogSize[2][cairo_components.PoseidonRoundKeysLogSize] += cairo_components.PoseidonRoundKeysInteractionColumns
+		componentConfig[39] = true
+		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize)] += cairo_components.RangeCheckFelt252Width27TraceColumns
+		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize)] += cairo_components.RangeCheckFelt252Width27InteractionColumns
+	}
+
+	// Build memory address to id component
+	componentConfig[40] = true
+	nColumnsPerLogSize[1][int(proofRaw.Claim.MemoryAddressToId.LogSize)] += cairo_components.MemoryAddressToIdTraceColumns
+	nColumnsPerLogSize[2][int(proofRaw.Claim.MemoryAddressToId.LogSize)] += cairo_components.MemoryAddressToIdInteractionColumns
+
+	// Build ID to Big Big memory components
+	// TODO: Handle multiple id to big tables
+	componentConfig[41] = true
+	nColumnsPerLogSize[1][int(proofRaw.Claim.MemoryIDToValue.BigLogSizes[0])] += cairo_components.MemoryIdToBigBigTraceCols
+	nColumnsPerLogSize[2][int(proofRaw.Claim.MemoryIDToValue.BigLogSizes[0])] += cairo_components.MemoryIdToBigBigInteractionColumns
+
+	// Build ID to Big Small memory components
+	componentConfig[42] = true
+	nColumnsPerLogSize[1][int(proofRaw.Claim.MemoryIDToValue.SmallLogSize)] += cairo_components.MemoryIdToBigSmallTraceCols
+	nColumnsPerLogSize[2][int(proofRaw.Claim.MemoryIDToValue.SmallLogSize)] += cairo_components.MemoryIdToBigSmallInteractionColumns
+
+	// Build range checks
+	componentConfig[43] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck6LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck6LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[44] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck8LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck8LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[45] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck11LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck11LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[46] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck12LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck12LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[47] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck18LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck18LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[48] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck19LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck19LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[49] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck43LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck43LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[50] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck44LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck44LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[51] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck54LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck54LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[52] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck99LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck99LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[53] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck725LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck725LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[54] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck3663LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck3663LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[55] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck4444LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck4444LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[56] = true
+	nColumnsPerLogSize[1][cairo_components.RangeCheck33333LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.RangeCheck33333LogSize] += cairo_components.LookupInteractionColumns
+
+	// Build bitwise XOR
+	componentConfig[57] = true
+	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor4LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor4LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[58] = true
+	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor7LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor7LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[59] = true
+	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor8LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor8LogSize] += cairo_components.LookupInteractionColumns
+	componentConfig[60] = true
+	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor9LogSize] += cairo_components.LookupTraceColumns
+	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor9LogSize] += cairo_components.LookupInteractionColumns
+
+	// Preprocessed columns log sizes
+	nColumnsPerLogSize[0][24] += 1
+	nColumnsPerLogSize[0][23] += 57
+	nColumnsPerLogSize[0][22] += 1
+	nColumnsPerLogSize[0][21] += 1
+	nColumnsPerLogSize[0][20] += 4
+	nColumnsPerLogSize[0][19] += 1
+	nColumnsPerLogSize[0][18] += 10
+	nColumnsPerLogSize[0][17] += 1
+	nColumnsPerLogSize[0][16] += 8
+	nColumnsPerLogSize[0][15] += 6
+	nColumnsPerLogSize[0][14] += 7
+	nColumnsPerLogSize[0][13] += 1
+	nColumnsPerLogSize[0][12] += 1
+	nColumnsPerLogSize[0][11] += 1
+	nColumnsPerLogSize[0][10] += 1
+	nColumnsPerLogSize[0][9] += 3
+	nColumnsPerLogSize[0][8] += 6
+	nColumnsPerLogSize[0][7] += 3
+	nColumnsPerLogSize[0][6] += 31
+	nColumnsPerLogSize[0][5] += 1
+	nColumnsPerLogSize[0][4] += 17
+
+	// CP log size
+	maxLogSize := -1
+	for i := 31; i >= 0; i-- {
+		if nColumnsPerLogSize[1][i] > 0 || nColumnsPerLogSize[2][i] > 0 {
+			maxLogSize = i
+			break
+		}
+	}
+	nColumnsPerLogSize[3][maxLogSize+1] += 4
+
 	return CircuitData{
-		ComponentConfig: componentConfig,
+		ComponentConfig:    componentConfig,
+		NColumnsPerLogSize: nColumnsPerLogSize,
 	}
 }
 
@@ -92,167 +397,128 @@ func BuildCircuitData(proofRaw *ProofRaw, componentConfig [61]bool) CircuitData 
 // ╚══════════════════════════════════╝
 
 // BuildClaim builds a CairoClaim from a ClaimRaw
-func BuildClaim(claimRaw *ClaimRaw) (CairoClaim, ComponentConfig) {
+func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 	if claimRaw == nil {
-		return CairoClaim{}, ComponentConfig{}
+		return CairoClaim{}
 	}
 
 	claim := CairoClaim{}
-
-	// Set all components presence to false
-	componentConfig := ComponentConfig{}
-	for i := range componentConfig {
-		componentConfig[i] = false
-	}
 
 	// Build public data
 	claim.PublicData = BuildPublicData(&claimRaw.PublicData)
 
 	// Build opcodes
 	if len(claimRaw.Opcodes.Add) > 0 {
-		componentConfig[0] = true
 		claim.Add = cairo_components.AddOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Add[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.AddSmall) > 0 {
-		componentConfig[1] = true
 		claim.AddSmall = cairo_components.AddSmallOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AddSmall[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.AddAp) > 0 {
-		componentConfig[2] = true
 		claim.AddAp = cairo_components.AddApOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AddAp[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.AssertEq) > 0 {
-		componentConfig[3] = true
 		claim.AssertEq = cairo_components.AssertEqOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AssertEq[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.AssertEqImm) > 0 {
-		componentConfig[4] = true
 		claim.AssertEqImm = cairo_components.AssertEqImmOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AssertEqImm[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.AssertEqDoubleDeref) > 0 {
-		componentConfig[5] = true
 		claim.AssertEqDoubleDeref = cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.AssertEqDoubleDeref[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Blake) > 0 {
-		componentConfig[6] = true
 		claim.Blake = cairo_components.BlakeCompressOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Blake[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Call) > 0 {
-		componentConfig[7] = true
 		claim.Call = cairo_components.CallOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Call[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.CallRelImm) > 0 {
-		componentConfig[8] = true
 		claim.CallRelImm = cairo_components.CallRelImmOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.CallRelImm[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Generic) > 0 {
-		componentConfig[9] = true
 		claim.Generic = cairo_components.GenericOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Generic[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Jnz) > 0 {
-		componentConfig[10] = true
 		claim.Jnz = cairo_components.JnzOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Jnz[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.JnzTaken) > 0 {
-		componentConfig[11] = true
 		claim.JnzTaken = cairo_components.JnzTakenOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JnzTaken[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Jump) > 0 {
-		componentConfig[12] = true
 		claim.Jump = cairo_components.JumpOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Jump[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.JumpDoubleDeref) > 0 {
-		componentConfig[13] = true
 		claim.JumpDoubleDeref = cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JumpDoubleDeref[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.JumpRel) > 0 {
-		componentConfig[14] = true
 		claim.JumpRel = cairo_components.JumpRelOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JumpRel[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.JumpRelImm) > 0 {
-		componentConfig[15] = true
 		claim.JumpRelImm = cairo_components.JumpRelImmOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.JumpRelImm[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Mul) > 0 {
-		componentConfig[16] = true
 		claim.Mul = cairo_components.MulOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Mul[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.MulSmall) > 0 {
-		componentConfig[17] = true
 		claim.MulSmall = cairo_components.MulSmallOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.MulSmall[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Qm31) > 0 {
-		componentConfig[18] = true
 		claim.Qm31 = cairo_components.Qm31OpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Qm31[0].LogSize)}
 	}
 	if len(claimRaw.Opcodes.Ret) > 0 {
-		componentConfig[19] = true
 		claim.Ret = cairo_components.RetOpcodeClaim{LogSize: frontend.Variable(claimRaw.Opcodes.Ret[0].LogSize)}
 	}
 
 	// Build verify instruction
-	componentConfig[20] = true
 	claim.VerifyInstruction = cairo_components.VerifyInstructionClaim{LogSize: frontend.Variable(claimRaw.VerifyInstruction.LogSize)}
 
 	// Build Blake context
 	if claimRaw.BlakeContext.Claim != nil {
-		componentConfig[21] = true
 		claim.BlakeRound = cairo_components.BlakeRoundClaim{LogSize: frontend.Variable(claimRaw.BlakeContext.Claim.BlakeRound.LogSize)}
-		componentConfig[22] = true
 		claim.BlakeG = cairo_components.BlakeGClaim{LogSize: frontend.Variable(claimRaw.BlakeContext.Claim.BlakeG.LogSize)}
-		componentConfig[23] = true
 		claim.BlakeRoundSigma = cairo_components.BlakeRoundSigmaClaim{LogSize: cairo_components.BlakeRoundSigmaLogSize}
-		componentConfig[24] = true
 		claim.TripleXor32 = cairo_components.TripleXor32Claim{LogSize: frontend.Variable(claimRaw.BlakeContext.Claim.TripleXor32.LogSize)}
-		componentConfig[25] = true
 		claim.VerifyBitwiseXor12 = cairo_components.VerifyBitwiseXor12Claim{LogSize: cairo_components.VerifyBitwiseXor12LogSize}
 	}
 
 	// Build builtins
 	if claimRaw.Builtins["add_mod_builtin"] != nil {
-		componentConfig[26] = true
 		claim.AddModBuiltin = cairo_components.AddModBuiltinClaim{
 			LogSize:                   frontend.Variable(claimRaw.Builtins["add_mod_builtin"].LogSize),
 			AddModBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["add_mod_builtin"].AddModBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["bitwise_builtin"] != nil {
-		componentConfig[27] = true
 		claim.BitwiseBuiltin = cairo_components.BitwiseBuiltinClaim{
 			LogSize:                    frontend.Variable(claimRaw.Builtins["bitwise_builtin"].LogSize),
 			BitwiseBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["bitwise_builtin"].BitwiseBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["mul_mod_builtin"] != nil {
-		componentConfig[28] = true
 		claim.MulModBuiltin = cairo_components.MulModBuiltinClaim{
 			LogSize:                   frontend.Variable(claimRaw.Builtins["mul_mod_builtin"].LogSize),
 			MulModBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["mul_mod_builtin"].MulModBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["pedersen_builtin"] != nil {
-		componentConfig[29] = true
 		claim.PedersenBuiltin = cairo_components.PedersenBuiltinClaim{
 			LogSize:                     frontend.Variable(claimRaw.Builtins["pedersen_builtin"].LogSize),
 			PedersenBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["pedersen_builtin"].PedersenBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["poseidon_builtin"] != nil {
-		componentConfig[30] = true
 		claim.PoseidonBuiltin = cairo_components.PoseidonBuiltinClaim{
 			LogSize:                     frontend.Variable(claimRaw.Builtins["poseidon_builtin"].LogSize),
 			PoseidonBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["poseidon_builtin"].PoseidonBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["range_check_96_builtin"] != nil {
-		componentConfig[31] = true
 		claim.RangeCheck96 = cairo_components.RangeCheck96BuiltinClaim{
 			LogSize:                frontend.Variable(claimRaw.Builtins["range_check_96_builtin"].LogSize),
 			RangeCheckSegmentStart: frontend.Variable(claimRaw.Builtins["range_check_96_builtin"].RangeCheckBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["range_check_128_builtin"] != nil {
-		componentConfig[32] = true
 		claim.RangeCheck128 = cairo_components.RangeCheck128BuiltinClaim{
 			LogSize:                frontend.Variable(claimRaw.Builtins["range_check_128_builtin"].LogSize),
 			RangeCheckSegmentStart: frontend.Variable(claimRaw.Builtins["range_check_128_builtin"].RangeCheckBuiltinSegmentStart),
@@ -261,85 +527,57 @@ func BuildClaim(claimRaw *ClaimRaw) (CairoClaim, ComponentConfig) {
 
 	// Build pedersen context
 	if claimRaw.PedersenContext.Claim != nil {
-		componentConfig[33] = true
 		claim.PartialEcMul = cairo_components.PartialEcMulClaim{LogSize: frontend.Variable(claimRaw.PedersenContext.Claim["partial_ec_mul"].LogSize)}
-		componentConfig[34] = true
 		claim.PedersenPointsTable = cairo_components.PedersenPointsTableClaim{LogSize: cairo_components.PedersenPointsTableLogSize}
 	}
 
 	// Build poseidon context
 	if claimRaw.PoseidonContext.Claim != nil {
-		componentConfig[35] = true
 		claim.Poseidon3PartialRoundsChain = cairo_components.Poseidon3PartialRoundsChainClaim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize)}
-		componentConfig[36] = true
 		claim.PoseidonFullRoundChain = cairo_components.PoseidonFullRoundChainClaim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize)}
-		componentConfig[37] = true
 		claim.Cube252 = cairo_components.Cube252Claim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.Cube252.LogSize)}
-		componentConfig[38] = true
 		claim.PoseidonRoundKeys = cairo_components.PoseidonRoundKeysClaim{LogSize: cairo_components.PoseidonRoundKeysLogSize}
-		componentConfig[39] = true
 		claim.RangeCheckFelt252Width27 = cairo_components.RangeCheckFelt252Width27Claim{LogSize: frontend.Variable(claimRaw.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize)}
 	}
 
 	// Build memory address to id component
-	componentConfig[40] = true
 	claim.MemoryAddressToID = cairo_components.MemoryAddressToIDClaim{LogSize: frontend.Variable(claimRaw.MemoryAddressToId.LogSize)}
 
 	// Build ID to Big Big memory components
 	// TODO: Handle multiple id to big tables
-	componentConfig[41] = true
 	claim.MemoryIDToBigBig = cairo_components.MemoryIdToBigBigClaim{
 		LogSize: frontend.Variable(claimRaw.MemoryIDToValue.BigLogSizes[0]),
 		Offset:  uint32(0),
 	}
 
 	// Build ID to Big Small memory components
-	componentConfig[42] = true
 	claim.MemoryIDToBigSmall = cairo_components.MemoryIdToBigSmallClaim{
 		LogSize: frontend.Variable(claimRaw.MemoryIDToValue.SmallLogSize),
 	}
 
 	// Build range checks
-	componentConfig[43] = true
 	claim.RC6 = cairo_components.RangeCheck6Claim{LogSize: cairo_components.RangeCheck6LogSize}
-	componentConfig[44] = true
 	claim.RC8 = cairo_components.RangeCheck8Claim{LogSize: cairo_components.RangeCheck8LogSize}
-	componentConfig[45] = true
 	claim.RC11 = cairo_components.RangeCheck11Claim{LogSize: cairo_components.RangeCheck11LogSize}
-	componentConfig[46] = true
 	claim.RC12 = cairo_components.RangeCheck12Claim{LogSize: cairo_components.RangeCheck12LogSize}
-	componentConfig[47] = true
 	claim.RC18 = cairo_components.RangeCheck18Claim{LogSize: cairo_components.RangeCheck18LogSize}
-	componentConfig[48] = true
 	claim.RC19 = cairo_components.RangeCheck19Claim{LogSize: cairo_components.RangeCheck19LogSize}
-	componentConfig[49] = true
 	claim.RC43 = cairo_components.RangeCheck43Claim{LogSize: cairo_components.RangeCheck43LogSize}
-	componentConfig[50] = true
 	claim.RC44 = cairo_components.RangeCheck44Claim{LogSize: cairo_components.RangeCheck44LogSize}
-	componentConfig[51] = true
 	claim.RC54 = cairo_components.RangeCheck54Claim{LogSize: cairo_components.RangeCheck54LogSize}
-	componentConfig[52] = true
 	claim.RC99 = cairo_components.RangeCheck99Claim{LogSize: cairo_components.RangeCheck99LogSize}
-	componentConfig[53] = true
 	claim.RC725 = cairo_components.RangeCheck725Claim{LogSize: cairo_components.RangeCheck725LogSize}
-	componentConfig[54] = true
 	claim.RC3663 = cairo_components.RangeCheck3663Claim{LogSize: cairo_components.RangeCheck3663LogSize}
-	componentConfig[55] = true
 	claim.RC4444 = cairo_components.RangeCheck4444Claim{LogSize: cairo_components.RangeCheck4444LogSize}
-	componentConfig[56] = true
 	claim.RC33333 = cairo_components.RangeCheck33333Claim{LogSize: cairo_components.RangeCheck33333LogSize}
 
 	// Build bitwise XOR
-	componentConfig[57] = true
 	claim.VerifyBitwiseXor4 = cairo_components.VerifyBitwiseXor4Claim{LogSize: cairo_components.VerifyBitwiseXor4LogSize}
-	componentConfig[58] = true
 	claim.VerifyBitwiseXor7 = cairo_components.VerifyBitwiseXor7Claim{LogSize: cairo_components.VerifyBitwiseXor7LogSize}
-	componentConfig[59] = true
 	claim.VerifyBitwiseXor8 = cairo_components.VerifyBitwiseXor8Claim{LogSize: cairo_components.VerifyBitwiseXor8LogSize}
-	componentConfig[60] = true
 	claim.VerifyBitwiseXor9 = cairo_components.VerifyBitwiseXor9Claim{LogSize: cairo_components.VerifyBitwiseXor9LogSize}
 
-	return claim, componentConfig
+	return claim
 }
 
 // ╔══════════════════════════════════╗

@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	partialEcMulTraceColumns       = 472
-	partialEcMulInteractionColumns = 428
-	partialEcMulGroupCount         = partialEcMulInteractionColumns / 4
+	PartialEcMulTraceColumns       = 472
+	PartialEcMulInteractionColumns = 428
+	partialEcMulGroupCount         = PartialEcMulInteractionColumns / 4
 )
 
 type constraintMode uint8
@@ -193,7 +193,7 @@ func NewPartialEcMul(
 }
 
 func (c PartialEcMulComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(partialEcMulTraceColumns, partialEcMulInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(PartialEcMulTraceColumns, PartialEcMulInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	mulSmallOpcodeTraceColumns       = 37
-	mulSmallOpcodeInteractionColumns = 24
+	MulSmallOpcodeTraceColumns       = 37
+	MulSmallOpcodeInteractionColumns = 24
 )
 
 type MulSmallOpcodeClaim struct {
@@ -62,7 +62,7 @@ func NewMulSmallOpcode(
 }
 
 func (c MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(mulSmallOpcodeTraceColumns, mulSmallOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(MulSmallOpcodeTraceColumns, MulSmallOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

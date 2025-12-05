@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	verifyInstructionTraceColumns       = 17
-	verifyInstructionInteractionColumns = 12
+	VerifyInstructionTraceColumns       = 17
+	VerifyInstructionInteractionColumns = 12
 )
 
 type VerifyInstructionClaim struct {
@@ -61,7 +61,7 @@ func NewVerifyInstruction(
 }
 
 func (c VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(verifyInstructionTraceColumns, verifyInstructionInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(VerifyInstructionTraceColumns, VerifyInstructionInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -10,7 +10,7 @@ const (
 	BlakeRoundSigmaInteractionColumns = 4
 )
 
-var BlakeRoundSigmaLogSize = frontend.Variable(4)
+var BlakeRoundSigmaLogSize = 4
 
 type BlakeRoundSigmaClaim struct {
 	LogSize frontend.Variable
@@ -50,7 +50,7 @@ func NewBlakeRoundSigma(
 	}
 }
 
-func (c BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+func (c BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(BlakeRoundSigmaTraceColumns, BlakeRoundSigmaInteractionColumns)
 
 	// ╔══════════════════════════════════╗

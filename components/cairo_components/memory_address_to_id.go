@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	memoryAddressToIdTraceColumns       = 16
-	memoryAddressToIdInteractionColumns = 16
+	MemoryAddressToIdTraceColumns       = 16
+	MemoryAddressToIdInteractionColumns = 16
 )
 
 // MemoryAddressToIdClaim carries the circuit-facing claim for the component.
@@ -56,7 +56,7 @@ func NewMemoryAddressToId(
 
 // Evaluate enforces the component constraints at the sampled point.
 func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(memoryAddressToIdTraceColumns, memoryAddressToIdInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(MemoryAddressToIdTraceColumns, MemoryAddressToIdInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	callRelImmOpcodeTraceColumns       = 18
-	callRelImmOpcodeInteractionColumns = 20
+	CallRelImmOpcodeTraceColumns       = 18
+	CallRelImmOpcodeInteractionColumns = 20
 )
 
 type CallRelImmOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewCallRelImmOpcode(
 }
 
 func (c CallRelImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(callRelImmOpcodeTraceColumns, callRelImmOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(CallRelImmOpcodeTraceColumns, CallRelImmOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -39,10 +39,10 @@ func TestLogupSum(t *testing.T) {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	proof, circuitData := variables.BuildProof(raw)
+	proof := variables.BuildProof(*raw)
+	logupSumCircuitData = variables.BuildCircuitData(raw)
 	logupSumClaim = proof.Claim
 	logupSumInteractionClaim = proof.InteractionClaim
-	logupSumCircuitData = *circuitData
 
 	circuit := &logupSumCircuit{}
 	witness := &logupSumCircuit{}

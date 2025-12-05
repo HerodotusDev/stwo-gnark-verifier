@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	retOpcodeTraceColumns       = 12
-	retOpcodeInteractionColumns = 16
+	RetOpcodeTraceColumns       = 12
+	RetOpcodeInteractionColumns = 16
 )
 
 type RetOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewRetOpcode(
 }
 
 func (c RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(retOpcodeTraceColumns, retOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(RetOpcodeTraceColumns, RetOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

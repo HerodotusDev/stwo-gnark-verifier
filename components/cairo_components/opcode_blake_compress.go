@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	blakeCompressTraceColumns       = 169
-	blakeCompressInteractionColumns = 148
+	BlakeCompressTraceColumns       = 169
+	BlakeCompressInteractionColumns = 148
 )
 
 type BlakeCompressOpcodeClaim struct {
@@ -73,7 +73,7 @@ func NewBlakeCompressOpcode(
 }
 
 func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(blakeCompressTraceColumns, blakeCompressInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(BlakeCompressTraceColumns, BlakeCompressInteractionColumns)
 
 	// Main Trace helpers
 	getTrace := func(idx int) m31.QM31 {

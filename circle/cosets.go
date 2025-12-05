@@ -1,9 +1,9 @@
 package circle
 
 import (
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/conversion"
-	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -53,24 +53,11 @@ func (c Coset) LogSize() frontend.Variable {
 }
 
 func (c Coset) Size() frontend.Variable {
-	return pow(c.circleChip.api, c.circleChip.comparator, frontend.Variable(2), c.logSize)
+	return utils.Pow(c.circleChip.api, c.circleChip.comparator, frontend.Variable(2), c.logSize)
 }
 
 func (c Coset) Step() circlePointIndex {
 	return c.step
-}
-
-// pow computes base^exponent using the binary decomposition of the exponent. (util should be elsewhere)
-func pow(api frontend.API, cmp *cmp.BoundedComparator, base, exponent frontend.Variable) frontend.Variable {
-	one := frontend.Variable(1)
-	result := one
-
-	for i := 0; i < CircleLogOrder; i++ {
-		isLess := cmp.IsLess(frontend.Variable(i), exponent)
-		result = api.Select(isLess, api.Mul(result, base), one)
-	}
-
-	return result
 }
 
 // ╔══════════════════════════════════╗

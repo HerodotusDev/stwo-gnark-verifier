@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	pedersenBuiltinTraceColumns       = 351
-	pedersenBuiltinInteractionColumns = 40
+	PedersenBuiltinTraceColumns       = 351
+	PedersenBuiltinInteractionColumns = 40
 )
 
 var pedersenPartialEcMulSum10Constants = []uint64{
@@ -72,8 +72,8 @@ func NewPedersenBuiltin(
 	}
 }
 
-func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
+func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PedersenBuiltinTraceColumns, PedersenBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 
@@ -129,7 +129,7 @@ func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 
 	pedersenResultID := nextTrace()
 
-	if cursor != pedersenBuiltinTraceColumns {
+	if cursor != PedersenBuiltinTraceColumns {
 		panic("unexpected trace column count")
 	}
 

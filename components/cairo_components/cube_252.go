@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	cube252TraceColumns       = 141
-	cube252InteractionColumns = 200
+	Cube252TraceColumns       = 141
+	Cube252InteractionColumns = 200
 )
 
 var (
@@ -60,7 +60,7 @@ func NewCube252(
 }
 
 func (c Cube252Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(cube252TraceColumns, cube252InteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(Cube252TraceColumns, Cube252InteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

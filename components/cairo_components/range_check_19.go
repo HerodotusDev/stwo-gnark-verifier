@@ -13,7 +13,7 @@ type RangeCheck19InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-var RangeCheck19LogSize = frontend.Variable(19)
+var RangeCheck19LogSize = 19
 
 type RangeCheck19Component struct {
 	inner lookupConstraintComponent

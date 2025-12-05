@@ -7,10 +7,10 @@ import (
 
 const (
 	memoryIdToBigSeqShift                = uint64(1073741824) // 2^30
-	memoryIdToBigBigTraceCols            = 29
-	memoryIdToBigSmallTraceCols          = 9
-	memoryIdToBigBigInteractionColumns   = 32
-	memoryIdToBigSmallInteractionColumns = 20
+	MemoryIdToBigBigTraceCols            = 29
+	MemoryIdToBigSmallTraceCols          = 9
+	MemoryIdToBigBigInteractionColumns   = 32
+	MemoryIdToBigSmallInteractionColumns = 20
 )
 
 // ╔══════════════════════════════════╗
@@ -68,7 +68,7 @@ func NewMemoryIdToBigBigComponent(
 }
 
 func (c MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(memoryIdToBigBigTraceCols, memoryIdToBigBigInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(MemoryIdToBigBigTraceCols, MemoryIdToBigBigInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -216,7 +216,7 @@ func NewMemoryIdToBigSmallComponent(
 }
 
 func (c MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(memoryIdToBigSmallTraceCols, memoryIdToBigSmallInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(MemoryIdToBigSmallTraceCols, MemoryIdToBigSmallInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

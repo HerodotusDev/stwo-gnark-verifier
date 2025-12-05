@@ -18,17 +18,12 @@ type MerkleVerifier struct {
 
 	root               [32]uints.U8
 	ColumnLogSizes     []frontend.Variable
-	nColumnsPerLogSize map[uint8]int
+	nColumnsPerLogSize []int
 }
 
-func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], root [32]uints.U8, columnLogSizes []frontend.Variable) *MerkleVerifier {
+func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], root [32]uints.U8, columnLogSizes []frontend.Variable, nColumnsPerLogSize []int) *MerkleVerifier {
 	m31Chip := m31.NewM31Chip(api)
 	blake2sChip := blake2s.NewBlake2sChip(api)
-
-	nColumnsPerLogSize := make(map[frontend.Variable]int)
-	for _, logSize := range columnLogSizes {
-		nColumnsPerLogSize[logSize]++
-	}
 
 	return &MerkleVerifier{
 		api:                api,
@@ -75,7 +70,7 @@ func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decomm
 
 	// decommit layer by layer, doing all queries at once
 	for layerLog := maxLogSize; ; layerLog-- {
-		nColumnsInLayer := v.nColumnsPerLogSize[layerLog]
+		nColumnsInLayer := v.nColumnsPerLogSize[layerLog-1]
 		j := 0 // pointer to the previous layer query
 
 		// go through all query positions of the current layer

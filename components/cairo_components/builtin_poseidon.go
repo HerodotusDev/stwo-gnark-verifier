@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	poseidonBuiltinTraceColumns       = 341
-	poseidonBuiltinInteractionColumns = 68
+	PoseidonBuiltinTraceColumns       = 341
+	PoseidonBuiltinInteractionColumns = 68
 )
 
 type PoseidonBuiltinClaim struct {
@@ -77,16 +77,16 @@ func NewPoseidonBuiltin(
 	}
 }
 
-func (c PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
+func (c PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PoseidonBuiltinTraceColumns, PoseidonBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 	interaction := interactionSampledValues
 
-	if len(trace) != poseidonBuiltinTraceColumns {
+	if len(trace) != PoseidonBuiltinTraceColumns {
 		panic("poseidon_builtin expects 341 trace columns")
 	}
-	if len(interaction) != poseidonBuiltinInteractionColumns {
+	if len(interaction) != PoseidonBuiltinInteractionColumns {
 		panic("poseidon_builtin expects 68 interaction columns")
 	}
 
@@ -181,7 +181,7 @@ func (c PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 	}
 	outputStateID2 := nextTrace()
 
-	if cursor != poseidonBuiltinTraceColumns {
+	if cursor != PoseidonBuiltinTraceColumns {
 		panic("unexpected trace column count")
 	}
 

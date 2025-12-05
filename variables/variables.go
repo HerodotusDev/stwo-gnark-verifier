@@ -53,8 +53,11 @@ type CircuitHints struct {
 
 // CircuitData is the data used to compile the circuit
 type CircuitData struct {
-	ComponentConfig ComponentConfig
-	BoundsLength    int
+	NColumnsPerLogSize  [][]int
+	DedupedQueriesShape []int
+	ComponentConfig     ComponentConfig
+	BoundsLength        int
+	MaxLogSize          uint8
 }
 
 // ComponentConfig is the configuration of the components used in the circuit

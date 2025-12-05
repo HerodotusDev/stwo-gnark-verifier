@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	blakeRoundTraceColumns       = 212
-	blakeRoundInteractionColumns = 120
+	BlakeRoundTraceColumns       = 212
+	BlakeRoundInteractionColumns = 120
 )
 
 type BlakeRoundClaim struct {
@@ -66,8 +66,8 @@ func NewBlakeRound(
 	}
 }
 
-func (c BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(blakeRoundTraceColumns, blakeRoundInteractionColumns)
+func (c BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(BlakeRoundTraceColumns, BlakeRoundInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

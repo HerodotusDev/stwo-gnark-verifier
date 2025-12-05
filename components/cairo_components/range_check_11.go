@@ -9,7 +9,7 @@ type RangeCheck11Claim struct {
 	LogSize frontend.Variable
 }
 
-var RangeCheck11LogSize = frontend.Variable(11)
+var RangeCheck11LogSize = 11
 
 type RangeCheck11InteractionClaim struct {
 	ClaimedSum m31.QM31

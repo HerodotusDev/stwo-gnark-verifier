@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	assertEqDoubleDerefOpcodeTraceColumns       = 17
-	assertEqDoubleDerefOpcodeInteractionColumns = 16
+	AssertEqDoubleDerefOpcodeTraceColumns       = 17
+	AssertEqDoubleDerefOpcodeInteractionColumns = 16
 )
 
 type AssertEqDoubleDerefOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewAssertEqDoubleDerefOpcode(
 }
 
 func (c AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(assertEqDoubleDerefOpcodeTraceColumns, assertEqDoubleDerefOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(AssertEqDoubleDerefOpcodeTraceColumns, AssertEqDoubleDerefOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

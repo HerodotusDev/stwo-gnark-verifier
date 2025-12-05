@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	addModBuiltinTraceColumns       = 251
-	addModBuiltinInteractionColumns = 108
+	AddModBuiltinTraceColumns       = 251
+	AddModBuiltinInteractionColumns = 108
 )
 
 type AddModBuiltinClaim struct {
@@ -63,7 +63,7 @@ func NewAddModBuiltin(
 }
 
 func (c AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addModBuiltinTraceColumns, addModBuiltinInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(AddModBuiltinTraceColumns, AddModBuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

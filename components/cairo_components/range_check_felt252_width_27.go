@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	rangeCheckFelt252Width27TraceColumns       = 20
-	rangeCheckFelt252Width27InteractionColumns = 32
+	RangeCheckFelt252Width27TraceColumns       = 20
+	RangeCheckFelt252Width27InteractionColumns = 32
 )
 
 type RangeCheckFelt252Width27Claim struct {
@@ -58,7 +58,7 @@ func NewRangeCheckFelt252Width27(
 }
 
 func (c RangeCheckFelt252Width27Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(rangeCheckFelt252Width27TraceColumns, rangeCheckFelt252Width27InteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(RangeCheckFelt252Width27TraceColumns, RangeCheckFelt252Width27InteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

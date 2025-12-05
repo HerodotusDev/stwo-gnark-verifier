@@ -3,6 +3,7 @@ package cairo_components
 import (
 	"math/big"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/cmp"
@@ -15,17 +16,9 @@ func init() {
 	solver.RegisterHint(MaxLogSizeHint)
 }
 
-func FlattenTree[T any](tree [][]T) []T {
-	result := make([]T, 0)
-	for _, group := range tree {
-		result = append(result, group...)
-	}
-	return result
-}
-
 func MaxLogSize(api frontend.API, logSizes TreeLogSizes) frontend.Variable {
 	// flatten the log sizes
-	flattened := FlattenTree(logSizes)
+	flattened := utils.FlattenTree(logSizes)
 	// get the hinted max log size
 	result, err := api.Compiler().NewHint(MaxLogSizeHint, 1, flattened...)
 	if err != nil {
@@ -103,83 +96,83 @@ func appendRepeat(base []frontend.Variable, value frontend.Variable, count int) 
 // ╚══════════════════════════════════╝
 
 func (claim AddOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, addOpcodeTraceColumns, addOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AddOpcodeTraceColumns, AddOpcodeInteractionColumns)
 }
 
 func (claim AddApOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, addApOpcodeTraceColumns, addApOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AddApOpcodeTraceColumns, AddApOpcodeInteractionColumns)
 }
 
 func (claim AddSmallOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, addSmallOpcodeTraceColumns, addSmallOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AddSmallOpcodeTraceColumns, AddSmallOpcodeInteractionColumns)
 }
 
 func (claim AssertEqOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, assertEqOpcodeTraceColumns, assertEqOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AssertEqOpcodeTraceColumns, AssertEqOpcodeInteractionColumns)
 }
 
 func (claim AssertEqDoubleDerefOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, assertEqDoubleDerefOpcodeTraceColumns, assertEqDoubleDerefOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AssertEqDoubleDerefOpcodeTraceColumns, AssertEqDoubleDerefOpcodeInteractionColumns)
 }
 
 func (claim AssertEqImmOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, assertEqImmOpcodeTraceColumns, assertEqImmOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AssertEqImmOpcodeTraceColumns, AssertEqImmOpcodeInteractionColumns)
 }
 
 func (claim BlakeCompressOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, blakeCompressTraceColumns, blakeCompressInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, BlakeCompressTraceColumns, BlakeCompressInteractionColumns)
 }
 
 func (claim CallOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, callOpcodeTraceColumns, callOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, CallOpcodeTraceColumns, CallOpcodeInteractionColumns)
 }
 
 func (claim CallRelImmOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, callRelImmOpcodeTraceColumns, callRelImmOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, CallRelImmOpcodeTraceColumns, CallRelImmOpcodeInteractionColumns)
 }
 
 func (claim GenericOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, genericOpcodeTraceColumns, genericOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, GenericOpcodeTraceColumns, GenericOpcodeInteractionColumns)
 }
 
 func (claim JnzOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, jnzOpcodeTraceColumns, jnzOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, JnzOpcodeTraceColumns, JnzOpcodeInteractionColumns)
 }
 
 func (claim JnzTakenOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, jnzTakenOpcodeTraceColumns, jnzTakenOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, JnzTakenOpcodeTraceColumns, JnzTakenOpcodeInteractionColumns)
 }
 
 func (claim JumpOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, jumpOpcodeTraceColumns, jumpOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, JumpOpcodeTraceColumns, JumpOpcodeInteractionColumns)
 }
 
 func (claim JumpDoubleDerefOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, jumpDoubleDerefOpcodeTraceColumns, jumpDoubleDerefOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, JumpDoubleDerefOpcodeTraceColumns, JumpDoubleDerefOpcodeInteractionColumns)
 }
 
 func (claim JumpRelOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, jumpRelOpcodeTraceColumns, jumpRelOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, JumpRelOpcodeTraceColumns, JumpRelOpcodeInteractionColumns)
 }
 
 func (claim JumpRelImmOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, jumpRelImmOpcodeTraceColumns, jumpRelImmOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, JumpRelImmOpcodeTraceColumns, JumpRelImmOpcodeInteractionColumns)
 }
 
 func (claim MulOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, mulOpcodeTraceColumns, mulOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, MulOpcodeTraceColumns, MulOpcodeInteractionColumns)
 }
 
 func (claim MulSmallOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, mulSmallOpcodeTraceColumns, mulSmallOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, MulSmallOpcodeTraceColumns, MulSmallOpcodeInteractionColumns)
 }
 
 func (claim Qm31OpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, qm31OpcodeTraceColumns, qm31OpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, Qm31OpcodeTraceColumns, Qm31OpcodeInteractionColumns)
 }
 
 func (claim RetOpcodeClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, retOpcodeTraceColumns, retOpcodeInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, RetOpcodeTraceColumns, RetOpcodeInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
@@ -187,31 +180,31 @@ func (claim RetOpcodeClaim) LogSizes() TreeLogSizes {
 // ╚══════════════════════════════════╝
 
 func (claim AddModBuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, addModBuiltinTraceColumns, addModBuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, AddModBuiltinTraceColumns, AddModBuiltinInteractionColumns)
 }
 
 func (claim BitwiseBuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, bitwiseBuiltinTraceColumns, bitwiseBuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, BitwiseBuiltinTraceColumns, BitwiseBuiltinInteractionColumns)
 }
 
 func (claim MulModBuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, mulModBuiltinTraceColumns, mulModBuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, MulModBuiltinTraceColumns, MulModBuiltinInteractionColumns)
 }
 
 func (claim PedersenBuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, PedersenBuiltinTraceColumns, PedersenBuiltinInteractionColumns)
 }
 
 func (claim PoseidonBuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, PoseidonBuiltinTraceColumns, PoseidonBuiltinInteractionColumns)
 }
 
 func (claim RangeCheck96BuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, rangeCheck96BuiltinTraceColumns, rangeCheck96BuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, RangeCheck96BuiltinTraceColumns, RangeCheck96BuiltinInteractionColumns)
 }
 
 func (claim RangeCheck128BuiltinClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, rangeCheck128BuiltinTraceColumns, rangeCheck128BuiltinInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, RangeCheck128BuiltinTraceColumns, RangeCheck128BuiltinInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
@@ -219,11 +212,11 @@ func (claim RangeCheck128BuiltinClaim) LogSizes() TreeLogSizes {
 // ╚══════════════════════════════════╝
 
 func (claim BlakeRoundClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, blakeRoundTraceColumns, blakeRoundInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, BlakeRoundTraceColumns, BlakeRoundInteractionColumns)
 }
 
 func (claim BlakeGClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, blakeGTraceColumns, blakeGInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, BlakeGTraceColumns, BlakeGInteractionColumns)
 }
 
 func (BlakeRoundSigmaClaim) LogSizes() TreeLogSizes {
@@ -231,7 +224,7 @@ func (BlakeRoundSigmaClaim) LogSizes() TreeLogSizes {
 }
 
 func (claim TripleXor32Claim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, tripleXor32TraceColumns, tripleXor32InteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, TripleXor32TraceColumns, TripleXor32InteractionColumns)
 }
 
 func (claim VerifyBitwiseXor12Claim) LogSizes() TreeLogSizes {
@@ -243,7 +236,7 @@ func (claim VerifyBitwiseXor12Claim) LogSizes() TreeLogSizes {
 // ╚══════════════════════════════════╝
 
 func (claim PartialEcMulClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, partialEcMulTraceColumns, partialEcMulInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, PartialEcMulTraceColumns, PartialEcMulInteractionColumns)
 }
 
 func (PedersenPointsTableClaim) LogSizes() TreeLogSizes {
@@ -255,15 +248,15 @@ func (PedersenPointsTableClaim) LogSizes() TreeLogSizes {
 // ╚══════════════════════════════════╝
 
 func (claim Poseidon3PartialRoundsChainClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, poseidon3PartialRoundsTraceColumns, poseidon3PartialRoundsInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, Poseidon3PartialRoundsTraceColumns, Poseidon3PartialRoundsInteractionColumns)
 }
 
 func (claim PoseidonFullRoundChainClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, poseidonFullRoundTraceColumns, poseidonFullRoundInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, PoseidonFullRoundTraceColumns, PoseidonFullRoundInteractionColumns)
 }
 
 func (claim Cube252Claim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, cube252TraceColumns, cube252InteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, Cube252TraceColumns, Cube252InteractionColumns)
 }
 
 func (PoseidonRoundKeysClaim) LogSizes() TreeLogSizes {
@@ -271,7 +264,7 @@ func (PoseidonRoundKeysClaim) LogSizes() TreeLogSizes {
 }
 
 func (claim RangeCheckFelt252Width27Claim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, rangeCheckFelt252Width27TraceColumns, rangeCheckFelt252Width27InteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, RangeCheckFelt252Width27TraceColumns, RangeCheckFelt252Width27InteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
@@ -279,15 +272,15 @@ func (claim RangeCheckFelt252Width27Claim) LogSizes() TreeLogSizes {
 // ╚══════════════════════════════════╝
 
 func (claim MemoryAddressToIDClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, memoryAddressToIdTraceColumns, memoryAddressToIdInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, MemoryAddressToIdTraceColumns, MemoryAddressToIdInteractionColumns)
 }
 
 func (claim MemoryIdToBigBigClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, memoryIdToBigBigTraceCols, memoryIdToBigBigInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, MemoryIdToBigBigTraceCols, MemoryIdToBigBigInteractionColumns)
 }
 
 func (claim MemoryIdToBigSmallClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, memoryIdToBigSmallTraceCols, memoryIdToBigSmallInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, MemoryIdToBigSmallTraceCols, MemoryIdToBigSmallInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
@@ -375,5 +368,5 @@ func (claim VerifyBitwiseXor9Claim) LogSizes() TreeLogSizes {
 // ╚══════════════════════════════════╝
 
 func (claim VerifyInstructionClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(claim.LogSize, verifyInstructionTraceColumns, verifyInstructionInteractionColumns)
+	return NewTreeLogSizesFromCounts(claim.LogSize, VerifyInstructionTraceColumns, VerifyInstructionInteractionColumns)
 }

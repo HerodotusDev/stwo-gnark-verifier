@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	poseidonFullRoundTraceColumns       = 126
-	poseidonFullRoundInteractionColumns = 24
+	PoseidonFullRoundTraceColumns       = 126
+	PoseidonFullRoundInteractionColumns = 24
 )
 
 type PoseidonFullRoundChainClaim struct {
@@ -58,7 +58,7 @@ func NewPoseidonFullRoundChain(
 }
 
 func (c PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(poseidonFullRoundTraceColumns, poseidonFullRoundInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(PoseidonFullRoundTraceColumns, PoseidonFullRoundInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

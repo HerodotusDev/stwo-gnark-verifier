@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	genericOpcodeTraceColumns       = 236
-	genericOpcodeInteractionColumns = 132
+	GenericOpcodeTraceColumns       = 236
+	GenericOpcodeInteractionColumns = 132
 )
 
 type GenericOpcodeClaim struct {
@@ -67,7 +67,7 @@ func NewGenericOpcode(
 }
 
 func (c GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(genericOpcodeTraceColumns, genericOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(GenericOpcodeTraceColumns, GenericOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║       Constraint Evaluations     ║

@@ -13,7 +13,7 @@ type RangeCheck4444InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-var RangeCheck4444LogSize = frontend.Variable(16)
+var RangeCheck4444LogSize = 16
 
 type RangeCheck4444Component struct {
 	inner lookupConstraintComponent

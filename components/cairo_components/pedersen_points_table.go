@@ -11,7 +11,7 @@ const (
 	PedersenPointsTableInteractionColumns = 4
 )
 
-var PedersenPointsTableLogSize = frontend.Variable(23)
+var PedersenPointsTableLogSize = 23
 
 type PedersenPointsTableClaim struct {
 	LogSize frontend.Variable

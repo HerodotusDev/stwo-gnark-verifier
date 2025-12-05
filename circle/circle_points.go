@@ -5,6 +5,7 @@ import (
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/conversion"
 	gnarkbits "github.com/consensys/gnark/std/math/bits"
@@ -212,7 +213,7 @@ func (c *CircleChip) AddPointIndex(a, b circlePointIndex) circlePointIndex {
 
 func SubgroupGenerator(circleChip *CircleChip, logSize frontend.Variable) circlePointIndex {
 	expNative := circleChip.api.Sub(frontend.Variable(CircleLogOrder), logSize)
-	twoPowExp := pow(circleChip.api, circleChip.comparator, frontend.Variable(2), expNative)
+	twoPowExp := utils.Pow(circleChip.api, circleChip.comparator, frontend.Variable(2), expNative)
 	pointIndexU32 := circleChip.uapi.ValueOf(twoPowExp)
 	return newPointIndex(circleChip, pointIndexU32)
 }

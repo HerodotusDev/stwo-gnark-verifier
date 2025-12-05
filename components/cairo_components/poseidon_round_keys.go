@@ -11,7 +11,7 @@ const (
 	PoseidonRoundKeysInteractionColumns = 4
 )
 
-var PoseidonRoundKeysLogSize = frontend.Variable(6)
+var PoseidonRoundKeysLogSize = 6
 
 type PoseidonRoundKeysClaim struct {
 	LogSize frontend.Variable

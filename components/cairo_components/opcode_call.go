@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	callOpcodeTraceColumns       = 19
-	callOpcodeInteractionColumns = 20
+	CallOpcodeTraceColumns       = 19
+	CallOpcodeInteractionColumns = 20
 )
 
 type CallOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewCallOpcode(
 }
 
 func (c CallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(callOpcodeTraceColumns, callOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(CallOpcodeTraceColumns, CallOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

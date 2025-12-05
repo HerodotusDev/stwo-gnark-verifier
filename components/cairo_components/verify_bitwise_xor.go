@@ -9,7 +9,7 @@ import (
 // ║      Verify Bitwise XOR (4)      ║
 // ╚══════════════════════════════════╝
 
-var VerifyBitwiseXor4LogSize = frontend.Variable(8)
+var VerifyBitwiseXor4LogSize = 8
 
 type VerifyBitwiseXor4Claim struct {
 	LogSize frontend.Variable
@@ -51,7 +51,7 @@ func (c VerifyBitwiseXor4Component) Evaluate(sum m31.QM31, traces *Traces, rando
 // ║      Verify Bitwise XOR (7)      ║
 // ╚══════════════════════════════════╝
 
-var VerifyBitwiseXor7LogSize = frontend.Variable(14)
+var VerifyBitwiseXor7LogSize = 14
 
 type VerifyBitwiseXor7Claim struct {
 	LogSize frontend.Variable
@@ -93,7 +93,7 @@ func (c VerifyBitwiseXor7Component) Evaluate(sum m31.QM31, traces *Traces, rando
 // ║      Verify Bitwise XOR (8)      ║
 // ╚══════════════════════════════════╝
 
-var VerifyBitwiseXor8LogSize = frontend.Variable(16)
+var VerifyBitwiseXor8LogSize = 16
 
 type VerifyBitwiseXor8Claim struct {
 	LogSize frontend.Variable
@@ -135,7 +135,7 @@ func (c VerifyBitwiseXor8Component) Evaluate(sum m31.QM31, traces *Traces, rando
 // ║      Verify Bitwise XOR (9)      ║
 // ╚══════════════════════════════════╝
 
-var VerifyBitwiseXor9LogSize = frontend.Variable(18)
+var VerifyBitwiseXor9LogSize = 18
 
 type VerifyBitwiseXor9Claim struct {
 	LogSize frontend.Variable
@@ -177,7 +177,7 @@ func (c VerifyBitwiseXor9Component) Evaluate(sum m31.QM31, traces *Traces, rando
 // ║     Verify Bitwise XOR (12)      ║
 // ╚══════════════════════════════════╝
 
-var VerifyBitwiseXor12LogSize = frontend.Variable(20)
+var VerifyBitwiseXor12LogSize = 20
 
 type VerifyBitwiseXor12Claim struct {
 	LogSize frontend.Variable

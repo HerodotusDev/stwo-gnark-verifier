@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	addOpcodeTraceColumns       = 103
-	addOpcodeInteractionColumns = 20
+	AddOpcodeTraceColumns       = 103
+	AddOpcodeInteractionColumns = 20
 )
 
 type AddOpcodeClaim struct {
@@ -59,7 +59,7 @@ func NewAddOpcode(
 }
 
 func (c AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addOpcodeTraceColumns, addOpcodeInteractionColumns)
+	traceSampledValues, interactionSampledValues := traces.Take(AddOpcodeTraceColumns, AddOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
