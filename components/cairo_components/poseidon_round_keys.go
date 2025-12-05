@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -43,18 +42,17 @@ func NewPoseidonRoundKeys(
 	interactionClaim PoseidonRoundKeysInteractionClaim,
 ) PoseidonRoundKeysComponent {
 	columnSize := computeColumnSize(api, PoseidonRoundKeysLogSize)
-	columnSizeQM := m31.NewQM31FromM31(m31.NewM31Unchecked(columnSize))
 
 	keyColumns := make([]PreprocessedColumn, poseidonRoundKeysColumns)
 	for i := 0; i < poseidonRoundKeysColumns; i++ {
-		keyColumns[i] = NewPreprocessedColumnPoseidonRoundKeys(uints.NewU32(uint32(i)))
+		keyColumns[i] = NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(i))
 	}
 
 	return PoseidonRoundKeysComponent{
 		qm31:           qm31,
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
-		columnSizeInv:  qm31.Inverse(columnSizeQM),
+		columnSizeInv:  qm31.Inverse(columnSize),
 		vanishEvalInv:  vanishEvalInv,
 		seqColumn:      NewPreprocessedColumnSeq(PoseidonRoundKeysLogSize),
 		keyColumns:     keyColumns,

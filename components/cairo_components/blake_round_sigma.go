@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -60,7 +59,7 @@ func (c BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 	values := make([]m31.QM31, 1+16)
 	values[0] = traces.Get(NewPreprocessedColumnSeq(BlakeRoundSigmaLogSize))
 	for i := 0; i < 16; i++ {
-		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(uints.NewU32(uint32(i))))
+		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(frontend.Variable(i)))
 	}
 
 	// ╔══════════════════════════════════╗

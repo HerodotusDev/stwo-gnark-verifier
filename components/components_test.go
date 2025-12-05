@@ -88,16 +88,16 @@ func TestCairoComponentAtomicEvaluations(t *testing.T) {
 		newRangeCheck12Fixture(expectedSums["range_check_12"]),
 		newRangeCheck18Fixture(expectedSums["range_check_18"]),
 		newRangeCheck19Fixture(expectedSums["range_check_19"]),
-		newRangeCheck33333Fixture(expectedSums["range_check_33333"]),
-		newRangeCheck3663Fixture(expectedSums["range_check_3663"]),
-		newRangeCheck43Fixture(expectedSums["range_check_43"]),
-		newRangeCheck4444Fixture(expectedSums["range_check_4444"]),
-		newRangeCheck44Fixture(expectedSums["range_check_44"]),
-		newRangeCheck54Fixture(expectedSums["range_check_54"]),
+		newRangeCheck33333Fixture(expectedSums["range_check_3_3_3_3_3"]),
+		newRangeCheck3663Fixture(expectedSums["range_check_3_6_6_3"]),
+		newRangeCheck43Fixture(expectedSums["range_check_4_3"]),
+		newRangeCheck4444Fixture(expectedSums["range_check_4_4_4_4"]),
+		newRangeCheck44Fixture(expectedSums["range_check_4_4"]),
+		newRangeCheck54Fixture(expectedSums["range_check_5_4"]),
 		newRangeCheck6Fixture(expectedSums["range_check_6"]),
-		newRangeCheck725Fixture(expectedSums["range_check_725"]),
+		newRangeCheck725Fixture(expectedSums["range_check_7_2_5"]),
 		newRangeCheck8Fixture(expectedSums["range_check_8"]),
-		newRangeCheck99Fixture(expectedSums["range_check_99"]),
+		newRangeCheck99Fixture(expectedSums["range_check_9_9"]),
 		newRangeCheckBuiltin128Fixture(expectedSums["range_check_builtin_bits_128"]),
 		newRangeCheckBuiltin96Fixture(expectedSums["range_check_builtin_bits_96"]),
 		newRangeCheckFelt252Width27Fixture(expectedSums["range_check_felt_252_width_27"]),
@@ -1617,12 +1617,12 @@ func (f *pedersenPointsTableFixture) Build(ctx componentContext) componentUnderT
 func (f *pedersenPointsTableFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
 	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
 
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(frontend.Variable(uint32(23)))
+	seqColumn := cairo_components.NewPreprocessedColumnSeq(frontend.Variable(23))
 	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
 	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
 
 	for i := 0; i < 56; i++ {
-		column := cairo_components.NewPreprocessedColumnPedersenPoints(frontend.Variable(uint32(i)))
+		column := cairo_components.NewPreprocessedColumnPedersenPoints(frontend.Variable(i))
 		idx := locatePreprocessedColumnIndex(ctx.api, column)
 		preprocessed[idx] = []m31.QM31{qm31One.ToQM31()}
 	}
@@ -1798,12 +1798,12 @@ func (f *poseidonRoundKeysFixture) Build(ctx componentContext) componentUnderTes
 func (f *poseidonRoundKeysFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
 	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
 
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(frontend.Variable(uint32(6)))
+	seqColumn := cairo_components.NewPreprocessedColumnSeq(frontend.Variable(6))
 	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
 	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
 
 	for i := 0; i < 30; i++ {
-		column := cairo_components.NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(uint32(i)))
+		column := cairo_components.NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(i))
 		idx := locatePreprocessedColumnIndex(ctx.api, column)
 		preprocessed[idx] = []m31.QM31{qm31One.ToQM31()}
 	}
@@ -2227,7 +2227,7 @@ func (f *blakeRoundSigmaFixture) Name() string {
 func (f *blakeRoundSigmaFixture) Build(ctx componentContext) componentUnderTest {
 	lookup := ctx.qm31Chip.DummyInteractionElements(17)
 
-	claim := cairo_components.BlakeRoundSigmaClaim{}
+	claim := cairo_components.BlakeRoundSigmaClaim{LogSize: frontend.Variable(4)}
 	interactionClaim := cairo_components.BlakeRoundSigmaInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -2251,7 +2251,7 @@ func (f *blakeRoundSigmaFixture) SampledValues(ctx componentContext) ([][]m31.QM
 	}
 
 	setPreprocessed(cairo_components.NewPreprocessedColumnSeq(frontend.Variable(4)))
-	for i := uint32(0); i < 16; i++ {
+	for i := 0; i < 16; i++ {
 		setPreprocessed(cairo_components.NewPreprocessedColumnBlakeSigma(frontend.Variable(i)))
 	}
 
@@ -2390,7 +2390,7 @@ func (f *blakeRoundFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [
 	}
 
 	setPreprocessed(cairo_components.NewPreprocessedColumnSeq(frontend.Variable(4)))
-	for i := uint32(0); i < 16; i++ {
+	for i := 0; i < 16; i++ {
 		setPreprocessed(cairo_components.NewPreprocessedColumnBlakeSigma(frontend.Variable(i)))
 	}
 
@@ -2580,7 +2580,7 @@ func (f *verifyBitwiseXor12Fixture) Build(ctx componentContext) componentUnderTe
 
 func (f *verifyBitwiseXor12Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
 	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	for i := uint32(0); i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		column := cairo_components.NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(i))
 		index := locatePreprocessedColumnIndex(ctx.api, column)
 		preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
@@ -2738,7 +2738,7 @@ func (f *memoryAddressToIdFixture) ExpectedSum() qm31Literal {
 
 type lookupFixture struct {
 	name           string
-	logSize        uint32
+	logSize        int
 	interactionKey string
 	expectedSum    qm31Literal
 	builder        func(componentContext, m31.InteractionElements) componentUnderTest

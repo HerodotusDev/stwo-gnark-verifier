@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
@@ -46,7 +45,7 @@ func NewPedersenPointsTable(
 
 	pointColumns := make([]PreprocessedColumn, pedersenPointsTableColumns)
 	for i := 0; i < pedersenPointsTableColumns; i++ {
-		pointColumns[i] = NewPreprocessedColumnPedersenPoints(uints.NewU32(uint32(i)))
+		pointColumns[i] = NewPreprocessedColumnPedersenPoints(frontend.Variable(i))
 	}
 
 	return PedersenPointsTableComponent{

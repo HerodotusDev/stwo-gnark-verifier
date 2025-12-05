@@ -11,24 +11,23 @@ import (
 )
 
 var (
-	testLogupSumQM31 = m31.NewQM31Unchecked(138003185, 504981591, 1541318630, 538197314)
+	testLogupSumQM31         = m31.NewQM31Unchecked(913953402, 396624481, 864959838, 298024670)
+	logupSumClaim            variables.CairoClaim
+	logupSumInteractionClaim variables.CairoInteractionClaim
+	logupSumCircuitData      variables.CircuitData
 )
 
 // ╔══════════════════════════════════╗
 // ║         Logup Sum Test           ║
 // ╚══════════════════════════════════╝
 
-type logupSumCircuit struct {
-	Claim            variables.CairoClaim
-	InteractionClaim variables.CairoInteractionClaim
-	CircuitData      variables.CircuitData
-}
+type logupSumCircuit struct{}
 
 func (c *logupSumCircuit) Define(api frontend.API) error {
 	m31Chip := m31.NewM31Chip(api)
 	qm31Chip := m31.NewQM31Chip(m31Chip)
 
-	sum := LogupSum(qm31Chip, c.Claim, dummyInteractionLookupElements(qm31Chip), c.InteractionClaim, c.CircuitData)
+	sum := LogupSum(qm31Chip, logupSumClaim, dummyInteractionLookupElements(qm31Chip), logupSumInteractionClaim, logupSumCircuitData)
 	qm31Chip.AssertEqual(sum, testLogupSumQM31)
 	return nil
 }
@@ -41,17 +40,12 @@ func TestLogupSum(t *testing.T) {
 	}
 
 	proof, circuitData := variables.BuildProof(raw)
+	logupSumClaim = proof.Claim
+	logupSumInteractionClaim = proof.InteractionClaim
+	logupSumCircuitData = *circuitData
 
-	circuit := &logupSumCircuit{
-		Claim:            proof.Claim,
-		InteractionClaim: proof.InteractionClaim,
-		CircuitData:      *circuitData,
-	}
-	witness := &logupSumCircuit{
-		Claim:            proof.Claim,
-		InteractionClaim: proof.InteractionClaim,
-		CircuitData:      *circuitData,
-	}
+	circuit := &logupSumCircuit{}
+	witness := &logupSumCircuit{}
 
 	assert.CheckCircuit(circuit,
 		test.WithValidAssignment(witness),
