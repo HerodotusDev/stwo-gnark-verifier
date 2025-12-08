@@ -386,9 +386,21 @@ func BuildCircuitData(proofRaw *ProofRaw) CircuitData {
 	}
 	nColumnsPerLogSize[3][maxLogSize+1] += 4
 
+	// bounds length (number of unique log sizes)
+	uniqueLogSizes := make(map[int]struct{})
+	for _, tree := range nColumnsPerLogSize {
+		for logSize := range tree {
+			if logSize > 0 {
+				uniqueLogSizes[logSize] = struct{}{}
+			}
+		}
+	}
+	boundsLengthCount := len(uniqueLogSizes)
+
 	return CircuitData{
 		ComponentConfig:    componentConfig,
 		NColumnsPerLogSize: nColumnsPerLogSize,
+		BoundsLength:       boundsLengthCount,
 	}
 }
 

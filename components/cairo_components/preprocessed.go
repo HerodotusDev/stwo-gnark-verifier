@@ -1,8 +1,6 @@
 package cairo_components
 
 import (
-	"fmt"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/lookup/logderivlookup"
@@ -242,7 +240,6 @@ func NewPreprocessedSampledValues(api frontend.API, qm31 *m31.QM31Chip, preproce
 		default:
 			panic("preprocessed column has more than 1 sampled value")
 		}
-		fmt.Println("value[i]", values.Lookup(frontend.Variable(i))[0])
 	}
 
 	return PreprocessedSampledValues{

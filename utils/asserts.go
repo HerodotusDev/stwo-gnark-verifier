@@ -19,7 +19,7 @@ func AssertAscendingOrder(api frontend.API, l []frontend.Variable) {
 func AssertDescendingOrder(api frontend.API, l []frontend.Variable) {
 	cmp := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
 	for i := 1; i < len(l); i++ {
-		cmp.AssertIsLess(l[i], l[i-1])
+		cmp.AssertIsLessEq(l[i], l[i-1])
 	}
 }
 
