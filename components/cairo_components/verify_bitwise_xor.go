@@ -188,6 +188,7 @@ type VerifyBitwiseXor12InteractionClaim struct {
 }
 
 type VerifyBitwiseXor12Component struct {
+	api                 frontend.API
 	qm31                *m31.QM31Chip
 	interactionElements m31.InteractionElements
 	claimedSum          m31.QM31
@@ -208,6 +209,7 @@ func NewVerifyBitwiseXor12(
 	interactionClaim VerifyBitwiseXor12InteractionClaim,
 ) VerifyBitwiseXor12Component {
 	return VerifyBitwiseXor12Component{
+		api:                 api,
 		qm31:                qm31,
 		interactionElements: interactionElements,
 		claimedSum:          interactionClaim.ClaimedSum,
@@ -223,9 +225,9 @@ func (c VerifyBitwiseXor12Component) Evaluate(sum m31.QM31, traces *Traces, rand
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
 	bitwiseXor := []m31.QM31{
-		traces.Get(NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(0))),
-		traces.Get(NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(1))),
-		traces.Get(NewPreprocessedColumnBitwiseXor(frontend.Variable(10), frontend.Variable(2))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(c.api, frontend.Variable(10), frontend.Variable(0))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(c.api, frontend.Variable(10), frontend.Variable(1))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(c.api, frontend.Variable(10), frontend.Variable(2))),
 	}
 
 	// ╔══════════════════════════════════╗

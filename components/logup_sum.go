@@ -18,7 +18,7 @@ func LogupSum(
 	circuitData variables.CircuitData,
 ) m31.QM31 {
 	// Public data sum
-	sum := publicDataLogupSum(qm31Chip, elements, claim.PublicData, circuitData)
+	sum := publicDataLogupSum(qm31Chip, elements, claim.PublicData)
 
 	// Opcode sums
 	if circuitData.ComponentConfig[0] {
@@ -260,10 +260,9 @@ func publicDataLogupSum(
 	qm31Chip *m31.QM31Chip,
 	elements variables.CairoInteractionElements,
 	publicData variables.PublicData,
-	circuitData variables.CircuitData,
 ) m31.QM31 {
 	sum := qm31Chip.Zero()
-	entries := publicMemoryEntries(qm31Chip, publicData, circuitData)
+	entries := publicMemoryEntries(qm31Chip, publicData)
 
 	for _, entry := range entries {
 		address := m31.NewQM31FromM31(entry.Address)
@@ -298,13 +297,13 @@ func publicDataLogupSum(
 	return sum
 }
 
-func publicMemoryEntries(qm31Chip *m31.QM31Chip, publicData variables.PublicData, circuitData variables.CircuitData) []variables.PublicMemoryEntry {
+func publicMemoryEntries(qm31Chip *m31.QM31Chip, publicData variables.PublicData) []variables.PublicMemoryEntry {
 	m31Chip := qm31Chip.M31Chip()
 
 	programLen := len(publicData.PublicMemory.Program)
 	outputLen := len(publicData.PublicMemory.Output)
 	safeCallLen := len(publicData.PublicMemory.SafeCall)
-	segments := publicData.PublicMemory.PublicSegments.PresentSegments(circuitData)
+	segments := publicData.PublicMemory.PublicSegments.Segments()
 	requiredCapacity := programLen + outputLen + safeCallLen + len(segments)*2
 
 	entries := make([]variables.PublicMemoryEntry, 0, requiredCapacity)

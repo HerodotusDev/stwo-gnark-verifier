@@ -31,8 +31,8 @@ func NewRangeCheck43(
 		frontend.Variable(3),
 	}
 	preprocessed := []PreprocessedColumn{
-		NewPreprocessedColumnRangeCheck2(values, frontend.Variable(0)),
-		NewPreprocessedColumnRangeCheck2(values, frontend.Variable(1)),
+		NewPreprocessedColumnRangeCheck2(api, values, frontend.Variable(0)),
+		NewPreprocessedColumnRangeCheck2(api, values, frontend.Variable(1)),
 	}
 
 	return RangeCheck43Component{

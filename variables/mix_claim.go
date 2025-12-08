@@ -39,64 +39,124 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitDa
 
 	// Mix opcodes
 	if circuitData.ComponentConfig[0] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Add.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[1] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddSmall.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[2] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddAp.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[3] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AssertEq.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[4] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AssertEqImm.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[5] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AssertEqDoubleDeref.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[6] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Blake.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[7] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Call.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[8] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.CallRelImm.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[9] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Generic.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[10] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Jnz.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[11] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JnzTaken.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[12] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Jump.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[13] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JumpDoubleDeref.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[14] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JumpRel.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[15] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JumpRelImm.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[16] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Mul.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[17] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MulSmall.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[18] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Qm31.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 	if circuitData.ComponentConfig[19] {
+		ch.MixU64(uints.NewU64(1))
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Ret.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
 
 	// Mix verify instruction
@@ -111,14 +171,8 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitDa
 	if circuitData.ComponentConfig[22] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BlakeG.LogSize), uints.NewU32(0)})
 	}
-	if circuitData.ComponentConfig[23] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BlakeRoundSigma.LogSize), uints.NewU32(0)})
-	}
 	if circuitData.ComponentConfig[24] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.TripleXor32.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[25] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.VerifyBitwiseXor12.LogSize), uints.NewU32(0)})
 	}
 
 	// Mix builtins
@@ -148,9 +202,6 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitDa
 	if circuitData.ComponentConfig[33] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PartialEcMul.LogSize), uints.NewU32(0)})
 	}
-	if circuitData.ComponentConfig[34] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PedersenPointsTable.LogSize), uints.NewU32(0)})
-	}
 
 	// Mix poseidon context
 	if circuitData.ComponentConfig[35] {
@@ -161,9 +212,6 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitDa
 	}
 	if circuitData.ComponentConfig[37] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Cube252.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[38] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PoseidonRoundKeys.LogSize), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[39] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheckFelt252Width27.LogSize), uints.NewU32(0)})
@@ -180,63 +228,9 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitDa
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MemoryIDToBigSmall.LogSize), uints.NewU32(0)})
 	}
 
-	// Mix range checks
-	if circuitData.ComponentConfig[43] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC6.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[44] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC8.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[45] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC11.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[46] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC12.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[47] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC18.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[48] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC19.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[49] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC43.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[50] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC44.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[51] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC54.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[52] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC99.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[53] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC725.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[54] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC3663.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[55] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC4444.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[56] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RC33333.LogSize), uints.NewU32(0)})
-	}
+	// Mix range checks (never mixed)
 
-	// Mix verify bitwise XOR components
-	if circuitData.ComponentConfig[57] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.VerifyBitwiseXor4.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[58] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.VerifyBitwiseXor7.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[59] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.VerifyBitwiseXor8.LogSize), uints.NewU32(0)})
-	}
-	if circuitData.ComponentConfig[60] {
-		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.VerifyBitwiseXor9.LogSize), uints.NewU32(0)})
-	}
+	// Mix verify bitwise XOR components (same as RC)
 }
 
 // ╔══════════════════════════════════╗
@@ -273,26 +267,35 @@ func (memory PublicMemory) mixInto(ch *channel.Channel, uapi32 *uints.BinaryFiel
 
 func (ranges PublicSegmentRanges) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64], circuitData CircuitData) {
 	ranges.Output.mixInto(ch, uapi32, uapi64)
-	if circuitData.ComponentConfig[26] {
-		ranges.AddMod.mixInto(ch, uapi32, uapi64)
-	}
-	if circuitData.ComponentConfig[27] {
-		ranges.Bitwise.mixInto(ch, uapi32, uapi64)
-	}
-	if circuitData.ComponentConfig[28] {
-		ranges.MulMod.mixInto(ch, uapi32, uapi64)
-	}
-	if circuitData.ComponentConfig[29] {
+	if ranges.Pedersen != nil {
 		ranges.Pedersen.mixInto(ch, uapi32, uapi64)
 	}
-	if circuitData.ComponentConfig[30] {
+	if ranges.RangeCheck128 != nil {
+		ranges.RangeCheck128.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Ecdsa != nil {
+		ranges.Ecdsa.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Bitwise != nil {
+		ranges.Bitwise.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.EcOp != nil {
+		ranges.EcOp.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Keccak != nil {
+		ranges.Keccak.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Poseidon != nil {
 		ranges.Poseidon.mixInto(ch, uapi32, uapi64)
 	}
-	if circuitData.ComponentConfig[31] {
+	if ranges.RangeCheck96 != nil {
 		ranges.RangeCheck96.mixInto(ch, uapi32, uapi64)
 	}
-	if circuitData.ComponentConfig[32] {
-		ranges.RangeCheck128.mixInto(ch, uapi32, uapi64)
+	if ranges.AddMod != nil {
+		ranges.AddMod.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.MulMod != nil {
+		ranges.MulMod.mixInto(ch, uapi32, uapi64)
 	}
 }
 

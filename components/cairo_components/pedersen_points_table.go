@@ -22,6 +22,7 @@ type PedersenPointsTableInteractionClaim struct {
 }
 
 type PedersenPointsTableComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	lookupElements m31.InteractionElements
@@ -45,16 +46,17 @@ func NewPedersenPointsTable(
 
 	pointColumns := make([]PreprocessedColumn, pedersenPointsTableColumns)
 	for i := 0; i < pedersenPointsTableColumns; i++ {
-		pointColumns[i] = NewPreprocessedColumnPedersenPoints(frontend.Variable(i))
+		pointColumns[i] = NewPreprocessedColumnPedersenPoints(api, frontend.Variable(i))
 	}
 
 	return PedersenPointsTableComponent{
+		api:            api,
 		qm31:           qm31,
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  qm31.Inverse(columnSize),
 		vanishEvalInv:  vanishEvalInv,
-		seqColumn:      NewPreprocessedColumnSeq(PedersenPointsTableLogSize),
+		seqColumn:      NewPreprocessedColumnSeq(api, PedersenPointsTableLogSize),
 		pointColumns:   pointColumns,
 	}
 }
@@ -65,7 +67,7 @@ func (c PedersenPointsTableComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(c.seqColumn)
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.seqColumn.id))
 
 	values := make([]m31.QM31, 1+len(c.pointColumns))
 	values[0] = seq

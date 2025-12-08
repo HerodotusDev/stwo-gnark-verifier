@@ -28,6 +28,7 @@ type PedersenBuiltinInteractionClaim struct {
 }
 
 type PedersenBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	rangeCheck54Elements      m31.InteractionElements
@@ -58,6 +59,7 @@ func NewPedersenBuiltin(
 	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return PedersenBuiltinComponent{
+		api:                       api,
 		qm31:                      qm31Chip,
 		rangeCheck54Elements:      rangeCheck54Elements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -80,7 +82,7 @@ func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := NewPreprocessedColumnSeq(c.logSize)
+	seqColumn := NewPreprocessedColumnSeq(c.api, c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0

@@ -21,6 +21,7 @@ type BlakeRoundSigmaInteractionClaim struct {
 }
 
 type BlakeRoundSigmaComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	lookupElements m31.InteractionElements
@@ -42,6 +43,7 @@ func NewBlakeRoundSigma(
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	return BlakeRoundSigmaComponent{
+		api:            api,
 		qm31:           qm31,
 		lookupElements: lookup,
 		claimedSum:     interactionClaim.ClaimedSum,
@@ -57,9 +59,9 @@ func (c BlakeRoundSigmaComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
 	values := make([]m31.QM31, 1+16)
-	values[0] = traces.Get(NewPreprocessedColumnSeq(BlakeRoundSigmaLogSize))
+	values[0] = traces.Get(NewPreprocessedColumnSeq(c.api, BlakeRoundSigmaLogSize))
 	for i := 0; i < 16; i++ {
-		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(frontend.Variable(i)))
+		values[i+1] = traces.Get(NewPreprocessedColumnBlakeSigma(c.api, frontend.Variable(i)))
 	}
 
 	// ╔══════════════════════════════════╗

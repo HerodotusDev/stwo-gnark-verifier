@@ -20,6 +20,7 @@ type BlakeCompressOpcodeInteractionClaim struct {
 }
 
 type BlakeCompressOpcodeComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
@@ -56,6 +57,7 @@ func NewBlakeCompressOpcode(
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	return BlakeCompressOpcodeComponent{
+		api:                       api,
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -85,7 +87,7 @@ func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 	}
 
 	// Preprocessed Trace
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	pc := getTrace(0)
 	ap := getTrace(1)

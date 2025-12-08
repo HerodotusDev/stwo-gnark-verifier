@@ -33,7 +33,7 @@ func NewRangeCheck6(
 			interactionElements,
 			interactionClaim.ClaimedSum,
 			RangeCheck6LogSize,
-			[]PreprocessedColumn{NewPreprocessedColumnSeq(RangeCheck6LogSize)},
+			[]PreprocessedColumn{NewPreprocessedColumnSeq(api, RangeCheck6LogSize)},
 			vanishEvalInv,
 		),
 	}

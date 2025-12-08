@@ -21,6 +21,7 @@ type PoseidonBuiltinInteractionClaim struct {
 }
 
 type PoseidonBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	memoryAddressToIdElements         m31.InteractionElements
@@ -59,6 +60,7 @@ func NewPoseidonBuiltin(
 	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return PoseidonBuiltinComponent{
+		api:                               api,
 		qm31:                              qm31Chip,
 		memoryAddressToIdElements:         memoryAddressToIdElements,
 		memoryIdToBigElements:             memoryIdToBigElements,
@@ -93,7 +95,7 @@ func (c PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := NewPreprocessedColumnSeq(c.logSize)
+	seqColumn := NewPreprocessedColumnSeq(c.api, c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0

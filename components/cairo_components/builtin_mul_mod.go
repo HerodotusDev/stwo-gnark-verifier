@@ -21,6 +21,7 @@ type MulModBuiltinInteractionClaim struct {
 }
 
 type MulModBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	logSize frontend.Variable
@@ -70,6 +71,7 @@ func NewMulModBuiltin(
 	)
 
 	return MulModBuiltinComponent{
+		api:                    api,
 		qm31:                   qm31,
 		logSize:                claim.LogSize,
 		memoryAddressToIdElems: memoryAddressElements,
@@ -89,7 +91,7 @@ func (c MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 
 	trace := traceSampledValues
 
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	get := func(idx int) m31.QM31 {
 		return trace[idx][0]

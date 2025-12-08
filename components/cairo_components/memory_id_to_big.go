@@ -27,6 +27,7 @@ type MemoryIdToBigBigInteractionClaim struct {
 }
 
 type MemoryIdToBigBigComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	lookupElements     m31.InteractionElements
@@ -56,6 +57,7 @@ func NewMemoryIdToBigBigComponent(
 	seqAddend := qm31.Add(qm31Const(memoryIdToBigSeqShift), offsetQM)
 
 	return MemoryIdToBigBigComponent{
+		api:                api,
 		qm31:               qm31,
 		lookupElements:     lookupElements,
 		rangeCheckElements: rangeCheckElements,
@@ -73,7 +75,7 @@ func (c MemoryIdToBigBigComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 	seqWithOffset := c.qm31.Add(seq, c.seqAddend)
 
 	// ╔══════════════════════════════════╗
@@ -180,6 +182,7 @@ type MemoryIdToBigSmallInteractionClaim struct {
 }
 
 type MemoryIdToBigSmallComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	lookupElements     m31.InteractionElements
@@ -205,6 +208,7 @@ func NewMemoryIdToBigSmallComponent(
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	return MemoryIdToBigSmallComponent{
+		api:                api,
 		qm31:               qm31,
 		lookupElements:     lookupElements,
 		rangeCheckElements: rangeCheckElements,
@@ -221,7 +225,7 @@ func (c MemoryIdToBigSmallComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

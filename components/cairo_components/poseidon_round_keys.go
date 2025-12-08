@@ -22,6 +22,7 @@ type PoseidonRoundKeysInteractionClaim struct {
 }
 
 type PoseidonRoundKeysComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	lookupElements m31.InteractionElements
@@ -45,16 +46,17 @@ func NewPoseidonRoundKeys(
 
 	keyColumns := make([]PreprocessedColumn, poseidonRoundKeysColumns)
 	for i := 0; i < poseidonRoundKeysColumns; i++ {
-		keyColumns[i] = NewPreprocessedColumnPoseidonRoundKeys(frontend.Variable(i))
+		keyColumns[i] = NewPreprocessedColumnPoseidonRoundKeys(api, frontend.Variable(i))
 	}
 
 	return PoseidonRoundKeysComponent{
+		api:            api,
 		qm31:           qm31,
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  qm31.Inverse(columnSize),
 		vanishEvalInv:  vanishEvalInv,
-		seqColumn:      NewPreprocessedColumnSeq(PoseidonRoundKeysLogSize),
+		seqColumn:      NewPreprocessedColumnSeq(api, PoseidonRoundKeysLogSize),
 		keyColumns:     keyColumns,
 	}
 }

@@ -16,6 +16,7 @@ type RangeCheck33333InteractionClaim struct {
 var RangeCheck33333LogSize = 15
 
 type RangeCheck33333Component struct {
+	api   frontend.API
 	inner lookupConstraintComponent
 }
 
@@ -34,14 +35,15 @@ func NewRangeCheck33333(
 		frontend.Variable(3),
 	}
 	preprocessed := []PreprocessedColumn{
-		NewPreprocessedColumnRangeCheck5(values, frontend.Variable(0)),
-		NewPreprocessedColumnRangeCheck5(values, frontend.Variable(1)),
-		NewPreprocessedColumnRangeCheck5(values, frontend.Variable(2)),
-		NewPreprocessedColumnRangeCheck5(values, frontend.Variable(3)),
-		NewPreprocessedColumnRangeCheck5(values, frontend.Variable(4)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(0)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(1)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(2)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(3)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(4)),
 	}
 
 	return RangeCheck33333Component{
+		api: api,
 		inner: newLookupConstraintComponent(
 			api,
 			qm31,

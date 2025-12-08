@@ -21,6 +21,7 @@ type AddModBuiltinInteractionClaim struct {
 }
 
 type AddModBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	logSize frontend.Variable
@@ -51,6 +52,7 @@ func NewAddModBuiltin(
 	)
 
 	return AddModBuiltinComponent{
+		api:                    api,
 		qm31:                   qm31,
 		logSize:                claim.LogSize,
 		memoryAddressToIdElems: memoryAddressElements,
@@ -68,7 +70,7 @@ func (c AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

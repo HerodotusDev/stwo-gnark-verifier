@@ -21,6 +21,7 @@ type RangeCheck96BuiltinInteractionClaim struct {
 }
 
 type RangeCheck96BuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	logSize frontend.Variable
@@ -53,6 +54,7 @@ func NewRangeCheck96Builtin(
 	)
 
 	return RangeCheck96BuiltinComponent{
+		api:                       api,
 		qm31:                      qm31,
 		logSize:                   claim.LogSize,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -71,7 +73,7 @@ func (c RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seqColumn := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 	input := c.qm31.Add(c.segmentStart, seqColumn)
 
 	// ╔══════════════════════════════════╗

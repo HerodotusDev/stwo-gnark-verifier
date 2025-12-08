@@ -6,6 +6,8 @@ import (
 
 	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/conversion"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 func init() {
@@ -719,4 +721,64 @@ func (q *QM31Chip) Select(condition frontend.Variable, trueValue, falseValue QM3
 		BReal: NewM31Unchecked(q.m31.api.Select(condition, trueValue.BReal.Limb, falseValue.BReal.Limb)),
 		BImag: NewM31Unchecked(q.m31.api.Select(condition, trueValue.BImag.Limb, falseValue.BImag.Limb)),
 	}
+}
+
+func (q *QM31Chip) DecodeNative(value frontend.Variable) QM31 {
+	bytes, err := conversion.NativeToBytes(q.m31.api, value)
+	if err != nil {
+		panic(err)
+	}
+	nBytes := len(bytes)
+	AReal, err := conversion.BytesToNative(q.m31.api, bytes[nBytes-4:])
+	if err != nil {
+		panic(err)
+	}
+	AImag, err := conversion.BytesToNative(q.m31.api, bytes[nBytes-8:nBytes-4])
+	if err != nil {
+		panic(err)
+	}
+	BReal, err := conversion.BytesToNative(q.m31.api, bytes[nBytes-12:nBytes-8])
+	if err != nil {
+		panic(err)
+	}
+	BImag, err := conversion.BytesToNative(q.m31.api, bytes[nBytes-16:nBytes-12])
+	if err != nil {
+		panic(err)
+	}
+	return QM31{
+		AReal: NewM31Unchecked(AReal),
+		AImag: NewM31Unchecked(AImag),
+		BReal: NewM31Unchecked(BReal),
+		BImag: NewM31Unchecked(BImag),
+	}
+}
+
+func (q *QM31Chip) EncodeNative(value QM31) frontend.Variable {
+	ARealBytes, err := conversion.NativeToBytes(q.m31.api, value.AReal.Limb)
+	if err != nil {
+		panic(err)
+	}
+	AImagBytes, err := conversion.NativeToBytes(q.m31.api, value.AImag.Limb)
+	if err != nil {
+		panic(err)
+	}
+	BRealBytes, err := conversion.NativeToBytes(q.m31.api, value.BReal.Limb)
+	if err != nil {
+		panic(err)
+	}
+	BImagBytes, err := conversion.NativeToBytes(q.m31.api, value.BImag.Limb)
+	if err != nil {
+		panic(err)
+	}
+	bytes := make([]uints.U8, 16)
+	copy(bytes[0:4], BImagBytes[len(BImagBytes)-4:])
+	copy(bytes[4:8], BRealBytes[len(BRealBytes)-4:])
+	copy(bytes[8:12], AImagBytes[len(AImagBytes)-4:])
+	copy(bytes[12:16], ARealBytes[len(ARealBytes)-4:])
+
+	encodedValue, err := conversion.BytesToNative(q.m31.api, bytes)
+	if err != nil {
+		panic(err)
+	}
+	return encodedValue
 }

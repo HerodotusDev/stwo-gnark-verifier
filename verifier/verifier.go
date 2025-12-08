@@ -55,7 +55,7 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 
 func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, circuitData variables.CircuitData) {
 	// Mix PCS configuration into the channel
-	pcsConfig.MixInto(c.channel)
+	pcsConfig.MixInto(c.channel, c.uapi)
 
 	// Initialize commitment verifier
 	commitmentVerifier := fri.NewCommitmentSchemeVerifier(c.api, c.uapi, pcsConfig, circuitData)

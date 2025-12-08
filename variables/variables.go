@@ -341,32 +341,21 @@ type SegmentPointer struct {
 	Value Felt252Value
 }
 
-// PresentSegments returns the present segments in the public memory.
-func (p *PublicSegmentRanges) PresentSegments(circuitData CircuitData) []SegmentRange {
-	segments := make([]SegmentRange, 0)
-	segments = append(segments, p.Output)
-	if circuitData.ComponentConfig[26] {
-		segments = append(segments, *p.AddMod)
+// Segments returns the present segments in the public memory.
+func (p *PublicSegmentRanges) Segments() []SegmentRange {
+	return []SegmentRange{
+		p.Output,
+		*p.Pedersen,
+		*p.RangeCheck128,
+		*p.Ecdsa,
+		*p.Bitwise,
+		*p.EcOp,
+		*p.Keccak,
+		*p.Poseidon,
+		*p.RangeCheck96,
+		*p.AddMod,
+		*p.MulMod,
 	}
-	if circuitData.ComponentConfig[27] {
-		segments = append(segments, *p.Bitwise)
-	}
-	if circuitData.ComponentConfig[28] {
-		segments = append(segments, *p.MulMod)
-	}
-	if circuitData.ComponentConfig[29] {
-		segments = append(segments, *p.Pedersen)
-	}
-	if circuitData.ComponentConfig[30] {
-		segments = append(segments, *p.Poseidon)
-	}
-	if circuitData.ComponentConfig[31] {
-		segments = append(segments, *p.RangeCheck96)
-	}
-	if circuitData.ComponentConfig[32] {
-		segments = append(segments, *p.RangeCheck128)
-	}
-	return segments
 }
 
 // ╔══════════════════════════════════╗

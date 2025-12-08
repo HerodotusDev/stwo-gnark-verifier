@@ -6,7 +6,6 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 // A chip for OODS
@@ -388,8 +387,86 @@ func NewComponents(
 		)
 	}
 
-	// Builtin components
+	// Verify instruction
 	if circuitData.ComponentConfig[20] {
+		comp.verifyInstruction = cairo_components.NewVerifyInstruction(
+			api,
+			qm31Chip,
+			cairoInteractionElements.RangeChecks.RC725,
+			cairoInteractionElements.RangeChecks.RC43,
+			cairoInteractionElements.MemoryAddressToID,
+			cairoInteractionElements.MemoryIDToValue,
+			cairoInteractionElements.VerifyInstruction,
+			circleChip.CanonicVanishingInverse(claim.VerifyInstruction.LogSize, oodsPoint),
+			claim.VerifyInstruction,
+			interactionClaim.VerifyInstruction,
+		)
+	}
+
+	// Blake context components
+	if circuitData.ComponentConfig[21] {
+		comp.blakeG = cairo_components.NewBlakeG(
+			api,
+			qm31Chip,
+			cairoInteractionElements.VerifyBitwiseXor8,
+			cairoInteractionElements.VerifyBitwiseXor12,
+			cairoInteractionElements.VerifyBitwiseXor4,
+			cairoInteractionElements.VerifyBitwiseXor7,
+			cairoInteractionElements.VerifyBitwiseXor9,
+			cairoInteractionElements.BlakeG,
+			circleChip.CanonicVanishingInverse(claim.BlakeG.LogSize, oodsPoint),
+			claim.BlakeG,
+			interactionClaim.BlakeG,
+		)
+	}
+	if circuitData.ComponentConfig[22] {
+		comp.blakeRound = cairo_components.NewBlakeRound(
+			api,
+			qm31Chip,
+			cairoInteractionElements.BlakeRoundSigma,
+			cairoInteractionElements.RangeChecks.RC725,
+			cairoInteractionElements.MemoryAddressToID,
+			cairoInteractionElements.MemoryIDToValue,
+			cairoInteractionElements.BlakeG,
+			cairoInteractionElements.BlakeRound,
+			circleChip.CanonicVanishingInverse(claim.BlakeRound.LogSize, oodsPoint),
+			claim.BlakeRound,
+			interactionClaim.BlakeRound,
+		)
+	}
+	if circuitData.ComponentConfig[23] {
+		comp.blakeRoundSigma = cairo_components.NewBlakeRoundSigma(
+			api,
+			qm31Chip,
+			cairoInteractionElements.BlakeRoundSigma,
+			circleChip.CanonicVanishingInverse(frontend.Variable(4), oodsPoint),
+			claim.BlakeRoundSigma,
+			interactionClaim.BlakeRoundSigma,
+		)
+	}
+	if circuitData.ComponentConfig[24] {
+		comp.tripleXor32 = cairo_components.NewTripleXor32(
+			api,
+			qm31Chip,
+			cairoInteractionElements.VerifyBitwiseXor8,
+			cairoInteractionElements.TripleXor32,
+			circleChip.CanonicVanishingInverse(claim.TripleXor32.LogSize, oodsPoint),
+			claim.TripleXor32,
+			interactionClaim.TripleXor32,
+		)
+	}
+	if circuitData.ComponentConfig[25] {
+		comp.verifyBitwiseXor12 = cairo_components.NewVerifyBitwiseXor12(
+			api,
+			qm31Chip,
+			cairoInteractionElements.VerifyBitwiseXor12,
+			circleChip.CanonicVanishingInverse(frontend.Variable(20), oodsPoint),
+			interactionClaim.VerifyBitwiseXor12,
+		)
+	}
+
+	// Builtin components
+	if circuitData.ComponentConfig[26] {
 		comp.addModBuiltin = cairo_components.NewAddModBuiltin(
 			api,
 			qm31Chip,
@@ -401,7 +478,7 @@ func NewComponents(
 		)
 	}
 
-	if circuitData.ComponentConfig[21] {
+	if circuitData.ComponentConfig[27] {
 		comp.bitwiseBuiltin = cairo_components.NewBitwiseBuiltin(
 			api,
 			qm31Chip,
@@ -414,7 +491,7 @@ func NewComponents(
 		)
 	}
 
-	if circuitData.ComponentConfig[22] {
+	if circuitData.ComponentConfig[28] {
 		comp.mulModBuiltin = cairo_components.NewMulModBuiltin(
 			api,
 			qm31Chip,
@@ -429,7 +506,7 @@ func NewComponents(
 		)
 	}
 
-	if circuitData.ComponentConfig[23] {
+	if circuitData.ComponentConfig[29] {
 		comp.pedersenBuiltin = cairo_components.NewPedersenBuiltin(
 			api,
 			qm31Chip,
@@ -444,7 +521,7 @@ func NewComponents(
 		)
 	}
 
-	if circuitData.ComponentConfig[24] {
+	if circuitData.ComponentConfig[30] {
 		comp.poseidonBuiltin = cairo_components.NewPoseidonBuiltin(
 			api,
 			qm31Chip,
@@ -463,7 +540,7 @@ func NewComponents(
 		)
 	}
 
-	if circuitData.ComponentConfig[25] {
+	if circuitData.ComponentConfig[31] {
 		comp.rangeCheckBuiltin96 = cairo_components.NewRangeCheck96Builtin(
 			api,
 			qm31Chip,
@@ -476,7 +553,7 @@ func NewComponents(
 		)
 	}
 
-	if circuitData.ComponentConfig[26] {
+	if circuitData.ComponentConfig[32] {
 		comp.rangeCheckBuiltin128 = cairo_components.NewRangeCheck128Builtin(
 			api,
 			qm31Chip,
@@ -488,105 +565,8 @@ func NewComponents(
 		)
 	}
 
-	// Memory ID components
-	if circuitData.ComponentConfig[27] {
-		comp.memoryAddressToId = cairo_components.NewMemoryAddressToId(
-			api,
-			qm31Chip,
-			cairoInteractionElements.MemoryAddressToID,
-			claim.MemoryAddressToID,
-			interactionClaim.MemoryAddressToID,
-			circleChip.CanonicVanishingInverse(claim.MemoryAddressToID.LogSize, oodsPoint),
-		)
-	}
-	if circuitData.ComponentConfig[28] {
-		comp.memoryIdToBigBigComponents = cairo_components.NewMemoryIdToBigBigComponent(
-			api,
-			qm31Chip,
-			cairoInteractionElements.MemoryIDToValue,
-			cairoInteractionElements.RangeChecks.RC99,
-			circleChip.CanonicVanishingInverse(claim.MemoryIDToBigBig.LogSize, oodsPoint),
-			claim.MemoryIDToBigBig,
-			interactionClaim.MemoryIDToBigBig,
-		)
-	}
-
-	if circuitData.ComponentConfig[29] {
-		comp.memoryIdToBigSmallComponent = cairo_components.NewMemoryIdToBigSmallComponent(
-			api,
-			qm31Chip,
-			cairoInteractionElements.MemoryIDToValue,
-			cairoInteractionElements.RangeChecks.RC99,
-			circleChip.CanonicVanishingInverse(claim.MemoryIDToBigSmall.LogSize, oodsPoint),
-			claim.MemoryIDToBigSmall,
-			interactionClaim.MemoryIDToBigSmall,
-		)
-	}
-
-	// Blake context components
-	if circuitData.ComponentConfig[30] {
-		comp.blakeG = cairo_components.NewBlakeG(
-			api,
-			qm31Chip,
-			cairoInteractionElements.VerifyBitwiseXor8,
-			cairoInteractionElements.VerifyBitwiseXor12,
-			cairoInteractionElements.VerifyBitwiseXor4,
-			cairoInteractionElements.VerifyBitwiseXor7,
-			cairoInteractionElements.VerifyBitwiseXor9,
-			cairoInteractionElements.BlakeG,
-			circleChip.CanonicVanishingInverse(claim.BlakeG.LogSize, oodsPoint),
-			claim.BlakeG,
-			interactionClaim.BlakeG,
-		)
-	}
-	if circuitData.ComponentConfig[31] {
-		comp.blakeRound = cairo_components.NewBlakeRound(
-			api,
-			qm31Chip,
-			cairoInteractionElements.BlakeRoundSigma,
-			cairoInteractionElements.RangeChecks.RC725,
-			cairoInteractionElements.MemoryAddressToID,
-			cairoInteractionElements.MemoryIDToValue,
-			cairoInteractionElements.BlakeG,
-			cairoInteractionElements.BlakeRound,
-			circleChip.CanonicVanishingInverse(claim.BlakeRound.LogSize, oodsPoint),
-			claim.BlakeRound,
-			interactionClaim.BlakeRound,
-		)
-	}
-	if circuitData.ComponentConfig[32] {
-		comp.blakeRoundSigma = cairo_components.NewBlakeRoundSigma(
-			api,
-			qm31Chip,
-			cairoInteractionElements.BlakeRoundSigma,
-			circleChip.CanonicVanishingInverse(uints.NewU32(4), oodsPoint),
-			claim.BlakeRoundSigma,
-			interactionClaim.BlakeRoundSigma,
-		)
-	}
-	if circuitData.ComponentConfig[33] {
-		comp.tripleXor32 = cairo_components.NewTripleXor32(
-			api,
-			qm31Chip,
-			cairoInteractionElements.VerifyBitwiseXor8,
-			cairoInteractionElements.TripleXor32,
-			circleChip.CanonicVanishingInverse(claim.TripleXor32.LogSize, oodsPoint),
-			claim.TripleXor32,
-			interactionClaim.TripleXor32,
-		)
-	}
-	if circuitData.ComponentConfig[34] {
-		comp.verifyBitwiseXor12 = cairo_components.NewVerifyBitwiseXor12(
-			api,
-			qm31Chip,
-			cairoInteractionElements.VerifyBitwiseXor12,
-			circleChip.CanonicVanishingInverse(uints.NewU32(20), oodsPoint),
-			interactionClaim.VerifyBitwiseXor12,
-		)
-	}
-
 	// Pedersen context components
-	if circuitData.ComponentConfig[35] {
+	if circuitData.ComponentConfig[33] {
 		comp.partialEcMul = cairo_components.NewPartialEcMul(
 			api,
 			qm31Chip,
@@ -599,18 +579,18 @@ func NewComponents(
 			interactionClaim.PartialEcMul,
 		)
 	}
-	if circuitData.ComponentConfig[36] {
+	if circuitData.ComponentConfig[34] {
 		comp.pedersenPointsTable = cairo_components.NewPedersenPointsTable(
 			api,
 			qm31Chip,
 			cairoInteractionElements.PedersenPointsTable,
-			circleChip.CanonicVanishingInverse(uints.NewU32(23), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(23), oodsPoint),
 			interactionClaim.PedersenPointsTable,
 		)
 	}
 
 	// Poseidon context components
-	if circuitData.ComponentConfig[37] {
+	if circuitData.ComponentConfig[35] {
 		comp.poseidon3PartialRoundsChain = cairo_components.NewPoseidon3PartialRoundsChain(
 			api,
 			qm31Chip,
@@ -625,7 +605,7 @@ func NewComponents(
 			interactionClaim.Poseidon3PartialRoundsChain,
 		)
 	}
-	if circuitData.ComponentConfig[38] {
+	if circuitData.ComponentConfig[36] {
 		comp.poseidonFullRoundChain = cairo_components.NewPoseidonFullRoundChain(
 			api,
 			qm31Chip,
@@ -638,7 +618,7 @@ func NewComponents(
 			interactionClaim.PoseidonFullRoundChain,
 		)
 	}
-	if circuitData.ComponentConfig[39] {
+	if circuitData.ComponentConfig[37] {
 		comp.cube252 = cairo_components.NewCube252(
 			api,
 			qm31Chip,
@@ -650,16 +630,16 @@ func NewComponents(
 			interactionClaim.Cube252,
 		)
 	}
-	if circuitData.ComponentConfig[40] {
+	if circuitData.ComponentConfig[38] {
 		comp.poseidonRoundKeys = cairo_components.NewPoseidonRoundKeys(
 			api,
 			qm31Chip,
 			cairoInteractionElements.PoseidonRoundKeys,
-			circleChip.CanonicVanishingInverse(uints.NewU32(6), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(6), oodsPoint),
 			interactionClaim.PoseidonRoundKeys,
 		)
 	}
-	if circuitData.ComponentConfig[41] {
+	if circuitData.ComponentConfig[39] {
 		comp.rangeCheckFelt252Width27 = cairo_components.NewRangeCheckFelt252Width27(
 			api,
 			qm31Chip,
@@ -672,185 +652,204 @@ func NewComponents(
 		)
 	}
 
-	// Range check components
+	// Memory ID components
+	if circuitData.ComponentConfig[40] {
+		comp.memoryAddressToId = cairo_components.NewMemoryAddressToId(
+			api,
+			qm31Chip,
+			cairoInteractionElements.MemoryAddressToID,
+			claim.MemoryAddressToID,
+			interactionClaim.MemoryAddressToID,
+			circleChip.CanonicVanishingInverse(claim.MemoryAddressToID.LogSize, oodsPoint),
+		)
+	}
+	if circuitData.ComponentConfig[41] {
+		comp.memoryIdToBigBigComponents = cairo_components.NewMemoryIdToBigBigComponent(
+			api,
+			qm31Chip,
+			cairoInteractionElements.MemoryIDToValue,
+			cairoInteractionElements.RangeChecks.RC99,
+			circleChip.CanonicVanishingInverse(claim.MemoryIDToBigBig.LogSize, oodsPoint),
+			claim.MemoryIDToBigBig,
+			interactionClaim.MemoryIDToBigBig,
+		)
+	}
+
 	if circuitData.ComponentConfig[42] {
+		comp.memoryIdToBigSmallComponent = cairo_components.NewMemoryIdToBigSmallComponent(
+			api,
+			qm31Chip,
+			cairoInteractionElements.MemoryIDToValue,
+			cairoInteractionElements.RangeChecks.RC99,
+			circleChip.CanonicVanishingInverse(claim.MemoryIDToBigSmall.LogSize, oodsPoint),
+			claim.MemoryIDToBigSmall,
+			interactionClaim.MemoryIDToBigSmall,
+		)
+	}
+
+	// Range check components
+	if circuitData.ComponentConfig[43] {
 		comp.rangeCheck6 = cairo_components.NewRangeCheck6(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC6,
-			circleChip.CanonicVanishingInverse(uints.NewU32(6), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(6), oodsPoint),
 			interactionClaim.RC6,
 		)
 	}
-	if circuitData.ComponentConfig[43] {
+	if circuitData.ComponentConfig[44] {
 		comp.rangeCheck8 = cairo_components.NewRangeCheck8(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC8,
-			circleChip.CanonicVanishingInverse(uints.NewU32(8), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(8), oodsPoint),
 			interactionClaim.RC8,
 		)
 	}
-	if circuitData.ComponentConfig[44] {
+	if circuitData.ComponentConfig[45] {
 		comp.rangeCheck11 = cairo_components.NewRangeCheck11(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC11,
-			circleChip.CanonicVanishingInverse(uints.NewU32(11), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(11), oodsPoint),
 			interactionClaim.RC11,
 		)
 	}
-	if circuitData.ComponentConfig[45] {
+	if circuitData.ComponentConfig[46] {
 		comp.rangeCheck12 = cairo_components.NewRangeCheck12(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC12,
-			circleChip.CanonicVanishingInverse(uints.NewU32(12), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(12), oodsPoint),
 			interactionClaim.RC12,
 		)
 	}
-	if circuitData.ComponentConfig[46] {
+	if circuitData.ComponentConfig[47] {
 		comp.rangeCheck18 = cairo_components.NewRangeCheck18(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC18,
-			circleChip.CanonicVanishingInverse(uints.NewU32(18), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(18), oodsPoint),
 			interactionClaim.RC18,
 		)
 	}
-	if circuitData.ComponentConfig[47] {
+	if circuitData.ComponentConfig[48] {
 		comp.rangeCheck19 = cairo_components.NewRangeCheck19(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC19,
-			circleChip.CanonicVanishingInverse(uints.NewU32(19), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(19), oodsPoint),
 			interactionClaim.RC19,
 		)
 	}
-	if circuitData.ComponentConfig[48] {
+	if circuitData.ComponentConfig[49] {
 		comp.rangeCheck43 = cairo_components.NewRangeCheck43(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC43,
-			circleChip.CanonicVanishingInverse(uints.NewU32(7), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(7), oodsPoint),
 			interactionClaim.RC43,
 		)
 	}
-	if circuitData.ComponentConfig[49] {
+	if circuitData.ComponentConfig[50] {
 		comp.rangeCheck44 = cairo_components.NewRangeCheck44(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC44,
-			circleChip.CanonicVanishingInverse(uints.NewU32(8), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(8), oodsPoint),
 			interactionClaim.RC44,
 		)
 	}
-	if circuitData.ComponentConfig[50] {
+	if circuitData.ComponentConfig[51] {
 		comp.rangeCheck54 = cairo_components.NewRangeCheck54(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC54,
-			circleChip.CanonicVanishingInverse(uints.NewU32(9), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(9), oodsPoint),
 			interactionClaim.RC54,
 		)
 	}
-	if circuitData.ComponentConfig[51] {
+	if circuitData.ComponentConfig[52] {
 		comp.rangeCheck99 = cairo_components.NewRangeCheck99(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC99,
-			circleChip.CanonicVanishingInverse(uints.NewU32(18), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(18), oodsPoint),
 			interactionClaim.RC99,
 		)
 	}
-	if circuitData.ComponentConfig[52] {
+	if circuitData.ComponentConfig[53] {
 		comp.rangeCheck725 = cairo_components.NewRangeCheck725(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC725,
-			circleChip.CanonicVanishingInverse(uints.NewU32(14), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(14), oodsPoint),
 			interactionClaim.RC725,
 		)
 	}
-	if circuitData.ComponentConfig[53] {
+	if circuitData.ComponentConfig[54] {
 		comp.rangeCheck3663 = cairo_components.NewRangeCheck3663(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC3663,
-			circleChip.CanonicVanishingInverse(uints.NewU32(18), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(18), oodsPoint),
 			interactionClaim.RC3663,
 		)
 	}
-	if circuitData.ComponentConfig[54] {
+	if circuitData.ComponentConfig[55] {
 		comp.rangeCheck4444 = cairo_components.NewRangeCheck4444(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC4444,
-			circleChip.CanonicVanishingInverse(uints.NewU32(16), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(16), oodsPoint),
 			interactionClaim.RC4444,
 		)
 	}
-	if circuitData.ComponentConfig[55] {
+	if circuitData.ComponentConfig[56] {
 		comp.rangeCheck33333 = cairo_components.NewRangeCheck33333(
 			api,
 			qm31Chip,
 			cairoInteractionElements.RangeChecks.RC33333,
-			circleChip.CanonicVanishingInverse(uints.NewU32(15), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(15), oodsPoint),
 			interactionClaim.RC33333,
 		)
 	}
 
 	// Verify bitwise xor components
-	if circuitData.ComponentConfig[56] {
+	if circuitData.ComponentConfig[57] {
 		comp.verifyBitwiseXor4 = cairo_components.NewVerifyBitwiseXor4(
 			api,
 			qm31Chip,
 			cairoInteractionElements.VerifyBitwiseXor4,
-			circleChip.CanonicVanishingInverse(uints.NewU32(8), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(8), oodsPoint),
 			interactionClaim.VerifyBitwiseXor4,
 		)
 	}
-	if circuitData.ComponentConfig[57] {
+	if circuitData.ComponentConfig[58] {
 		comp.verifyBitwiseXor7 = cairo_components.NewVerifyBitwiseXor7(
 			api,
 			qm31Chip,
 			cairoInteractionElements.VerifyBitwiseXor7,
-			circleChip.CanonicVanishingInverse(uints.NewU32(14), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(14), oodsPoint),
 			interactionClaim.VerifyBitwiseXor7,
 		)
 	}
-	if circuitData.ComponentConfig[58] {
+	if circuitData.ComponentConfig[59] {
 		comp.verifyBitwiseXor8 = cairo_components.NewVerifyBitwiseXor8(
 			api,
 			qm31Chip,
 			cairoInteractionElements.VerifyBitwiseXor8,
-			circleChip.CanonicVanishingInverse(uints.NewU32(16), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(16), oodsPoint),
 			interactionClaim.VerifyBitwiseXor8,
 		)
 	}
-	if circuitData.ComponentConfig[59] {
+	if circuitData.ComponentConfig[60] {
 		comp.verifyBitwiseXor9 = cairo_components.NewVerifyBitwiseXor9(
 			api,
 			qm31Chip,
 			cairoInteractionElements.VerifyBitwiseXor9,
-			circleChip.CanonicVanishingInverse(uints.NewU32(18), oodsPoint),
+			circleChip.CanonicVanishingInverse(frontend.Variable(18), oodsPoint),
 			interactionClaim.VerifyBitwiseXor9,
-		)
-	}
-
-	// Verify instruction
-	if circuitData.ComponentConfig[60] {
-		comp.verifyInstruction = cairo_components.NewVerifyInstruction(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC725,
-			cairoInteractionElements.RangeChecks.RC43,
-			cairoInteractionElements.MemoryAddressToID,
-			cairoInteractionElements.MemoryIDToValue,
-			cairoInteractionElements.VerifyInstruction,
-			circleChip.CanonicVanishingInverse(claim.VerifyInstruction.LogSize, oodsPoint),
-			claim.VerifyInstruction,
-			interactionClaim.VerifyInstruction,
 		)
 	}
 
@@ -860,7 +859,7 @@ func NewComponents(
 func (c Components) Evaluate(sampledValues [][][]m31.QM31, random_coeff m31.QM31, circuitData variables.CircuitData) m31.QM31 {
 	// Prepare sampled values
 	preprocessedSampledValuesRaw := sampledValues[cairo_components.PREPROCESSED_IDX]
-	preprocessedSampledValues := cairo_components.NewPreprocessedSampledValues(c.api, c.m31, preprocessedSampledValuesRaw)
+	preprocessedSampledValues := cairo_components.NewPreprocessedSampledValues(c.api, c.qm31, preprocessedSampledValuesRaw)
 	traceSampledValues := sampledValues[cairo_components.MAIN_IDX]
 	interactionSampledValues := sampledValues[cairo_components.INTERACTION_IDX]
 

@@ -62,7 +62,7 @@ func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
 	// Addresses start at 1 in the trace, so shift by one after reading the sequence column.
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

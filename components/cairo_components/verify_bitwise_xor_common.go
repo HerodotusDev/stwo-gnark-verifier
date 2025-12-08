@@ -15,9 +15,9 @@ func newVerifyBitwiseXorLookupComponent(
 	vanishEvalInv m31.QM31,
 ) lookupConstraintComponent {
 	columns := []PreprocessedColumn{
-		NewPreprocessedColumnBitwiseXor(termBits, 0),
-		NewPreprocessedColumnBitwiseXor(termBits, 1),
-		NewPreprocessedColumnBitwiseXor(termBits, 2),
+		NewPreprocessedColumnBitwiseXor(api, termBits, 0),
+		NewPreprocessedColumnBitwiseXor(api, termBits, 1),
+		NewPreprocessedColumnBitwiseXor(api, termBits, 2),
 	}
 	return newLookupConstraintComponent(api, qm31, interactionElements, claimedSum, logSize, columns, vanishEvalInv)
 }

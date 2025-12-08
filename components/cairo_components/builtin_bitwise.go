@@ -21,6 +21,7 @@ type BitwiseBuiltinInteractionClaim struct {
 }
 
 type BitwiseBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	logSize frontend.Variable
@@ -48,6 +49,7 @@ func NewBitwiseBuiltin(
 	columnSize := computeColumnSize(api, claim.LogSize)
 
 	return BitwiseBuiltinComponent{
+		api:                       api,
 		qm31:                      qm31,
 		logSize:                   claim.LogSize,
 		memoryAddressToIdElements: memoryAddressElements,
@@ -68,7 +70,7 @@ func (c BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

@@ -29,7 +29,7 @@ func U32SliceToNativeSlice(api frontend.API, uapi *uints.BinaryField[uints.U32],
 }
 
 // BlowupLogSizes blows up the log sizes by the given factor.
-func BlowupLogSizes(api frontend.API, logSizes []frontend.Variable, blowupFactor uints.U32) []frontend.Variable {
+func BlowupLogSizes(api frontend.API, logSizes []frontend.Variable, blowupFactor frontend.Variable) []frontend.Variable {
 	if len(logSizes) == 0 {
 		return nil
 	}
