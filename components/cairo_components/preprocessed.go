@@ -1,6 +1,8 @@
 package cairo_components
 
 import (
+	"fmt"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/lookup/logderivlookup"
@@ -8,6 +10,34 @@ import (
 )
 
 const NPreprocessedColumns = 162
+
+// seqColumnMappings lists the canonical IDs for each sequence column.
+var seqColumnMappings = []struct {
+	logSize int
+	id      int
+}{
+	{logSize: 24, id: 0},
+	{logSize: 23, id: 1},
+	{logSize: 22, id: 58},
+	{logSize: 21, id: 59},
+	{logSize: 20, id: 60},
+	{logSize: 19, id: 64},
+	{logSize: 18, id: 65},
+	{logSize: 17, id: 75},
+	{logSize: 16, id: 76},
+	{logSize: 15, id: 84},
+	{logSize: 14, id: 90},
+	{logSize: 13, id: 97},
+	{logSize: 12, id: 98},
+	{logSize: 11, id: 99},
+	{logSize: 10, id: 100},
+	{logSize: 9, id: 101},
+	{logSize: 8, id: 104},
+	{logSize: 7, id: 110},
+	{logSize: 6, id: 113},
+	{logSize: 5, id: 144},
+	{logSize: 4, id: 145},
+}
 
 // ╔══════════════════════════════════╗
 // ║       Preprocessed Columns       ║
@@ -18,93 +48,98 @@ type PreprocessedColumn struct {
 	id frontend.Variable // unique identifier of the column in [0, NPreprocessedColumns-1]
 }
 
-// NewPreprocessedColumnSeq builds a sequence column descriptor.
-// Occupy range 0 to 20 (inclusive) since logSizes range from 4 to 24.
+// NewPreprocessedColumnSeq builds a sequence column descriptor using the canonical
+// ordering defined in PreprocessedColumns.
 func NewPreprocessedColumnSeq(api frontend.API, logSize frontend.Variable) PreprocessedColumn {
-	id := api.Sub(logSize, frontend.Variable(4))
+	id := frontend.Variable(0)
+	matchCount := frontend.Variable(0)
+	for _, mapping := range seqColumnMappings {
+		isMatch := cmp.IsEqual(api, logSize, frontend.Variable(mapping.logSize))
+		id = api.Add(id, api.Mul(isMatch, frontend.Variable(mapping.id)))
+		matchCount = api.Add(matchCount, isMatch)
+	}
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
 	return PreprocessedColumn{
 		id: id,
 	}
 }
 
 // NewPreprocessedColumnPedersenPoints builds a pedersen points column descriptor.
-// Occupy range 21 to 76 (inclusive) since pedersen points range from 0 to 55.
+// IDs span 2 to 57 as defined by PreprocessedColumns.
 func NewPreprocessedColumnPedersenPoints(api frontend.API, index frontend.Variable) PreprocessedColumn {
-	id := api.Add(index, frontend.Variable(21))
+	id := api.Add(index, frontend.Variable(2))
 	return PreprocessedColumn{
 		id: id,
 	}
 }
 
-// NewPreprocessedColumnBitwiseXor builds a bitwise xor column descriptor.
-// Occupy range 77 to 91 (inclusive)
+// NewPreprocessedColumnBitwiseXor builds a bitwise xor column descriptor aligned
+// with the canonical ordering.
 func NewPreprocessedColumnBitwiseXor(api frontend.API, nBits, columnID frontend.Variable) PreprocessedColumn {
-	// nTermBits is either 4, 7, 8, 9, or 10
-	// convert to id in range 0 to 4
 	is4 := cmp.IsEqual(api, nBits, frontend.Variable(4))
 	is7 := cmp.IsEqual(api, nBits, frontend.Variable(7))
 	is8 := cmp.IsEqual(api, nBits, frontend.Variable(8))
 	is9 := cmp.IsEqual(api, nBits, frontend.Variable(9))
 	is10 := cmp.IsEqual(api, nBits, frontend.Variable(10))
-	nBitsID := api.Select(is4,
-		frontend.Variable(0),
-		api.Select(is7,
-			frontend.Variable(1),
-			api.Select(is8,
-				frontend.Variable(2),
-				api.Select(is9,
-					frontend.Variable(3),
-					api.Select(is10,
-						frontend.Variable(4),
-						frontend.Variable(0),
-					),
-				),
-			),
-		),
-	)
-	base := frontend.Variable(77)
-	step := frontend.Variable(3)
-	// id = 77 + 3 * nBitsID + columnID
-	id := api.Add(api.Add(base, api.Mul(nBitsID, step)), columnID)
+
+	base := frontend.Variable(0)
+	base = api.Add(base, api.Mul(is10, frontend.Variable(61)))
+	base = api.Add(base, api.Mul(is9, frontend.Variable(66)))
+	base = api.Add(base, api.Mul(is8, frontend.Variable(77)))
+	base = api.Add(base, api.Mul(is7, frontend.Variable(91)))
+	base = api.Add(base, api.Mul(is4, frontend.Variable(105)))
+
+	matchCount := api.Add(is10, is9)
+	matchCount = api.Add(matchCount, is8)
+	matchCount = api.Add(matchCount, is7)
+	matchCount = api.Add(matchCount, is4)
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
 		id: id,
 	}
 }
 
-// NewPreprocessedColumnRangeCheck2 builds a range-check (2 values) column descriptor.
-// Occupy range 92 to 99 (inclusive)
+// NewPreprocessedColumnRangeCheck2 builds a range-check (2 values) column
+// descriptor that matches the canonical ordering.
 func NewPreprocessedColumnRangeCheck2(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
-	// values are either 9_9, 5_4, 4_4 or 4_3
-	is99 := cmp.IsEqual(api, values[0], frontend.Variable(9))
-	is54 := cmp.IsEqual(api, values[0], frontend.Variable(5))
-	is44 := cmp.IsEqual(api, values[0], frontend.Variable(4))
-	is43 := cmp.IsEqual(api, values[1], frontend.Variable(3))
-	valuesID := api.Select(is99,
-		frontend.Variable(0),
-		api.Select(is54,
-			frontend.Variable(1),
-			api.Select(is44,
-				frontend.Variable(2),
-				api.Select(is43,
-					frontend.Variable(3),
-					frontend.Variable(0),
-				),
-			),
-		),
-	)
-	base := frontend.Variable(92)
-	step := frontend.Variable(2)
-	// id = 92 + 2 * valuesID + columnID
-	id := api.Add(api.Add(base, api.Mul(valuesID, step)), columnID)
+	isFirst9 := cmp.IsEqual(api, values[0], frontend.Variable(9))
+	isFirst5 := cmp.IsEqual(api, values[0], frontend.Variable(5))
+	isFirst4 := cmp.IsEqual(api, values[0], frontend.Variable(4))
+
+	isSecond9 := cmp.IsEqual(api, values[1], frontend.Variable(9))
+	isSecond4 := cmp.IsEqual(api, values[1], frontend.Variable(4))
+	isSecond3 := cmp.IsEqual(api, values[1], frontend.Variable(3))
+
+	case99 := api.Mul(isFirst9, isSecond9)
+	case54 := api.Mul(isFirst5, isSecond4)
+	case44 := api.Mul(isFirst4, isSecond4)
+	case43 := api.Mul(isFirst4, isSecond3)
+
+	base := frontend.Variable(0)
+	base = api.Add(base, api.Mul(case99, frontend.Variable(69)))
+	base = api.Add(base, api.Mul(case54, frontend.Variable(102)))
+	base = api.Add(base, api.Mul(case44, frontend.Variable(108)))
+	base = api.Add(base, api.Mul(case43, frontend.Variable(111)))
+
+	matchCount := api.Add(api.Add(case99, case54), api.Add(case44, case43))
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
 		id: id,
 	}
 }
 
 // NewPreprocessedColumnRangeCheck3 builds a range-check (3 values) column descriptor.
-// Occupy range 100 to 102 (inclusive)
 func NewPreprocessedColumnRangeCheck3(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
-	base := frontend.Variable(100)
+	api.AssertIsEqual(values[0], frontend.Variable(7))
+	api.AssertIsEqual(values[1], frontend.Variable(2))
+	api.AssertIsEqual(values[2], frontend.Variable(5))
+
+	base := frontend.Variable(94)
 	id := api.Add(base, columnID)
 	return PreprocessedColumn{
 		id: id,
@@ -112,30 +147,43 @@ func NewPreprocessedColumnRangeCheck3(api frontend.API, values []frontend.Variab
 }
 
 // NewPreprocessedColumnRangeCheck4 builds a range-check (4 values) column descriptor.
-// Occupy range 103 to 110 (inclusive)
 func NewPreprocessedColumnRangeCheck4(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
-	// values are either 3_6_6_3, 4_4_4_4
-	is3663 := cmp.IsEqual(api, values[0], frontend.Variable(3))
-	is4444 := cmp.IsEqual(api, values[0], frontend.Variable(4))
-	valuesID := api.Select(is3663,
-		frontend.Variable(0),
-		api.Select(is4444,
-			frontend.Variable(1),
-			frontend.Variable(0),
-		),
-	)
-	base := frontend.Variable(103)
-	step := frontend.Variable(4)
-	id := api.Add(api.Add(base, api.Mul(valuesID, step)), columnID)
+	isFirst3 := cmp.IsEqual(api, values[0], frontend.Variable(3))
+	isFirst4 := cmp.IsEqual(api, values[0], frontend.Variable(4))
+	isSecond6 := cmp.IsEqual(api, values[1], frontend.Variable(6))
+	isSecond4 := cmp.IsEqual(api, values[1], frontend.Variable(4))
+	isThird6 := cmp.IsEqual(api, values[2], frontend.Variable(6))
+	isThird4 := cmp.IsEqual(api, values[2], frontend.Variable(4))
+	isFourth3 := cmp.IsEqual(api, values[3], frontend.Variable(3))
+	isFourth4 := cmp.IsEqual(api, values[3], frontend.Variable(4))
+
+	case3663 := api.Mul(isFirst3, isSecond6)
+	case3663 = api.Mul(case3663, isThird6)
+	case3663 = api.Mul(case3663, isFourth3)
+
+	case4444 := api.Mul(isFirst4, isSecond4)
+	case4444 = api.Mul(case4444, isThird4)
+	case4444 = api.Mul(case4444, isFourth4)
+
+	base := frontend.Variable(0)
+	base = api.Add(base, api.Mul(case3663, frontend.Variable(71)))
+	base = api.Add(base, api.Mul(case4444, frontend.Variable(80)))
+
+	matchCount := api.Add(case3663, case4444)
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
 		id: id,
 	}
 }
 
 // NewPreprocessedColumnRangeCheck5 builds a range-check (5 values) column descriptor.
-// Occupy range 111 to 115 (inclusive)
 func NewPreprocessedColumnRangeCheck5(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
-	base := frontend.Variable(111)
+	for i := 0; i < 5; i++ {
+		api.AssertIsEqual(values[i], frontend.Variable(3))
+	}
+	base := frontend.Variable(85)
 	id := api.Add(base, columnID)
 	return PreprocessedColumn{
 		id: id,
@@ -143,9 +191,8 @@ func NewPreprocessedColumnRangeCheck5(api frontend.API, values []frontend.Variab
 }
 
 // NewPreprocessedColumnPoseidonRoundKeys builds a poseidon round keys column descriptor.
-// Occupy range 116 to 145 (inclusive)
 func NewPreprocessedColumnPoseidonRoundKeys(api frontend.API, index frontend.Variable) PreprocessedColumn {
-	base := frontend.Variable(116)
+	base := frontend.Variable(114)
 	id := api.Add(base, index)
 	return PreprocessedColumn{
 		id: id,
@@ -195,6 +242,7 @@ func NewPreprocessedSampledValues(api frontend.API, qm31 *m31.QM31Chip, preproce
 		default:
 			panic("preprocessed column has more than 1 sampled value")
 		}
+		fmt.Println("value[i]", values.Lookup(frontend.Variable(i))[0])
 	}
 
 	return PreprocessedSampledValues{
