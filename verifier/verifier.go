@@ -1,8 +1,6 @@
 package verifier
 
 import (
-	"fmt"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -107,8 +105,6 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, ci
 
 	// Compute mask points
 	maskPoints := proof.Claim.MaskPoints(c.api, oodsPoint, c.circle, circuitData)
-	// DEBUG: Verify that there is a point for each sampled value (no constraints enforced)
-	checkMaskPoints(maskPoints, proof.StarkProof.SampledValues)
 
 	c.VerifyValues(commitmentVerifier, proof.StarkProof, maskPoints, circuitData)
 }
@@ -160,20 +156,4 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVeri
 	// Verify FRI quotients
 	// friAnswers := friVerifier.FriQuotientEvaluations(commitmentVerifier.ColumnLogSizes(false), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
 	// friVerifier.Verify(queries, friAnswers)
-}
-
-func checkMaskPoints(maskPoints cairo_components.TreeMaskPoints, sampledValues [][][]m31.QM31) {
-	if len(maskPoints) != len(sampledValues) {
-		panic("tree length mismatch")
-	}
-	for treeIndex, tree := range maskPoints {
-		if len(tree) != len(sampledValues[treeIndex]) {
-			panic(fmt.Sprintf("column length mismatch: %d != %d", len(tree), len(sampledValues[treeIndex])))
-		}
-		for columnIndex, column := range tree {
-			if len(column) != len(sampledValues[treeIndex][columnIndex]) {
-				panic(fmt.Sprintf("sample length mismatch (tree index: %d, column index: %d): %d != %d", treeIndex, columnIndex, len(column), len(sampledValues[treeIndex][columnIndex])))
-			}
-		}
-	}
 }

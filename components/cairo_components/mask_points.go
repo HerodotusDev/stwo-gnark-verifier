@@ -119,7 +119,7 @@ func (claim JnzOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point,
 }
 
 func (claim JnzTakenOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim)
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JnzTakenOpcodeTraceColumns, JnzTakenOpcodeInteractionColumns)
 }
 
@@ -183,7 +183,7 @@ func (claim MulModBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Po
 }
 
 func (claim PedersenBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim)
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PedersenBuiltinTraceColumns, PedersenBuiltinInteractionColumns)
 }
 
