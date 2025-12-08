@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	testLogupSumQM31         = m31.NewQM31Unchecked(913953402, 396624481, 864959838, 298024670)
+	testLogupSumQM31         = m31.NewQM31Unchecked(138003185, 504981591, 1541318630, 538197314)
 	logupSumClaim            variables.CairoClaim
 	logupSumInteractionClaim variables.CairoInteractionClaim
 	logupSumCircuitData      variables.CircuitData

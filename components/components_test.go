@@ -150,6 +150,8 @@ func (c *componentEvaluationCircuit) Define(api frontend.API) error {
 
 	preprocessedRaw, traceRaw, interactionRaw := c.fixture.SampledValues(ctx)
 	preprocessed := cairo_components.NewPreprocessedSampledValues(api, qm31Chip, preprocessedRaw)
+	// dummy request to have at least one query (required by gnark)
+	preprocessed.Get(cairo_components.NewPreprocessedColumnSeq(api, frontend.Variable(4)))
 	traces := cairo_components.NewTraces(preprocessed, traceRaw, interactionRaw)
 
 	sum := qm31Chip.Zero()
@@ -227,7 +229,7 @@ func (f *addApOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *addApOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 15)
 	for i := range trace {
@@ -288,7 +290,7 @@ func (f *addSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *addSmallOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 33)
 	for i := range trace {
@@ -351,7 +353,7 @@ func (f *mulSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *mulSmallOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 37)
 	for i := range trace {
@@ -414,7 +416,7 @@ func (f *mulOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *mulOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 130)
 	for i := range trace {
@@ -477,7 +479,7 @@ func (f *qm31OpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *qm31OpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 73)
 	for i := range trace {
@@ -603,7 +605,7 @@ func (f *bitwiseBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *bitwiseBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 89)
 	for i := range trace {
@@ -671,7 +673,7 @@ func (f *mulModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *mulModBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 410)
 	for i := range trace {
@@ -732,7 +734,7 @@ func (f *assertEqOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *assertEqOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 12)
 	for i := range trace {
@@ -795,7 +797,7 @@ func (f *assertEqDoubleDerefOpcodeFixture) Build(ctx componentContext) component
 }
 
 func (f *assertEqDoubleDerefOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -856,7 +858,7 @@ func (f *assertEqImmOpcodeFixture) Build(ctx componentContext) componentUnderTes
 }
 
 func (f *assertEqImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 9)
 	for i := range trace {
@@ -919,7 +921,7 @@ func (f *retOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *retOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 12)
 	for i := range trace {
@@ -982,7 +984,7 @@ func (f *callOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *callOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 19)
 	for i := range trace {
@@ -1045,7 +1047,7 @@ func (f *callRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 }
 
 func (f *callRelImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 18)
 	for i := range trace {
@@ -1108,7 +1110,7 @@ func (f *jumpOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jumpOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 13)
 	for i := range trace {
@@ -1171,7 +1173,7 @@ func (f *jumpRelOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jumpRelOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 15)
 	for i := range trace {
@@ -1234,7 +1236,7 @@ func (f *jumpRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 }
 
 func (f *jumpRelImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 11)
 	for i := range trace {
@@ -1297,7 +1299,7 @@ func (f *jumpDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnde
 }
 
 func (f *jumpDoubleDerefOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -1360,7 +1362,7 @@ func (f *jnzOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jnzOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 37)
 	for i := range trace {
@@ -1423,7 +1425,7 @@ func (f *jnzTakenOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jnzTakenOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 45)
 	for i := range trace {
@@ -1648,7 +1650,7 @@ func (f *partialEcMulFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *partialEcMulFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 472)
 	for i := range trace {
@@ -1825,7 +1827,7 @@ func (f *poseidon3PartialRoundsChainFixture) Build(ctx componentContext) compone
 }
 
 func (f *poseidon3PartialRoundsChainFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 169)
 	for i := range trace {
@@ -1886,7 +1888,7 @@ func (f *cube252Fixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *cube252Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 141)
 	for i := range trace {
@@ -1949,7 +1951,7 @@ func (f *poseidonFullRoundChainFixture) Build(ctx componentContext) componentUnd
 }
 
 func (f *poseidonFullRoundChainFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 126)
 	for i := range trace {
@@ -2075,7 +2077,7 @@ func (f *tripleXor32Fixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *tripleXor32Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 21)
 	for i := range trace {
@@ -2140,7 +2142,7 @@ func (f *verifyInstructionFixture) Build(ctx componentContext) componentUnderTes
 }
 
 func (f *verifyInstructionFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -3085,7 +3087,7 @@ func (f *rangeCheckFelt252Width27Fixture) Build(ctx componentContext) componentU
 }
 
 func (f *rangeCheckFelt252Width27Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 20)
 	for i := range trace {
