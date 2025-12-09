@@ -55,6 +55,7 @@ type CircuitHints struct {
 type CircuitData struct {
 	NColumnsPerLogSize  [][]int
 	ColumnLogSizes      [][]int
+	ColumnBounds        []int
 	DedupedQueriesShape []int
 	ComponentConfig     ComponentConfig
 	PreprocessedConfig  PreprocessedConfig

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -384,6 +385,13 @@ func BuildCircuitData(proofRaw *ProofRaw) CircuitData {
 	}
 	boundsLengthCount := len(uniqueLogSizes)
 
+	// column bounds in decreasing order and depuped
+	columnBounds := make([]int, 0)
+	for logSize := range uniqueLogSizes {
+		columnBounds = append(columnBounds, logSize+1)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(columnBounds)))
+
 	// preprocessed columns configuration
 	preprocessedConfig := PreprocessedConfig{}
 	for i := range cairo_components.NPreprocessedColumns {
@@ -398,6 +406,7 @@ func BuildCircuitData(proofRaw *ProofRaw) CircuitData {
 		ComponentConfig:    componentConfig,
 		PreprocessedConfig: preprocessedConfig,
 		ColumnLogSizes:     columnLogSizes,
+		ColumnBounds:       columnBounds,
 		NColumnsPerLogSize: nColumnsPerLogSize,
 		BoundsLength:       boundsLengthCount,
 	}

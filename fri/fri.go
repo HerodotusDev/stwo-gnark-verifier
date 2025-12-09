@@ -110,23 +110,6 @@ func (f *FriVerifier) FriQuotientEvaluations(
 	randomCoeff m31.QM31,
 	circuitData variables.CircuitData,
 ) [][]m31.QM31 {
-	// compute max and min log sizes
-	maxLogSize := 0
-	minLogSize := 32
-	for _, treeColumnLogSizes := range circuitData.ColumnLogSizes {
-		for _, logSize := range treeColumnLogSizes {
-			if logSize > maxLogSize {
-				maxLogSize = logSize
-			}
-			if logSize < minLogSize {
-				minLogSize = logSize
-			}
-		}
-	}
-	// NOTE: Blowup hardcoded to 1 for now
-	maxLogSize++
-	minLogSize++
-
 	// compute the orvall maximum number of columns for a log size
 	maxNColumns := 0
 	for i := 0; i < 32; i++ {
@@ -182,7 +165,7 @@ func (f *FriVerifier) FriQuotientEvaluations(
 	// evaluate the quotient at each query position for each log size
 	quotientEvaluations := make([][]m31.QM31, 0)
 	queriedValuesPointer := make([]int, cairo_components.N_TREES)
-	for logSize := maxLogSize; logSize >= minLogSize; logSize-- {
+	for _, logSize := range circuitData.ColumnBounds {
 		samples := samplesByLogSize[logSize]
 		circleDomain := circle.NewCanonicCoset(f.circleChip, frontend.Variable(logSize)).CircleDomain()
 		layerQuotientEvaluations := make([]m31.QM31, 0)
