@@ -47,7 +47,7 @@ func Pow(api frontend.API, cmp *cmp.BoundedComparator, base, exponent frontend.V
 
 	for i := 0; i < 32; i++ {
 		isLess := cmp.IsLess(frontend.Variable(i), exponent)
-		result = api.Select(isLess, api.Mul(result, base), one)
+		result = api.Select(isLess, api.Mul(result, base), result)
 	}
 
 	return result
@@ -73,14 +73,19 @@ func GenerateQueries(api frontend.API, baseLayerQueries []frontend.Variable, nQu
 	queries := make([][]frontend.Variable, maxLogSize+1)
 	queriesDeduped := make([][]frontend.Variable, maxLogSize+1)
 
-	// deduplicate the base layer queries
+	// deduplicate and orderthe base layer queries
 	queries[maxLogSize] = baseLayerQueries
 	layerQueriesDeduped, err := api.Compiler().NewHint(DeduplicationHint, dedupedQueriesShape[maxLogSize], queries[maxLogSize]...)
 	if err != nil {
 		panic(err)
 	}
-	AssertPartialDeduplication(api, layerQueriesDeduped, queries[maxLogSize])
-	queriesDeduped[maxLogSize] = layerQueriesDeduped
+	layerQueriesDedupedOrdered, err := api.Compiler().NewHint(AscendingOrderHint, dedupedQueriesShape[maxLogSize], layerQueriesDeduped...)
+	if err != nil {
+		panic(err)
+	}
+	AssertPartialDeduplication(api, layerQueriesDedupedOrdered, queries[maxLogSize])
+	AssertAscendingOrder(api, layerQueriesDedupedOrdered)
+	queriesDeduped[maxLogSize] = layerQueriesDedupedOrdered
 
 	// build all queries above the base layer
 	for l := maxLogSize; l >= 1; l-- {
@@ -99,8 +104,13 @@ func GenerateQueries(api frontend.API, baseLayerQueries []frontend.Variable, nQu
 		if err != nil {
 			panic(err)
 		}
-		AssertPartialDeduplication(api, nextLayerQueriesDeduped, queries[l-1])
-		queriesDeduped[l-1] = nextLayerQueriesDeduped
+		nextLayerQueriesDedupedOrdered, err := api.Compiler().NewHint(AscendingOrderHint, dedupedQueriesShape[l-1], nextLayerQueriesDeduped...)
+		if err != nil {
+			panic(err)
+		}
+		AssertPartialDeduplication(api, nextLayerQueriesDedupedOrdered, queries[l-1])
+		AssertAscendingOrder(api, nextLayerQueriesDedupedOrdered)
+		queriesDeduped[l-1] = nextLayerQueriesDedupedOrdered
 	}
 
 	return queriesDeduped

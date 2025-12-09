@@ -23,6 +23,7 @@ type MerkleVerifier struct {
 	root               [32]uints.U8
 	ColumnLogSizes     []frontend.Variable
 	nColumnsPerLogSize []int
+	maxLogSize         int
 }
 
 func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], root [32]uints.U8, columnLogSizes []frontend.Variable, nColumnsPerLogSize []int) *MerkleVerifier {
@@ -31,6 +32,13 @@ func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], roo
 	bapi, err := uints.NewBytes(api)
 	if err != nil {
 		panic(err)
+	}
+
+	maxLogSize := 0
+	for i, nColumns := range nColumnsPerLogSize {
+		if nColumns > 0 {
+			maxLogSize = i
+		}
 	}
 
 	return &MerkleVerifier{
@@ -42,6 +50,7 @@ func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], roo
 		root:               root,
 		ColumnLogSizes:     columnLogSizes,
 		nColumnsPerLogSize: nColumnsPerLogSize,
+		maxLogSize:         maxLogSize,
 	}
 }
 
@@ -55,14 +64,11 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 	// not needed but convenient for hint signature)
 	witnessIndex := frontend.Variable(0)
 
-	// find the log size of the largest layer
-	maxLogSize := uint8(len(queries) - 1)
-
 	// storage for the hashes per layer, keyed by log size
-	layerHashes := make([]logderivlookup.Table, maxLogSize+1)
+	layerHashes := make([]logderivlookup.Table, v.maxLogSize+1)
 
 	// decommit layer by layer, doing all queries at once
-	for layerLog := maxLogSize; ; layerLog-- {
+	for layerLog := v.maxLogSize; ; layerLog-- {
 		// initialize the layer hashes
 		layerHashes[layerLog] = logderivlookup.New(v.api)
 		// get the number of columns in the layer
@@ -81,7 +87,7 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 			}
 
 			// for the largest layer, there are no children to hash, just hash the column values
-			if layerLog == maxLogSize {
+			if layerLog == v.maxLogSize {
 				hash := v.blake2sChip.HashNode(nil, nil, columnValues)
 				lo, hi := utils.SplitHash(v.api, hash)
 				layerHashes[layerLog].Insert(lo)

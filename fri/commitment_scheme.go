@@ -39,7 +39,13 @@ func (v *CommitmentSchemeVerifier) Commit(treeIndex int, root [32]uints.U8, logS
 
 	ch.MixRootBytes(root[:])
 	columnLogSizes := utils.BlowupLogSizes(v.api, logSizes, v.PcsConfig.FriConfig.LogBlowupFactor)
-	v.Trees[treeIndex] = NewMerkleVerifier(v.api, v.uapi, root, columnLogSizes, v.circuitData.NColumnsPerLogSize[treeIndex])
+	// NOTE: This hardcodes the blowup factor to 1 for now
+	nColumnsPerLogSize := v.circuitData.NColumnsPerLogSize[treeIndex]
+	nDomainPerLogSize := make([]int, len(nColumnsPerLogSize)+1)
+	for i, nColumns := range nColumnsPerLogSize {
+		nDomainPerLogSize[i+1] = nColumns
+	}
+	v.Trees[treeIndex] = NewMerkleVerifier(v.api, v.uapi, root, columnLogSizes, nDomainPerLogSize)
 }
 
 func (v *CommitmentSchemeVerifier) ColumnLogSizes(blowup bool) [][]frontend.Variable {

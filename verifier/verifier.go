@@ -143,7 +143,7 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVeri
 	c.channel.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
 
 	// Generate base layer queries and verify they match the hinted queries
-	maxLogSize := c.api.Add(bounds[0], commitmentVerifier.PcsConfig.FriConfig.LogBlowupFactor)
+	maxLogSize := bounds[0]
 	baseLayerQueries := c.channel.GenerateBaseLayerQueries(maxLogSize, commitmentVerifier.PcsConfig.FriConfig.NQueries)
 	queries := utils.GenerateQueries(c.api, baseLayerQueries, commitmentVerifier.PcsConfig.FriConfig.NQueries, circuitData.DedupedQueriesShape, circuitData.MaxLogSize)
 	queriesLookup := utils.ToLookupTable(c.api, queries)

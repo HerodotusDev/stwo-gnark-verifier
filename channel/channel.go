@@ -182,7 +182,6 @@ func checkProofOfWork(uapi *uints.BinaryField[uints.U32], digest Blake2sHash, in
 // ╚══════════════════════════════════╝
 
 func (c *Channel) GenerateBaseLayerQueries(maxLogSize frontend.Variable, nQueries uint8) []frontend.Variable {
-	// maxLogSize := f.FirstLayerVerifier.columnBounds[0] + f.friConfig.LogBlowupFactor
 	queries := make([]frontend.Variable, 0)
 	queryCount := uint8(0)
 	maxQuery := c.api.Sub(utils.Pow(c.api, c.comparator, frontend.Variable(2), maxLogSize), frontend.Variable(1))
