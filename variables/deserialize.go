@@ -82,323 +82,322 @@ func BuildCircuitData(proofRaw *ProofRaw) CircuitData {
 		componentConfig[i] = false
 	}
 
-	nColumnsPerLogSize := make([][]int, 4)
-	for i := range nColumnsPerLogSize {
-		nColumnsPerLogSize[i] = make([]int, 32)
+	columnLogSizes := make([][]int, cairo_components.N_TREES)
+	for i := range columnLogSizes {
+		columnLogSizes[i] = make([]int, 0)
+	}
+
+	appendColumns := func(treeIndex, logSize, count int) {
+		if count <= 0 {
+			return
+		}
+		for i := 0; i < count; i++ {
+			columnLogSizes[treeIndex] = append(columnLogSizes[treeIndex], logSize)
+		}
+	}
+
+	appendTraceAndInteraction := func(logSize, traceCols, interactionCols int) {
+		appendColumns(cairo_components.MAIN_IDX, logSize, traceCols)
+		appendColumns(cairo_components.INTERACTION_IDX, logSize, interactionCols)
+	}
+
+	frontendVarToInt := func(value frontend.Variable) int {
+		switch v := value.(type) {
+		case int:
+			return v
+		case int8:
+			return int(v)
+		case int16:
+			return int(v)
+		case int32:
+			return int(v)
+		case int64:
+			return int(v)
+		case uint:
+			return int(v)
+		case uint8:
+			return int(v)
+		case uint16:
+			return int(v)
+		case uint32:
+			return int(v)
+		case uint64:
+			return int(v)
+		case *big.Int:
+			if !v.IsInt64() {
+				panic("log size does not fit into int")
+			}
+			return int(v.Int64())
+		default:
+			panic("unsupported log size type")
+		}
 	}
 
 	// Build opcodes
 	if len(proofRaw.Claim.Opcodes.Add) > 0 {
 		componentConfig[0] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Add[0].LogSize)] += cairo_components.AddOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Add[0].LogSize)] += cairo_components.AddOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Add[0].LogSize), cairo_components.AddOpcodeTraceColumns, cairo_components.AddOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.AddSmall) > 0 {
 		componentConfig[1] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AddSmall[0].LogSize)] += cairo_components.AddSmallOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AddSmall[0].LogSize)] += cairo_components.AddSmallOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.AddSmall[0].LogSize), cairo_components.AddSmallOpcodeTraceColumns, cairo_components.AddSmallOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.AddAp) > 0 {
 		componentConfig[2] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AddAp[0].LogSize)] += cairo_components.AddApOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AddAp[0].LogSize)] += cairo_components.AddApOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.AddAp[0].LogSize), cairo_components.AddApOpcodeTraceColumns, cairo_components.AddApOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.AssertEq) > 0 {
 		componentConfig[3] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AssertEq[0].LogSize)] += cairo_components.AssertEqOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AssertEq[0].LogSize)] += cairo_components.AssertEqOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.AssertEq[0].LogSize), cairo_components.AssertEqOpcodeTraceColumns, cairo_components.AssertEqOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.AssertEqImm) > 0 {
 		componentConfig[4] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AssertEqImm[0].LogSize)] += cairo_components.AssertEqImmOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AssertEqImm[0].LogSize)] += cairo_components.AssertEqImmOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.AssertEqImm[0].LogSize), cairo_components.AssertEqImmOpcodeTraceColumns, cairo_components.AssertEqImmOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.AssertEqDoubleDeref) > 0 {
 		componentConfig[5] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.AssertEqDoubleDeref[0].LogSize)] += cairo_components.AssertEqDoubleDerefOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.AssertEqDoubleDeref[0].LogSize)] += cairo_components.AssertEqDoubleDerefOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.AssertEqDoubleDeref[0].LogSize), cairo_components.AssertEqDoubleDerefOpcodeTraceColumns, cairo_components.AssertEqDoubleDerefOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Blake) > 0 {
 		componentConfig[6] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Blake[0].LogSize)] += cairo_components.BlakeCompressTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Blake[0].LogSize)] += cairo_components.BlakeCompressInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Blake[0].LogSize), cairo_components.BlakeCompressTraceColumns, cairo_components.BlakeCompressInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Call) > 0 {
 		componentConfig[7] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Call[0].LogSize)] += cairo_components.CallOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Call[0].LogSize)] += cairo_components.CallOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Call[0].LogSize), cairo_components.CallOpcodeTraceColumns, cairo_components.CallOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.CallRelImm) > 0 {
 		componentConfig[8] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.CallRelImm[0].LogSize)] += cairo_components.CallRelImmOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.CallRelImm[0].LogSize)] += cairo_components.CallRelImmOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.CallRelImm[0].LogSize), cairo_components.CallRelImmOpcodeTraceColumns, cairo_components.CallRelImmOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Generic) > 0 {
 		componentConfig[9] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Generic[0].LogSize)] += cairo_components.GenericOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Generic[0].LogSize)] += cairo_components.GenericOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Generic[0].LogSize), cairo_components.GenericOpcodeTraceColumns, cairo_components.GenericOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Jnz) > 0 {
 		componentConfig[10] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Jnz[0].LogSize)] += cairo_components.JnzOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Jnz[0].LogSize)] += cairo_components.JnzOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Jnz[0].LogSize), cairo_components.JnzOpcodeTraceColumns, cairo_components.JnzOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.JnzTaken) > 0 {
 		componentConfig[11] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JnzTaken[0].LogSize)] += cairo_components.JnzTakenOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JnzTaken[0].LogSize)] += cairo_components.JnzTakenOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.JnzTaken[0].LogSize), cairo_components.JnzTakenOpcodeTraceColumns, cairo_components.JnzTakenOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Jump) > 0 {
 		componentConfig[12] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Jump[0].LogSize)] += cairo_components.JumpOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Jump[0].LogSize)] += cairo_components.JumpOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Jump[0].LogSize), cairo_components.JumpOpcodeTraceColumns, cairo_components.JumpOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.JumpDoubleDeref) > 0 {
 		componentConfig[13] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JumpDoubleDeref[0].LogSize)] += cairo_components.JumpDoubleDerefOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JumpDoubleDeref[0].LogSize)] += cairo_components.JumpDoubleDerefOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.JumpDoubleDeref[0].LogSize), cairo_components.JumpDoubleDerefOpcodeTraceColumns, cairo_components.JumpDoubleDerefOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.JumpRel) > 0 {
 		componentConfig[14] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JumpRel[0].LogSize)] += cairo_components.JumpRelOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JumpRel[0].LogSize)] += cairo_components.JumpRelOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.JumpRel[0].LogSize), cairo_components.JumpRelOpcodeTraceColumns, cairo_components.JumpRelOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.JumpRelImm) > 0 {
 		componentConfig[15] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.JumpRelImm[0].LogSize)] += cairo_components.JumpRelImmOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.JumpRelImm[0].LogSize)] += cairo_components.JumpRelImmOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.JumpRelImm[0].LogSize), cairo_components.JumpRelImmOpcodeTraceColumns, cairo_components.JumpRelImmOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Mul) > 0 {
 		componentConfig[16] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Mul[0].LogSize)] += cairo_components.MulOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Mul[0].LogSize)] += cairo_components.MulOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Mul[0].LogSize), cairo_components.MulOpcodeTraceColumns, cairo_components.MulOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.MulSmall) > 0 {
 		componentConfig[17] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.MulSmall[0].LogSize)] += cairo_components.MulSmallOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.MulSmall[0].LogSize)] += cairo_components.MulSmallOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.MulSmall[0].LogSize), cairo_components.MulSmallOpcodeTraceColumns, cairo_components.MulSmallOpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Qm31) > 0 {
 		componentConfig[18] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Qm31[0].LogSize)] += cairo_components.Qm31OpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Qm31[0].LogSize)] += cairo_components.Qm31OpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Qm31[0].LogSize), cairo_components.Qm31OpcodeTraceColumns, cairo_components.Qm31OpcodeInteractionColumns)
 	}
 	if len(proofRaw.Claim.Opcodes.Ret) > 0 {
 		componentConfig[19] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.Opcodes.Ret[0].LogSize)] += cairo_components.RetOpcodeTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.Opcodes.Ret[0].LogSize)] += cairo_components.RetOpcodeInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.Opcodes.Ret[0].LogSize), cairo_components.RetOpcodeTraceColumns, cairo_components.RetOpcodeInteractionColumns)
 	}
 
 	// Build verify instruction
 	componentConfig[20] = true
-	nColumnsPerLogSize[1][int(proofRaw.Claim.VerifyInstruction.LogSize)] += cairo_components.VerifyInstructionTraceColumns
-	nColumnsPerLogSize[2][int(proofRaw.Claim.VerifyInstruction.LogSize)] += cairo_components.VerifyInstructionInteractionColumns
+	appendTraceAndInteraction(int(proofRaw.Claim.VerifyInstruction.LogSize), cairo_components.VerifyInstructionTraceColumns, cairo_components.VerifyInstructionInteractionColumns)
 
 	// Build Blake context
 	if proofRaw.Claim.BlakeContext.Claim != nil {
 		componentConfig[21] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.BlakeContext.Claim.BlakeRound.LogSize)] += cairo_components.BlakeRoundTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.BlakeContext.Claim.BlakeRound.LogSize)] += cairo_components.BlakeRoundInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.BlakeContext.Claim.BlakeRound.LogSize), cairo_components.BlakeRoundTraceColumns, cairo_components.BlakeRoundInteractionColumns)
 		componentConfig[22] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.BlakeContext.Claim.BlakeG.LogSize)] += cairo_components.BlakeGTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.BlakeContext.Claim.BlakeG.LogSize)] += cairo_components.BlakeGInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.BlakeContext.Claim.BlakeG.LogSize), cairo_components.BlakeGTraceColumns, cairo_components.BlakeGInteractionColumns)
 		componentConfig[23] = true
-		nColumnsPerLogSize[1][cairo_components.BlakeRoundSigmaLogSize] += cairo_components.BlakeRoundSigmaTraceColumns
-		nColumnsPerLogSize[2][cairo_components.BlakeRoundSigmaLogSize] += cairo_components.BlakeRoundSigmaInteractionColumns
+		appendTraceAndInteraction(cairo_components.BlakeRoundSigmaLogSize, cairo_components.BlakeRoundSigmaTraceColumns, cairo_components.BlakeRoundSigmaInteractionColumns)
 		componentConfig[24] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.BlakeContext.Claim.TripleXor32.LogSize)] += cairo_components.TripleXor32TraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.BlakeContext.Claim.TripleXor32.LogSize)] += cairo_components.TripleXor32InteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.BlakeContext.Claim.TripleXor32.LogSize), cairo_components.TripleXor32TraceColumns, cairo_components.TripleXor32InteractionColumns)
 		componentConfig[25] = true
-		nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor12LogSize] += cairo_components.VerifyBitwiseXor12TraceColumns
-		nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor12LogSize] += cairo_components.VerifyBitwiseXor12InteractionColumns
+		appendTraceAndInteraction(cairo_components.VerifyBitwiseXor12LogSize, cairo_components.VerifyBitwiseXor12TraceColumns, cairo_components.VerifyBitwiseXor12InteractionColumns)
 	}
 
 	// Build builtins
 	if proofRaw.Claim.Builtins["add_mod_builtin"] != nil {
 		componentConfig[26] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["add_mod_builtin"].LogSize)] += cairo_components.AddModBuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["add_mod_builtin"].LogSize)] += cairo_components.AddModBuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["add_mod_builtin"].LogSize), cairo_components.AddModBuiltinTraceColumns, cairo_components.AddModBuiltinInteractionColumns)
 	}
 	if proofRaw.Claim.Builtins["bitwise_builtin"] != nil {
 		componentConfig[27] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["bitwise_builtin"].LogSize)] += cairo_components.BitwiseBuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["bitwise_builtin"].LogSize)] += cairo_components.BitwiseBuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["bitwise_builtin"].LogSize), cairo_components.BitwiseBuiltinTraceColumns, cairo_components.BitwiseBuiltinInteractionColumns)
 	}
 	if proofRaw.Claim.Builtins["mul_mod_builtin"] != nil {
 		componentConfig[28] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["mul_mod_builtin"].LogSize)] += cairo_components.MulModBuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["mul_mod_builtin"].LogSize)] += cairo_components.MulModBuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["mul_mod_builtin"].LogSize), cairo_components.MulModBuiltinTraceColumns, cairo_components.MulModBuiltinInteractionColumns)
 	}
 	if proofRaw.Claim.Builtins["pedersen_builtin"] != nil {
 		componentConfig[29] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["pedersen_builtin"].LogSize)] += cairo_components.PedersenBuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["pedersen_builtin"].LogSize)] += cairo_components.PedersenBuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["pedersen_builtin"].LogSize), cairo_components.PedersenBuiltinTraceColumns, cairo_components.PedersenBuiltinInteractionColumns)
 	}
 	if proofRaw.Claim.Builtins["poseidon_builtin"] != nil {
 		componentConfig[30] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["poseidon_builtin"].LogSize)] += cairo_components.PoseidonBuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["poseidon_builtin"].LogSize)] += cairo_components.PoseidonBuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["poseidon_builtin"].LogSize), cairo_components.PoseidonBuiltinTraceColumns, cairo_components.PoseidonBuiltinInteractionColumns)
 	}
 	if proofRaw.Claim.Builtins["range_check_96_builtin"] != nil {
 		componentConfig[31] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["range_check_96_builtin"].LogSize)] += cairo_components.RangeCheck96BuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["range_check_96_builtin"].LogSize)] += cairo_components.RangeCheck96BuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["range_check_96_builtin"].LogSize), cairo_components.RangeCheck96BuiltinTraceColumns, cairo_components.RangeCheck96BuiltinInteractionColumns)
 	}
 	if proofRaw.Claim.Builtins["range_check_128_builtin"] != nil {
 		componentConfig[32] = true
-		nColumnsPerLogSize[1][int(*proofRaw.Claim.Builtins["range_check_128_builtin"].LogSize)] += cairo_components.RangeCheck128BuiltinTraceColumns
-		nColumnsPerLogSize[2][int(*proofRaw.Claim.Builtins["range_check_128_builtin"].LogSize)] += cairo_components.RangeCheck128BuiltinInteractionColumns
+		appendTraceAndInteraction(int(*proofRaw.Claim.Builtins["range_check_128_builtin"].LogSize), cairo_components.RangeCheck128BuiltinTraceColumns, cairo_components.RangeCheck128BuiltinInteractionColumns)
 	}
 
 	// Build pedersen context
 	if proofRaw.Claim.PedersenContext.Claim != nil {
 		componentConfig[33] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.PedersenContext.Claim["partial_ec_mul"].LogSize)] += cairo_components.PartialEcMulTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.PedersenContext.Claim["partial_ec_mul"].LogSize)] += cairo_components.PartialEcMulInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.PedersenContext.Claim["partial_ec_mul"].LogSize), cairo_components.PartialEcMulTraceColumns, cairo_components.PartialEcMulInteractionColumns)
 		componentConfig[34] = true
-		nColumnsPerLogSize[1][cairo_components.PedersenPointsTableLogSize] += cairo_components.PedersenPointsTableTraceColumns
-		nColumnsPerLogSize[2][cairo_components.PedersenPointsTableLogSize] += cairo_components.PedersenPointsTableInteractionColumns
+		appendTraceAndInteraction(cairo_components.PedersenPointsTableLogSize, cairo_components.PedersenPointsTableTraceColumns, cairo_components.PedersenPointsTableInteractionColumns)
 	}
 
 	// Build poseidon context
 	if proofRaw.Claim.PoseidonContext.Claim != nil {
 		componentConfig[35] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize)] += cairo_components.Poseidon3PartialRoundsTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize)] += cairo_components.Poseidon3PartialRoundsInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.PoseidonContext.Claim.Poseidon3PartialRoundsChain.LogSize), cairo_components.Poseidon3PartialRoundsTraceColumns, cairo_components.Poseidon3PartialRoundsInteractionColumns)
 		componentConfig[36] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize)] += cairo_components.PoseidonFullRoundTraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize)] += cairo_components.PoseidonFullRoundInteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.PoseidonContext.Claim.PoseidonFullRoundChain.LogSize), cairo_components.PoseidonFullRoundTraceColumns, cairo_components.PoseidonFullRoundInteractionColumns)
 		componentConfig[37] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.Cube252.LogSize)] += cairo_components.Cube252TraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.Cube252.LogSize)] += cairo_components.Cube252InteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.PoseidonContext.Claim.Cube252.LogSize), cairo_components.Cube252TraceColumns, cairo_components.Cube252InteractionColumns)
 		componentConfig[38] = true
-		nColumnsPerLogSize[1][cairo_components.PoseidonRoundKeysLogSize] += cairo_components.PoseidonRoundKeysTraceColumns
-		nColumnsPerLogSize[2][cairo_components.PoseidonRoundKeysLogSize] += cairo_components.PoseidonRoundKeysInteractionColumns
+		appendTraceAndInteraction(cairo_components.PoseidonRoundKeysLogSize, cairo_components.PoseidonRoundKeysTraceColumns, cairo_components.PoseidonRoundKeysInteractionColumns)
 		componentConfig[39] = true
-		nColumnsPerLogSize[1][int(proofRaw.Claim.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize)] += cairo_components.RangeCheckFelt252Width27TraceColumns
-		nColumnsPerLogSize[2][int(proofRaw.Claim.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize)] += cairo_components.RangeCheckFelt252Width27InteractionColumns
+		appendTraceAndInteraction(int(proofRaw.Claim.PoseidonContext.Claim.RangeCheckFelt252Width27.LogSize), cairo_components.RangeCheckFelt252Width27TraceColumns, cairo_components.RangeCheckFelt252Width27InteractionColumns)
 	}
 
 	// Build memory address to id component
 	componentConfig[40] = true
-	nColumnsPerLogSize[1][int(proofRaw.Claim.MemoryAddressToId.LogSize)] += cairo_components.MemoryAddressToIdTraceColumns
-	nColumnsPerLogSize[2][int(proofRaw.Claim.MemoryAddressToId.LogSize)] += cairo_components.MemoryAddressToIdInteractionColumns
+	appendTraceAndInteraction(int(proofRaw.Claim.MemoryAddressToId.LogSize), cairo_components.MemoryAddressToIdTraceColumns, cairo_components.MemoryAddressToIdInteractionColumns)
 
 	// Build ID to Big Big memory components
 	// TODO: Handle multiple id to big tables
 	componentConfig[41] = true
-	nColumnsPerLogSize[1][int(proofRaw.Claim.MemoryIDToValue.BigLogSizes[0])] += cairo_components.MemoryIdToBigBigTraceCols
-	nColumnsPerLogSize[2][int(proofRaw.Claim.MemoryIDToValue.BigLogSizes[0])] += cairo_components.MemoryIdToBigBigInteractionColumns
+	appendTraceAndInteraction(int(proofRaw.Claim.MemoryIDToValue.BigLogSizes[0]), cairo_components.MemoryIdToBigBigTraceCols, cairo_components.MemoryIdToBigBigInteractionColumns)
 
 	// Build ID to Big Small memory components
 	componentConfig[42] = true
-	nColumnsPerLogSize[1][int(proofRaw.Claim.MemoryIDToValue.SmallLogSize)] += cairo_components.MemoryIdToBigSmallTraceCols
-	nColumnsPerLogSize[2][int(proofRaw.Claim.MemoryIDToValue.SmallLogSize)] += cairo_components.MemoryIdToBigSmallInteractionColumns
+	appendTraceAndInteraction(int(proofRaw.Claim.MemoryIDToValue.SmallLogSize), cairo_components.MemoryIdToBigSmallTraceCols, cairo_components.MemoryIdToBigSmallInteractionColumns)
 
 	// Build range checks
 	componentConfig[43] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck6LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck6LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck6LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[44] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck8LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck8LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck8LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[45] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck11LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck11LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck11LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[46] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck12LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck12LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck12LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[47] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck18LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck18LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck18LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[48] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck19LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck19LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck19LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[49] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck43LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck43LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck43LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[50] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck44LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck44LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck44LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[51] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck54LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck54LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck54LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[52] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck99LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck99LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck99LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[53] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck725LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck725LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck725LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[54] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck3663LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck3663LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck3663LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[55] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck4444LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck4444LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck4444LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[56] = true
-	nColumnsPerLogSize[1][cairo_components.RangeCheck33333LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.RangeCheck33333LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.RangeCheck33333LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 
 	// Build bitwise XOR
 	componentConfig[57] = true
-	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor4LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor4LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.VerifyBitwiseXor4LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[58] = true
-	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor7LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor7LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.VerifyBitwiseXor7LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[59] = true
-	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor8LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor8LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.VerifyBitwiseXor8LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 	componentConfig[60] = true
-	nColumnsPerLogSize[1][cairo_components.VerifyBitwiseXor9LogSize] += cairo_components.LookupTraceColumns
-	nColumnsPerLogSize[2][cairo_components.VerifyBitwiseXor9LogSize] += cairo_components.LookupInteractionColumns
+	appendTraceAndInteraction(cairo_components.VerifyBitwiseXor9LogSize, cairo_components.LookupTraceColumns, cairo_components.LookupInteractionColumns)
 
 	// Preprocessed columns log sizes
-	nColumnsPerLogSize[0][24] += 1
-	nColumnsPerLogSize[0][23] += 57
-	nColumnsPerLogSize[0][22] += 1
-	nColumnsPerLogSize[0][21] += 1
-	nColumnsPerLogSize[0][20] += 4
-	nColumnsPerLogSize[0][19] += 1
-	nColumnsPerLogSize[0][18] += 10
-	nColumnsPerLogSize[0][17] += 1
-	nColumnsPerLogSize[0][16] += 8
-	nColumnsPerLogSize[0][15] += 6
-	nColumnsPerLogSize[0][14] += 7
-	nColumnsPerLogSize[0][13] += 1
-	nColumnsPerLogSize[0][12] += 1
-	nColumnsPerLogSize[0][11] += 1
-	nColumnsPerLogSize[0][10] += 1
-	nColumnsPerLogSize[0][9] += 3
-	nColumnsPerLogSize[0][8] += 6
-	nColumnsPerLogSize[0][7] += 3
-	nColumnsPerLogSize[0][6] += 31
-	nColumnsPerLogSize[0][5] += 1
-	nColumnsPerLogSize[0][4] += 17
+	preprocessedLogSizes := cairo_components.PreprocessedLogSizes()
+	columnLogSizes[cairo_components.PREPROCESSED_IDX] = make([]int, len(preprocessedLogSizes))
+	for i, logSize := range preprocessedLogSizes {
+		columnLogSizes[cairo_components.PREPROCESSED_IDX][i] = frontendVarToInt(logSize)
+	}
 
 	// CP log size
 	maxLogSize := -1
-	for i := 31; i >= 0; i-- {
-		if nColumnsPerLogSize[1][i] > 0 || nColumnsPerLogSize[2][i] > 0 {
-			maxLogSize = i
-			break
+	for _, logSize := range columnLogSizes[cairo_components.MAIN_IDX] {
+		if logSize > maxLogSize {
+			maxLogSize = logSize
 		}
 	}
-	nColumnsPerLogSize[3][maxLogSize+1] += 4
+	for _, logSize := range columnLogSizes[cairo_components.INTERACTION_IDX] {
+		if logSize > maxLogSize {
+			maxLogSize = logSize
+		}
+	}
+	cpLogSize := maxLogSize + 1
+	if cpLogSize < 0 {
+		cpLogSize = 0
+	}
+	appendColumns(cairo_components.CP_IDX, cpLogSize, 4)
+
+	// Build nColumnsPerLogSize from column log sizes
+	nColumnsPerLogSize := make([][]int, cairo_components.N_TREES)
+	for treeIndex := range nColumnsPerLogSize {
+		nColumnsPerLogSize[treeIndex] = make([]int, 32)
+		for _, logSize := range columnLogSizes[treeIndex] {
+			if logSize < 0 || logSize >= len(nColumnsPerLogSize[treeIndex]) {
+				panic("log size out of supported range")
+			}
+			nColumnsPerLogSize[treeIndex][logSize]++
+		}
+	}
 
 	// bounds length (number of unique log sizes)
 	uniqueLogSizes := make(map[int]struct{})
-	for _, tree := range nColumnsPerLogSize {
-		for logSize := range tree {
-			if logSize > 0 {
-				uniqueLogSizes[logSize] = struct{}{}
-			}
+	for _, tree := range columnLogSizes {
+		for _, logSize := range tree {
+			uniqueLogSizes[logSize] = struct{}{}
 		}
 	}
 	boundsLengthCount := len(uniqueLogSizes)
 
+	// preprocessed columns configuration
+	preprocessedConfig := PreprocessedConfig{}
+	for i := range cairo_components.NPreprocessedColumns {
+		if len(proofRaw.StarkProof.SampledValues[cairo_components.PREPROCESSED_IDX][i]) > 0 {
+			preprocessedConfig[i] = true
+		} else {
+			preprocessedConfig[i] = false
+		}
+	}
+
 	return CircuitData{
 		ComponentConfig:    componentConfig,
+		PreprocessedConfig: preprocessedConfig,
+		ColumnLogSizes:     columnLogSizes,
 		NColumnsPerLogSize: nColumnsPerLogSize,
 		BoundsLength:       boundsLengthCount,
 	}

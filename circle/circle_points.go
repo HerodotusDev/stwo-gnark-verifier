@@ -193,9 +193,10 @@ func (i circlePointIndex) Neg() circlePointIndex {
 	return circlePointIndex{circleChip: i.circleChip, value: negValue}
 }
 
-func (i circlePointIndex) Mul(scalar frontend.Variable) circlePointIndex {
+func (i circlePointIndex) Mul(scalar uints.U32) circlePointIndex {
+	scalarNative := i.circleChip.uapi.ToValue(scalar)
 	indexNative := i.circleChip.uapi.ToValue(i.value)
-	unreducedNewValue := i.circleChip.api.Mul(indexNative, scalar)
+	unreducedNewValue := i.circleChip.api.Mul(indexNative, scalarNative)
 	unreducedNewValueBytes, err := conversion.NativeToBytes(i.circleChip.api, unreducedNewValue)
 	if err != nil {
 		panic(err)

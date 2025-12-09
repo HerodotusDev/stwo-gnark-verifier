@@ -34,13 +34,13 @@ func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize frontend
 
 // halfOdds returns the odds half of the coset.
 func (c Coset) halfOdds(logSize frontend.Variable) Coset {
-	return NewCoset(c.circleChip, SubgroupGenerator(c.circleChip, c.circleChip.api.Add(c.logSize, frontend.Variable(2))), logSize)
+	return NewCoset(c.circleChip, SubgroupGenerator(c.circleChip, c.circleChip.api.Add(logSize, frontend.Variable(2))), logSize)
 }
 
 // Double returns the double of the coset.
 // Coset {initial, step, logSize} -> Coset {initial, step * 2, logSize - 1}
 func (c Coset) Double() Coset {
-	return NewCoset(c.circleChip, c.initial.Mul(frontend.Variable(2)), c.circleChip.api.Sub(c.logSize, frontend.Variable(1)))
+	return NewCoset(c.circleChip, c.initial.Mul(uints.NewU32(2)), c.circleChip.api.Sub(c.logSize, frontend.Variable(1)))
 }
 
 func (c Coset) IndexAt(i uints.U32) circlePointIndex {

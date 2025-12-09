@@ -131,13 +131,13 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVeri
 	c.channel.MixFelts(flattenedSampledValues)
 
 	// Draw random coeff for FRI
-	_ = c.channel.DrawFelt()
+	randomCoeff := c.channel.DrawFelt()
 
 	// Compute bounds (column log sizes deduped, in decreasing order and not blew up)
 	bounds := commitmentVerifier.Bounds()
 
 	// Verification of commitment stage of FRI
-	_ = fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.FriProof, bounds)
+	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.FriProof, bounds)
 
 	// Proof of work
 	c.channel.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
@@ -154,6 +154,6 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVeri
 	}
 
 	// Verify FRI quotients
-	// friAnswers := friVerifier.FriQuotientEvaluations(commitmentVerifier.ColumnLogSizes(false), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
+	_ = friVerifier.FriQuotientEvaluations(proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff, circuitData)
 	// friVerifier.Verify(queries, friAnswers)
 }

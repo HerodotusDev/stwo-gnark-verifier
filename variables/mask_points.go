@@ -217,9 +217,9 @@ func (claim CairoClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, cir
 	// Add preprocessed mask points
 	preprocessedMaskPoints := make([][]circle.Point, cairo_components.NPreprocessedColumns)
 	for i := range cairo_components.NPreprocessedColumns {
-		// it's easier to add a point for each preprocessed column and later in fri (where the point presence matters)
-		// iterate over sampling points rather than mask points
-		preprocessedMaskPoints[i] = []circle.Point{oodsPoint}
+		if circuitData.PreprocessedConfig[i] {
+			preprocessedMaskPoints[i] = []circle.Point{oodsPoint}
+		}
 	}
 	maskPoints[cairo_components.PREPROCESSED_IDX] = preprocessedMaskPoints
 

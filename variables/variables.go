@@ -54,14 +54,19 @@ type CircuitHints struct {
 // CircuitData is the data used to compile the circuit
 type CircuitData struct {
 	NColumnsPerLogSize  [][]int
+	ColumnLogSizes      [][]int
 	DedupedQueriesShape []int
 	ComponentConfig     ComponentConfig
+	PreprocessedConfig  PreprocessedConfig
 	BoundsLength        int
 	MaxLogSize          uint8
 }
 
 // ComponentConfig is the configuration of the components used in the circuit
 type ComponentConfig [61]bool
+
+// PreprocessedConfig is the configuration of the preprocessed columns used in the circuit
+type PreprocessedConfig [cairo_components.NPreprocessedColumns]bool
 
 // ╔══════════════════════════════════╗
 // ║        Interaction Elements      ║
