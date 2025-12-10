@@ -33,6 +33,7 @@ func TestVerifier(t *testing.T) {
 
 	cairoProof := variables.BuildProof(*cairoProofRaw)
 	circuitData := variables.BuildCircuitData(cairoProofRaw)
+	// TODO: have a verifier run generate a file with circuitData
 	circuitData.DedupedQueriesShape = []int{1, 2, 3, 5, 7, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}
 	circuitData.MaxLogSize = 25
 

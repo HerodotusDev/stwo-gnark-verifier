@@ -1,8 +1,6 @@
 package fri
 
 import (
-	"math/big"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
@@ -170,6 +168,8 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 		// append a dummy hash to the end of the layer, will never be used for hashing
 		layerHashes[layerLog].Insert(frontend.Variable(0))
 		layerHashes[layerLog].Insert(frontend.Variable(0))
+		layerHashes[layerLog].Insert(frontend.Variable(0))
+		layerHashes[layerLog].Insert(frontend.Variable(0))
 
 		if layerLog == 0 {
 			break
@@ -184,56 +184,4 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 		v.uapi.AssertIsEqual(computedRoot[i], v.root[i])
 	}
 
-}
-
-// WitnessHint returns the witness values for the given inputs.
-// It always returns 2 witness values in a predictable order (guessing which one will be needed based on the provided flags)
-func WitnessHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
-	// extract the inputs
-	isLeftQueried := inputs[0].Uint64()
-	isRightAlsoQueried := inputs[1].Uint64()
-	isJustRightQueried := inputs[2].Uint64()
-	// witness index points to the next unused hash witness entry (as a list of [32]uints.U8)
-	witnessIndex := int(inputs[3].Uint64())
-	// hashWitness is passed as a flat []*big.Int (so a singe witness entry is 32 consecutive big.Ints)
-	hashWitness := inputs[4:]
-
-	// initialize the results with dummy witness values by default
-	for i := 0; i < 64; i++ {
-		results[i] = big.NewInt(0)
-	}
-	// fill the results with the needed witness values
-	if isLeftQueried == 1 {
-		if isRightAlsoQueried == 1 {
-			// no witness needed, keep dummy witness
-		} else {
-			// right witness needed
-			for i := 0; i < 32; i++ {
-				results[32+i] = hashWitness[32*witnessIndex+i]
-			}
-			witnessIndex++
-		}
-	} else {
-		if isJustRightQueried == 1 {
-			// left witness needed
-			for i := 0; i < 32; i++ {
-				results[i] = hashWitness[32*witnessIndex+i]
-			}
-			witnessIndex++
-		} else {
-			// both witnesses needed
-			for i := 0; i < 32; i++ {
-				results[i] = hashWitness[32*witnessIndex+i]
-			}
-			for i := 0; i < 32; i++ {
-				results[32+i] = hashWitness[32*(witnessIndex+1)+i]
-			}
-			witnessIndex += 2
-		}
-	}
-
-	// set the witness index to the next unused hash witness entry
-	results[64] = big.NewInt(int64(witnessIndex))
-
-	return nil
 }

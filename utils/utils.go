@@ -69,13 +69,11 @@ func SelectHash(api frontend.API, condition frontend.Variable, hash0, hash1 [32]
 // GenerateQueries folds the base layer queries and deduplicates them layer by layer.
 // It returns the deduplicated queries for all layers from root to leaves (exactly maxLogSize + 1 layers).
 func GenerateQueries(api frontend.API, baseLayerQueries []frontend.Variable, nQueries uint8, dedupedQueriesShape []int, maxLogSize uint8) [][]frontend.Variable {
-	// initialize the queries array (containing duplicates and that can be computed statically)
-	queries := make([][]frontend.Variable, maxLogSize+1)
+	// initialize the queries array
 	queriesDeduped := make([][]frontend.Variable, maxLogSize+1)
 
-	// deduplicate and orderthe base layer queries
-	queries[maxLogSize] = baseLayerQueries
-	layerQueriesDeduped, err := api.Compiler().NewHint(DeduplicationHint, dedupedQueriesShape[maxLogSize], queries[maxLogSize]...)
+	// deduplicate and order the base layer queries
+	layerQueriesDeduped, err := api.Compiler().NewHint(DeduplicationHint, dedupedQueriesShape[maxLogSize], baseLayerQueries...)
 	if err != nil {
 		panic(err)
 	}
@@ -83,50 +81,54 @@ func GenerateQueries(api frontend.API, baseLayerQueries []frontend.Variable, nQu
 	if err != nil {
 		panic(err)
 	}
-	AssertPartialDeduplication(api, layerQueriesDedupedOrdered, queries[maxLogSize])
+	AssertPartialDeduplication(api, layerQueriesDedupedOrdered, baseLayerQueries)
 	AssertAscendingOrder(api, layerQueriesDedupedOrdered)
 	queriesDeduped[maxLogSize] = layerQueriesDedupedOrdered
 
 	// build all queries above the base layer
 	for l := maxLogSize; l >= 1; l-- {
-		// compute the queries for the next layer (not deduplicated)
-		queries[l-1] = make([]frontend.Variable, dedupedQueriesShape[l])
-		if dedupedQueriesShape[l] > 0 {
-			for queryIndex := 0; queryIndex < dedupedQueriesShape[l]; queryIndex++ {
-				parentQueryBinary := api.ToBinary(queriesDeduped[l][queryIndex], 32)
-				parentQueryShifted := api.FromBinary(parentQueryBinary[1:]...)
-				queries[l-1][queryIndex] = parentQueryShifted
-			}
-		}
-
-		// deduplicate the queries for the next layer
-		nextLayerQueriesDeduped, err := api.Compiler().NewHint(DeduplicationHint, dedupedQueriesShape[l-1], queries[l-1]...)
-		if err != nil {
-			panic(err)
-		}
-		nextLayerQueriesDedupedOrdered, err := api.Compiler().NewHint(AscendingOrderHint, dedupedQueriesShape[l-1], nextLayerQueriesDeduped...)
-		if err != nil {
-			panic(err)
-		}
-		AssertPartialDeduplication(api, nextLayerQueriesDedupedOrdered, queries[l-1])
-		AssertAscendingOrder(api, nextLayerQueriesDedupedOrdered)
-		queriesDeduped[l-1] = nextLayerQueriesDedupedOrdered
+		queriesDeduped[l-1] = FoldQueries(api, queriesDeduped[l], dedupedQueriesShape[l-1])
 	}
 
 	return queriesDeduped
 }
 
+// FoldQueries folds the src layer queries and deduplicates/orders them.
+func FoldQueries(api frontend.API, srcQueries []frontend.Variable, nDeduplicatedQueries int) []frontend.Variable {
+	// compute the queries for the dst layer (not deduplicated)
+	dstQueries := make([]frontend.Variable, len(srcQueries))
+	for queryIndex := 0; queryIndex < len(srcQueries); queryIndex++ {
+		parentQueryBinary := api.ToBinary(srcQueries[queryIndex], 32)
+		parentQueryShifted := api.FromBinary(parentQueryBinary[1:]...)
+		dstQueries[queryIndex] = parentQueryShifted
+	}
+
+	// deduplicate the queries for the dst layer
+	nextLayerQueriesDeduped, err := api.Compiler().NewHint(DeduplicationHint, nDeduplicatedQueries, dstQueries...)
+	if err != nil {
+		panic(err)
+	}
+	dstQueriesOrdered, err := api.Compiler().NewHint(AscendingOrderHint, nDeduplicatedQueries, nextLayerQueriesDeduped...)
+	if err != nil {
+		panic(err)
+	}
+	AssertPartialDeduplication(api, dstQueriesOrdered, dstQueries)
+	AssertAscendingOrder(api, dstQueriesOrdered)
+	return dstQueriesOrdered
+}
+
 // ToLookupTable converts a slice of slices of frontend.Variable to a slice of lookup tables.
-func ToLookupTable(api frontend.API, queries [][]frontend.Variable) []logderivlookup.Table {
-	lookupTables := make([]logderivlookup.Table, len(queries))
-	for i, layerQueries := range queries {
+func ToLookupTable(api frontend.API, table [][]frontend.Variable) []logderivlookup.Table {
+	lookupTables := make([]logderivlookup.Table, len(table))
+	for i, slice := range table {
 		lookupTables[i] = logderivlookup.New(api)
-		for _, query := range layerQueries {
-			lookupTables[i].Insert(query)
+		for _, value := range slice {
+			lookupTables[i].Insert(value)
 		}
-		// We append a dummy query to the end of the lookup table, this is because when handling the last query (queries[j])
-		// of a layer the vcs verifier also accesses the next query (queries[j+1]).
-		// We use a dummy query that is greater than all possible queries to have an error in case it is used
+		// We append a dummy value to the end of the lookup table.
+		// This is because when, for instance, handling the last query (queries[j]) of a layer the vcs verifier also
+		// accesses the next query (queries[j+1]). We use a dummy query that is greater than all possible queries to
+		// have an error in case it is used. Same for fri quotient evaluations.
 		lookupTables[i].Insert(frontend.Variable(1 << 32))
 	}
 	return lookupTables

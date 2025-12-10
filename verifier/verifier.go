@@ -137,7 +137,7 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVeri
 	bounds := commitmentVerifier.Bounds()
 
 	// Verification of commitment stage of FRI
-	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.FriProof, bounds)
+	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.FriProof, bounds, circuitData)
 
 	// Proof of work
 	c.channel.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
@@ -154,6 +154,8 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVeri
 	}
 
 	// Verify FRI quotients
-	_ = friVerifier.FriQuotientEvaluations(proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff, circuitData)
-	// friVerifier.Verify(queries, friAnswers)
+	friAnswers := friVerifier.FriQuotientEvaluations(proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
+	friAnswersEncoded := fri.EncodeFriAnswers(c.qm31, friAnswers)
+	friAnswersLookup := utils.ToLookupTable(c.api, friAnswersEncoded)
+	friVerifier.Verify(queriesLookup, friAnswersLookup)
 }

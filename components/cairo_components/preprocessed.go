@@ -56,7 +56,7 @@ func NewPreprocessedColumnSeq(api frontend.API, logSize frontend.Variable) Prepr
 		id = api.Add(id, api.Mul(isMatch, frontend.Variable(mapping.id)))
 		matchCount = api.Add(matchCount, isMatch)
 	}
-	api.AssertIsEqual(matchCount, frontend.Variable(1))
+	api.AssertIsEqual(api.Mul(matchCount, api.Sub(frontend.Variable(1), matchCount)), frontend.Variable(0))
 
 	return PreprocessedColumn{
 		id: id,

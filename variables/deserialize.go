@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strconv"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
@@ -62,7 +61,6 @@ func BuildProof(proofRaw ProofRaw) Proof {
 	proof.InteractionPow = uints.NewU64(proofRaw.InteractionPow)
 	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
 	proof.StarkProof = BuildStarkProof(&proofRaw.StarkProof)
-	proof.CircuitHints = buildCircuitHints(proofRaw.CircuitHints)
 
 	return proof
 }
@@ -1057,40 +1055,6 @@ func buildLastLayerPoly(raw LinePolyRaw) circle.LinePoly {
 		Coeffs:  []m31.QM31{coeffs},
 		LogSize: uints.NewU8(raw.LogSize),
 	}
-}
-
-// ╔══════════════════════════════════╗
-// ║      Circuit Hints Building      ║
-// ╚══════════════════════════════════╝
-
-func buildCircuitHints(raw CircuitHintsRaw) CircuitHints {
-	hints := CircuitHints{}
-
-	queryMap := make(map[int][]int, len(raw.QueryPositionsByLogSize))
-	maxLogSize := -1
-	for logSizeStr, positions := range raw.QueryPositionsByLogSize {
-		logSize, err := strconv.ParseUint(logSizeStr, 10, 32)
-		if err != nil {
-			panic(err)
-		}
-		intLogSize := int(logSize)
-		if intLogSize > maxLogSize {
-			maxLogSize = intLogSize
-		}
-		queryMap[intLogSize] = append([]int(nil), positions...)
-	}
-
-	queries := make([][]int, maxLogSize+1)
-	for log := 0; log <= maxLogSize; log++ {
-		if positions, ok := queryMap[log]; ok {
-			queries[log] = positions
-			continue
-		}
-		queries[log] = []int{}
-	}
-
-	hints.Queries = queries
-	return hints
 }
 
 // ╔══════════════════════════════════╗

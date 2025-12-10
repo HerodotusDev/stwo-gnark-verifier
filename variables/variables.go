@@ -29,7 +29,6 @@ type Proof struct {
 	InteractionPow   uints.U64
 	InteractionClaim CairoInteractionClaim
 	StarkProof       StarkProof
-	CircuitHints     CircuitHints
 }
 
 // StarkProof is the proof emitted by the Stwo Backend
@@ -40,11 +39,6 @@ type StarkProof struct {
 	Decommitments []MerkleDecommitment
 	FriProof      FriProof
 	ProofOfWork   uints.U64
-}
-
-// CircuitHints is the data provided to the circuit by the Stwo Prover
-type CircuitHints struct {
-	Queries [][]int
 }
 
 // ╔══════════════════════════════════╗
