@@ -13,7 +13,7 @@ import (
 )
 
 type VerifierCircuit struct {
-	proof       variables.Proof       `gnark:"-"`
+	proof       variables.Proof
 	circuitData variables.CircuitData `gnark:"-"`
 }
 
