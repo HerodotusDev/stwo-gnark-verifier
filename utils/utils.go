@@ -10,6 +10,10 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+// ╔══════════════════════════════════╗
+// ║         Conversion Utils         ║
+// ╚══════════════════════════════════╝
+
 // FlattenTree flattens a tree of slices into a single slice.
 func FlattenTree[T any](tree [][]T) []T {
 	result := make([]T, 0)
@@ -28,6 +32,23 @@ func U32SliceToNativeSlice(api frontend.API, uapi *uints.BinaryField[uints.U32],
 	return out
 }
 
+// ToLookupTable converts a slice of slices of frontend.Variable to a slice of lookup tables.
+func ToLookupTable(api frontend.API, table [][]frontend.Variable) []logderivlookup.Table {
+	lookupTables := make([]logderivlookup.Table, len(table))
+	for i, slice := range table {
+		lookupTables[i] = logderivlookup.New(api)
+		for _, value := range slice {
+			lookupTables[i].Insert(value)
+		}
+		// We append a dummy value to the end of the lookup table.
+		// This is because when, for instance, handling the last query (queries[j]) of a layer the vcs verifier also
+		// accesses the next query (queries[j+1]). We use a dummy query that is greater than all possible queries to
+		// have an error in case it is used. Same for fri quotient evaluations.
+		lookupTables[i].Insert(frontend.Variable(1 << 32))
+	}
+	return lookupTables
+}
+
 // BlowupLogSizes blows up the log sizes by the given factor.
 func BlowupLogSizes(api frontend.API, logSizes []frontend.Variable, blowupFactor frontend.Variable) []frontend.Variable {
 	if len(logSizes) == 0 {
@@ -40,31 +61,9 @@ func BlowupLogSizes(api frontend.API, logSizes []frontend.Variable, blowupFactor
 	return out
 }
 
-// Pow computes base^exponent using the binary decomposition of the exponent. (util should be elsewhere)
-func Pow(api frontend.API, cmp *cmp.BoundedComparator, base, exponent frontend.Variable) frontend.Variable {
-	one := frontend.Variable(1)
-	result := one
-
-	for i := 0; i < 32; i++ {
-		isLess := cmp.IsLess(frontend.Variable(i), exponent)
-		result = api.Select(isLess, api.Mul(result, base), result)
-	}
-
-	return result
-}
-
-// SelectHash selects between two [32]uints.U8 based on a frontend.Variable condition.
-func SelectHash(api frontend.API, condition frontend.Variable, hash0, hash1 [32]uints.U8) [32]uints.U8 {
-	result := [32]uints.U8{}
-	uapi, err := uints.New[uints.U32](api)
-	if err != nil {
-		panic(err)
-	}
-	for i := 0; i < 32; i++ {
-		result[i] = uapi.Select(condition, hash0[i], hash1[i])
-	}
-	return result
-}
+// ╔══════════════════════════════════╗
+// ║           Query Utils            ║
+// ╚══════════════════════════════════╝
 
 // GenerateQueries folds the base layer queries and deduplicates them layer by layer.
 // It returns the deduplicated queries for all layers from root to leaves (exactly maxLogSize + 1 layers).
@@ -117,21 +116,21 @@ func FoldQueries(api frontend.API, srcQueries []frontend.Variable, nDeduplicated
 	return dstQueriesOrdered
 }
 
-// ToLookupTable converts a slice of slices of frontend.Variable to a slice of lookup tables.
-func ToLookupTable(api frontend.API, table [][]frontend.Variable) []logderivlookup.Table {
-	lookupTables := make([]logderivlookup.Table, len(table))
-	for i, slice := range table {
-		lookupTables[i] = logderivlookup.New(api)
-		for _, value := range slice {
-			lookupTables[i].Insert(value)
-		}
-		// We append a dummy value to the end of the lookup table.
-		// This is because when, for instance, handling the last query (queries[j]) of a layer the vcs verifier also
-		// accesses the next query (queries[j+1]). We use a dummy query that is greater than all possible queries to
-		// have an error in case it is used. Same for fri quotient evaluations.
-		lookupTables[i].Insert(frontend.Variable(1 << 32))
+// ╔══════════════════════════════════╗
+// ║           Hashing utils		  ║
+// ╚══════════════════════════════════╝
+
+// SelectHash selects between two [32]uints.U8 based on a frontend.Variable condition.
+func SelectHash(api frontend.API, condition frontend.Variable, hash0, hash1 [32]uints.U8) [32]uints.U8 {
+	result := [32]uints.U8{}
+	uapi, err := uints.New[uints.U32](api)
+	if err != nil {
+		panic(err)
 	}
-	return lookupTables
+	for i := 0; i < 32; i++ {
+		result[i] = uapi.Select(condition, hash0[i], hash1[i])
+	}
+	return result
 }
 
 // SplitHash splits a [32]uints.U8 into two 128-bit frontend.Variables.
@@ -165,4 +164,21 @@ func RebuildHash(api frontend.API, lo, hi frontend.Variable) [32]uints.U8 {
 		hash[i+16] = hiBytes[nHiBytes-16+i]
 	}
 	return hash
+}
+
+// ╔══════════════════════════════════╗
+// ║            Math Utils            ║
+// ╚══════════════════════════════════╝
+
+// Pow computes base^exponent using the binary decomposition of the exponent. (util should be elsewhere)
+func Pow(api frontend.API, cmp *cmp.BoundedComparator, base, exponent frontend.Variable) frontend.Variable {
+	one := frontend.Variable(1)
+	result := one
+
+	for i := 0; i < 32; i++ {
+		isLess := cmp.IsLess(frontend.Variable(i), exponent)
+		result = api.Select(isLess, api.Mul(result, base), result)
+	}
+
+	return result
 }
