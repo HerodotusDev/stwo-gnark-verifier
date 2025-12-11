@@ -37,7 +37,7 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	// First layer verifier
 	columncommitmentDomains := make([]circle.CircleDomain, 0)
 	for _, bound := range bounds {
-		columncommitmentDomains = append(columncommitmentDomains, circle.NewCanonicCoset(circleChip, api.Add(bound, friConfig.LogBlowupFactor)).CircleDomain())
+		columncommitmentDomains = append(columncommitmentDomains, circle.NewCanonicCoset(circleChip, bound).CircleDomain())
 	}
 	firstLayerVerifier := FriFirstLayerVerifier{
 		columnBounds:            bounds,
@@ -47,9 +47,8 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	}
 
 	// Inner layer verifiers
-	layerBound := api.Sub(bounds[0], 1) // first bound folded
-	layerBoundBlewup := api.Add(layerBound, friConfig.LogBlowupFactor)
-	layerDomain := circle.NewLineDomain(circle.NewCoset(circleChip, circle.SubgroupGenerator(circleChip, api.Add(layerBoundBlewup, 2)), layerBoundBlewup))
+	layerBound := api.Sub(bounds[0], 2) // first bound folded and blew up
+	layerDomain := circle.NewLineDomain(circle.NewCoset(circleChip, circle.SubgroupGenerator(circleChip, api.Add(api.Add(layerBound, friConfig.LogBlowupFactor), 2)), api.Add(layerBound, friConfig.LogBlowupFactor)))
 
 	innerLayerVerifiers := make([]FriInnerLayerVerifier, len(friProof.InnerLayerProofs))
 	for i, innerLayerProof := range friProof.InnerLayerProofs {
@@ -85,9 +84,9 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 }
 
 func (f *FriVerifier) Verify(queries []logderivlookup.Table, evaluations []logderivlookup.Table) {
-	_ = f.verifyFirstLayer(queries, evaluations)
-	// lastEvaluations := f.verifyInnerLayers(queries, firstLayerEvaluations)
-	// f.verifyLastLayer(lastEvaluations)
+	firstLayerEvaluations := f.verifyFirstLayer(queries, evaluations)
+	lastEvaluations := f.verifyInnerLayers(queries, firstLayerEvaluations)
+	f.verifyLastLayer(lastEvaluations)
 }
 
 // ╔══════════════════════════════════╗
@@ -353,6 +352,161 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 	return sparseEvaluations
 }
 
+// ╔══════════════════════════════════╗
+// ║            Inner Layers          ║
+// ╚══════════════════════════════════╝
+type FriInnerLayerVerifier struct {
+	degreeBound  frontend.Variable
+	domain       circle.LineDomain
+	foldingAlpha m31.QM31
+	layerIndex   int
+	proof        variables.FriLayerProof
+}
+
+func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLayerEvaluations []SparseEvaluations) []m31.QM31 {
+	columnBoundsIndex := 0
+	previousAlpha := f.FirstLayerVerifier.foldingAlpha
+	maxLogSize := f.circuitData.ColumnBounds[0] - 2
+
+	// initialize the current layer evaluations with the first layer evaluations
+	nQueriesForFirstInnerLayer := f.circuitData.DedupedQueriesShape[maxLogSize]
+	currentLayerEvals := make([]m31.QM31, nQueriesForFirstInnerLayer)
+	for i := range currentLayerEvals {
+		currentLayerEvals[i] = f.qm31Chip.Zero()
+	}
+
+	for logSize := maxLogSize; logSize >= 1; logSize-- {
+		innerLayerVerifier := f.InnerLayerVerifiers[maxLogSize-logSize]
+		// check if we need to fold in fri answers to this layer
+		if columnBoundsIndex < len(f.FirstLayerVerifier.columnBounds) && f.circuitData.ColumnBounds[columnBoundsIndex]-2 == logSize {
+			// fold the evaluations from H_i to I_i
+			foldedColumnEvals := make([]m31.QM31, 0)
+
+			for i, eval := range firstLayerEvaluations[columnBoundsIndex].evals {
+				// queryInitial is the index of (x_i,y_i) in H_i
+				queryInitial := firstLayerEvaluations[columnBoundsIndex].queryInitials[i]
+				// columnDomain corresponds to the circle domain H_i
+				columnDomain := f.FirstLayerVerifier.columnCommitmentDomains[columnBoundsIndex]
+				// P is the point (x_i,y_i) in H_i, we only need the y coordinate for folding
+				P := columnDomain.IndexAt(queryInitial).Point()
+				// Calculate `evenPart` and `oddPart` such that `2h(P) = evenPart + Py * oddPart`.
+				h0 := eval[0] // h(P) = h(x_i, y_i)
+				h1 := eval[1] // h(-P) = h(x_i, -y_i)
+				evenPart := f.qm31Chip.Add(h0, h1)
+				inversePy, _ := f.m31Chip.Inverse(P.Y)
+				oddPart := f.qm31Chip.MulM31(f.qm31Chip.Sub(h0, h1), inversePy)
+				// fold the evaluations with the previous alpha
+				folded := f.qm31Chip.Add(evenPart, f.qm31Chip.Mul(previousAlpha, oddPart))
+				foldedColumnEvals = append(foldedColumnEvals, folded)
+			}
+			columnBoundsIndex++
+
+			// build g_i(x_j) from folded column evaluations and folded g_{i-1}
+			previousAlphaSq := f.qm31Chip.Mul(previousAlpha, previousAlpha)
+			for i, eval := range foldedColumnEvals {
+				currentLayerEvals[i] = f.qm31Chip.Mul(currentLayerEvals[i], previousAlphaSq)
+				currentLayerEvals[i] = f.qm31Chip.Add(currentLayerEvals[i], eval)
+			}
+		}
+
+		// encode the g_i(x_j) into a lookup table of frontend.Variables
+		encodedCurrentLayerEvalsLookup := logderivlookup.New(f.api)
+		for _, eval := range currentLayerEvals {
+			encodedCurrentLayerEvalsLookup.Insert(f.qm31Chip.EncodeNative(eval))
+		}
+		encodedCurrentLayerEvalsLookup.Insert(frontend.Variable(1 << 32))
+
+		// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
+		columnLogSizes := []frontend.Variable{logSize, logSize, logSize, logSize}
+
+		// verify g_i(x_j) decommitments
+		layerDecommitmentPositions, sparseEvaluationsFlattened, sparseEvaluation, _ := f.computeDecommitmentPositionsAndRebuildEvals(
+			queries[logSize+1],
+			encodedCurrentLayerEvalsLookup,
+			f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.FriWitness,
+			0,
+			f.circuitData.DedupedQueriesShape[logSize],
+			logSize+1,
+		)
+
+		// build the decommitment positions and query shape
+		queryShape := make([]int, 32)
+
+		// first layer is layerDecommitmentPositions
+		decommitmentPositions := make([]logderivlookup.Table, 32)
+		decommitmentPositions[logSize+1] = layerDecommitmentPositions
+		queryShape[logSize+1] = 2 * f.circuitData.DedupedQueriesShape[logSize]
+
+		// fold the previous layer knowing that there are 2*f.circuitData.DedupedQueriesShape[logSize] queries
+		previousLayerQueriesLookup := layerDecommitmentPositions
+		previousLayerQueries := make([]frontend.Variable, 0)
+		for i := 0; i < 2*f.circuitData.DedupedQueriesShape[logSize]; i++ {
+			previousLayerQueries = append(previousLayerQueries, previousLayerQueriesLookup.Lookup(frontend.Variable(i))[0])
+		}
+		layerQueries := utils.FoldQueries(f.api, previousLayerQueries, f.circuitData.DedupedQueriesShape[logSize])
+		layerQueriesLookup := logderivlookup.New(f.api)
+		for _, query := range layerQueries {
+			layerQueriesLookup.Insert(query)
+		}
+		layerQueriesLookup.Insert(frontend.Variable(1 << 32))
+		layerQueriesLookup.Insert(frontend.Variable(1 << 32))
+		decommitmentPositions[logSize] = layerQueriesLookup
+		queryShape[logSize] = f.circuitData.DedupedQueriesShape[logSize]
+
+		// the rest of the decommitment positions are the regular queries (no pairs)
+		for i := logSize - 1; i >= 0; i-- {
+			decommitmentPositions[i] = queries[i]
+			queryShape[i] = f.circuitData.DedupedQueriesShape[i]
+		}
+
+		nColumnsPerLogSize := make([]int, 32)
+		nColumnsPerLogSize[logSize+1] = 4
+
+		merkleVerifier := NewMerkleVerifier(f.api, f.uapi, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Commitment, columnLogSizes, nColumnsPerLogSize)
+		merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Decommitment, queryShape)
+
+		// currentLayerEvals contains g_{i-1}(x_j) folded
+		currentLayerEvals = make([]m31.QM31, f.circuitData.DedupedQueriesShape[logSize])
+
+		// fold g_i evaluations from I_i to I_{i+1} (similar to folding over H_i to I_i but with line domains)
+		for i, eval := range sparseEvaluation.evals {
+			queryInitial := sparseEvaluation.queryInitials[i]
+			domain := innerLayerVerifier.domain.Coset()
+			queryInitialLE := uints.U32{queryInitial[3], queryInitial[2], queryInitial[1], queryInitial[0]}
+			P := domain.IndexAt(queryInitialLE).Point()
+			h0 := eval[0] // g_i(P) = g_i(x_i, y_i)
+			h1 := eval[1] // g_i(-P) = g_i(x_i, -y_i)
+			evenPart := f.qm31Chip.Add(h0, h1)
+			inversePx, _ := f.m31Chip.Inverse(P.X) // x instead of y since we are in the line domain
+			oddPart := f.qm31Chip.MulM31(f.qm31Chip.Sub(h0, h1), inversePx)
+			folded := f.qm31Chip.Add(evenPart, f.qm31Chip.Mul(innerLayerVerifier.foldingAlpha, oddPart))
+			currentLayerEvals[i] = folded
+		}
+
+		// update alpha
+		previousAlpha = innerLayerVerifier.foldingAlpha
+
+	}
+
+	return currentLayerEvals
+}
+
+// ╔══════════════════════════════════╗
+// ║            Last Layer            ║
+// ╚══════════════════════════════════╝
+
+// Verifies that the last layer evaluations are equal to the last layer polynomial coefficients
+// This assumes the last layer is a constant polynomial
+func (f *FriVerifier) verifyLastLayer(lastEvaluations []m31.QM31) {
+	for _, eval := range lastEvaluations {
+		f.qm31Chip.AssertEqual(eval, f.LastLayerPoly.Coeffs[0])
+	}
+}
+
+// ╔══════════════════════════════════╗
+// ║            Utilities             ║
+// ╚══════════════════════════════════╝
+
 func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 	layerQueries logderivlookup.Table,
 	evalAtQueries logderivlookup.Table,
@@ -439,114 +593,6 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 
 	return layerDecommitmentPositions, pairedEvalsFlattened, sparseEvaluation, witnessIndex
 }
-
-// ╔══════════════════════════════════╗
-// ║            Inner Layers          ║
-// ╚══════════════════════════════════╝
-type FriInnerLayerVerifier struct {
-	degreeBound  frontend.Variable
-	domain       circle.LineDomain
-	foldingAlpha m31.QM31
-	layerIndex   int
-	proof        variables.FriLayerProof
-}
-
-// func (f *FriVerifier) verifyInnerLayers(queries [][]frontend.Variable, firstLayerEvaluations []SparseEvaluations) []m31.QM31 {
-// 	columnBoundsIndex := 0
-// 	previousAlpha := f.FirstLayerVerifier.foldingAlpha
-// 	// initialize the current layer evaluations with the first layer evaluations
-// 	nQueriesForFirstInnerLayer := len(queries[f.circuitData.ColumnBounds[0]-1])
-// 	currentLayerEvals := make([]m31.QM31, nQueriesForFirstInnerLayer)
-// 	for i := range currentLayerEvals {
-// 		currentLayerEvals[i] = f.qm31Chip.Zero()
-// 	}
-
-// 	for _, innerLayerVerifier := range f.InnerLayerVerifiers {
-// 		// check if we need to fold in fri answers to this layer
-// 		if columnBoundsIndex < len(f.FirstLayerVerifier.columnBounds) && f.FirstLayerVerifier.columnBounds[columnBoundsIndex]-1 == innerLayerVerifier.degreeBound {
-// 			// fold the evaluations from H_i to I_i
-// 			foldedColumnEvals := make([]m31.QM31, 0)
-
-// 			for i, eval := range firstLayerEvaluations[columnBoundsIndex].evals {
-// 				// queryInitial is the index of (x_i,y_i) in H_i
-// 				queryInitial := firstLayerEvaluations[columnBoundsIndex].queryInitials[i]
-// 				// columnDomain corresponds to the circle domain H_i
-// 				columnDomain := f.FirstLayerVerifier.columnCommitmentDomains[columnBoundsIndex]
-// 				// P is the point (x_i,y_i) in H_i, we only need the y coordinate for folding
-// 				P := columnDomain.IndexAt(queryInitial).Point()
-// 				// Calculate `evenPart` and `oddPart` such that `2h(P) = evenPart + Py * oddPart`.
-// 				h0 := eval[0] // h(P) = h(x_i, y_i)
-// 				h1 := eval[1] // h(-P) = h(x_i, -y_i)
-// 				evenPart := f.qm31Chip.Add(h0, h1)
-// 				inversePy, _ := f.m31Chip.Inverse(P.Y)
-// 				oddPart := f.qm31Chip.MulM31(f.qm31Chip.Sub(h0, h1), inversePy)
-// 				// fold the evaluations with the previous alpha
-// 				folded := f.qm31Chip.Add(evenPart, f.qm31Chip.Mul(previousAlpha, oddPart))
-// 				foldedColumnEvals = append(foldedColumnEvals, folded)
-// 			}
-// 			columnBoundsIndex++
-
-// 			// build g_i(x_j) from folded column evaluations and folded g_{i-1}
-// 			previousAlphaSq := f.qm31Chip.Mul(previousAlpha, previousAlpha)
-// 			for i, eval := range foldedColumnEvals {
-// 				currentLayerEvals[i] = f.qm31Chip.Mul(currentLayerEvals[i], previousAlphaSq)
-// 				currentLayerEvals[i] = f.qm31Chip.Add(currentLayerEvals[i], eval)
-// 			}
-// 		}
-
-// 		// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
-// 		logSize := uint8(innerLayerVerifier.domain.LogSize())
-// 		columnLogSizes := []uint8{logSize, logSize, logSize, logSize}
-
-// 		// verify g_i(x_j) decommitments
-// 		layerDecommitmentPositions, sparseEvaluationsFlattened, sparseEvaluation, _ := f.computeDecommitmentPositionsAndRebuildEvals(queries[innerLayerVerifier.degreeBound+1], currentLayerEvals, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.FriWitness, 0, int(innerLayerVerifier.degreeBound+1))
-// 		decommitmentPositions := make([][]int, 32)
-// 		decommitmentPositions[logSize] = layerDecommitmentPositions
-
-// 		merkleVerifier := NewMerkleVerifier(f.api, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Commitment, columnLogSizes)
-// 		merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Decommitment)
-
-// 		// currentLayerEvals contains g_{i-1}(x_j) folded
-// 		currentLayerEvals = make([]m31.QM31, len(queries[innerLayerVerifier.degreeBound]))
-
-// 		// fold g_i evaluations from I_i to I_{i+1} (similar to folding over H_i to I_i but with line domains)
-// 		for i, eval := range sparseEvaluation.evals {
-// 			queryInitial := sparseEvaluation.queryInitials[i]
-// 			domain := innerLayerVerifier.domain.Coset()
-// 			queryInitialLE := uints.U32{queryInitial[3], queryInitial[2], queryInitial[1], queryInitial[0]}
-// 			P := domain.IndexAt(queryInitialLE).Point()
-// 			h0 := eval[0] // g_i(P) = g_i(x_i, y_i)
-// 			h1 := eval[1] // g_i(-P) = g_i(x_i, -y_i)
-// 			evenPart := f.qm31Chip.Add(h0, h1)
-// 			inversePx, _ := f.m31Chip.Inverse(P.X) // x instead of y since we are in the line domain
-// 			oddPart := f.qm31Chip.MulM31(f.qm31Chip.Sub(h0, h1), inversePx)
-// 			folded := f.qm31Chip.Add(evenPart, f.qm31Chip.Mul(innerLayerVerifier.foldingAlpha, oddPart))
-// 			currentLayerEvals[i] = folded
-// 		}
-
-// 		// update alpha
-// 		previousAlpha = innerLayerVerifier.foldingAlpha
-
-// 	}
-
-// 	return currentLayerEvals
-// }
-
-// // ╔══════════════════════════════════╗
-// // ║            Last Layer            ║
-// // ╚══════════════════════════════════╝
-
-// // Verifies that the last layer evaluations are equal to the last layer polynomial coefficients
-// // This assumes the last layer is a constant polynomial
-// func (f *FriVerifier) verifyLastLayer(lastEvaluations []m31.QM31) {
-// 	for _, eval := range lastEvaluations {
-// 		f.qm31Chip.AssertEqual(eval, f.LastLayerPoly.Coeffs[0])
-// 	}
-// }
-
-// ╔══════════════════════════════════╗
-// ║            Utilities             ║
-// ╚══════════════════════════════════╝
 
 func reverseBitIndex(api frontend.API, uapi *uints.BinaryField[uints.U32], n frontend.Variable, logSize int) uints.U32 {
 	nBits := bits.ToBinary(api, n, bits.WithNbDigits(32))
