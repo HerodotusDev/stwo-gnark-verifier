@@ -420,7 +420,7 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 		return CairoClaim{}
 	}
 
-	claim := CairoClaim{}
+	claim := CairoClaim{}.Default()
 
 	// Build public data
 	claim.PublicData = BuildPublicData(&claimRaw.PublicData)
@@ -732,7 +732,7 @@ func BuildInteractionClaim(interactionClaimRaw *InteractionClaimRaw) CairoIntera
 		return CairoInteractionClaim{}
 	}
 
-	var interactionClaim CairoInteractionClaim
+	interactionClaim := CairoInteractionClaim{}.Default()
 
 	// Opcode interaction claim
 	if len(interactionClaimRaw.Opcodes["add"]) > 0 {

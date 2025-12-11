@@ -1,10 +1,13 @@
 package variables
 
 import (
+	"reflect"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -274,6 +277,13 @@ type CairoClaim struct {
 	VerifyBitwiseXor9 cairo_components.VerifyBitwiseXor9Claim
 }
 
+// Default returns a CairoClaim with all claim fields initialized to zero values except PublicData.
+func (CairoClaim) Default() CairoClaim {
+	var claim CairoClaim
+	zeroFrontendVariables(reflect.ValueOf(&claim), true)
+	return claim
+}
+
 // ╔══════════════════════════════════╗
 // ║            Public Data           ║
 // ╚══════════════════════════════════╝
@@ -444,6 +454,13 @@ type CairoInteractionClaim struct {
 	VerifyBitwiseXor9 cairo_components.VerifyBitwiseXor9InteractionClaim
 }
 
+// Default returns a CairoInteractionClaim with all claim fields initialized to zero values.
+func (CairoInteractionClaim) Default() CairoInteractionClaim {
+	var claim CairoInteractionClaim
+	zeroInteractionValues(reflect.ValueOf(&claim))
+	return claim
+}
+
 // ╔══════════════════════════════════╗
 // ║            Stark Proof           ║
 // ╚══════════════════════════════════╝
@@ -466,4 +483,60 @@ type FriLayerProof struct {
 	FriWitness   []m31.QM31
 	Decommitment MerkleDecommitment
 	Commitment   [32]uints.U8
+}
+
+var (
+	frontendVariableType = reflect.TypeOf((*frontend.Variable)(nil)).Elem()
+	frontendZeroValue    = reflect.ValueOf(frontend.Variable(0))
+	m31QM31Type          = reflect.TypeOf(m31.QM31{})
+)
+
+func zeroFrontendVariables(value reflect.Value, skipPublicData bool) {
+	if !value.IsValid() {
+		return
+	}
+	switch value.Kind() {
+	case reflect.Pointer:
+		if value.IsNil() {
+			return
+		}
+		zeroFrontendVariables(value.Elem(), skipPublicData)
+	case reflect.Struct:
+		valueType := value.Type()
+		for i := 0; i < value.NumField(); i++ {
+			if skipPublicData && valueType.Field(i).Name == "PublicData" {
+				continue
+			}
+			zeroFrontendVariables(value.Field(i), false)
+		}
+	case reflect.Interface:
+		if value.Type() == frontendVariableType && value.CanSet() {
+			value.Set(frontendZeroValue)
+		}
+	}
+}
+
+func zeroInteractionValues(value reflect.Value) {
+	if !value.IsValid() {
+		return
+	}
+	switch value.Kind() {
+	case reflect.Pointer:
+		if value.IsNil() {
+			return
+		}
+		zeroInteractionValues(value.Elem())
+	case reflect.Struct:
+		if value.Type() == m31QM31Type && value.CanSet() {
+			value.Set(reflect.ValueOf(m31.NewQM31Unchecked(0, 0, 0, 0)))
+			return
+		}
+		for i := 0; i < value.NumField(); i++ {
+			zeroInteractionValues(value.Field(i))
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < value.Len(); i++ {
+			zeroInteractionValues(value.Index(i))
+		}
+	}
 }

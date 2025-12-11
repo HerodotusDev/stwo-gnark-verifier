@@ -13,13 +13,13 @@ import (
 )
 
 type VerifierCircuit struct {
-	proof       variables.Proof
+	Proof       variables.Proof       `gnark:",public"`
 	circuitData variables.CircuitData `gnark:"-"`
 }
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := NewVerifierChip(api)
-	verifierChip.Verify(c.proof, fri.DefaultPcsConfig(), c.circuitData)
+	verifierChip.Verify(c.Proof, fri.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }
@@ -38,11 +38,11 @@ func TestVerifier(t *testing.T) {
 	circuitData.MaxLogSize = 25
 
 	witness := VerifierCircuit{
-		proof:       cairoProof,
+		Proof:       cairoProof,
 		circuitData: circuitData,
 	}
 	circuit := VerifierCircuit{
-		proof:       cairoProof,
+		Proof:       cairoProof,
 		circuitData: circuitData,
 	}
 	assert := test.NewAssert(t)
