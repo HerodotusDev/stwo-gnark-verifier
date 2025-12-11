@@ -57,7 +57,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, ci
 
 	// Initialize commitment verifier
 	commitmentVerifier := fri.NewCommitmentSchemeVerifier(c.api, c.uapi, pcsConfig, circuitData)
-	logSizes := proof.Claim.LogSizes(circuitData)
+	logSizes := components.LogSizes(proof.Claim, circuitData)
 
 	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
 	// This should not include the preprocessed trace (hence calling MAX before adding preprocessed trace log sizes)
@@ -100,11 +100,11 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, ci
 
 	// Verify OODS
 	oodsPoint := c.circle.GetRandomPoint(c.channel)
-	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint, circuitData)
-	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff, circuitData)
+	cairoComponents := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint, circuitData)
+	c.VerifyOODS(proof.StarkProof.SampledValues, cairoComponents, randomCoeff, circuitData)
 
 	// Compute mask points
-	maskPoints := proof.Claim.MaskPoints(c.api, oodsPoint, c.circle, circuitData)
+	maskPoints := components.MaskPoints(c.api, proof.Claim, oodsPoint, c.circle, circuitData)
 
 	c.VerifyValues(commitmentVerifier, proof.StarkProof, maskPoints, circuitData)
 }

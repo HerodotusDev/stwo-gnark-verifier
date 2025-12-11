@@ -1,13 +1,14 @@
-package variables
+package components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
 )
 
 // MaskPoints returns the per-tree sample points for the Cairo claim.
-func (claim CairoClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, circuitData CircuitData) cairo_components.TreeMaskPoints {
+func MaskPoints(api frontend.API, claim variables.CairoClaim, oodsPoint circle.Point, circleChip *circle.CircleChip, circuitData variables.CircuitData) cairo_components.TreeMaskPoints {
 	var parts []cairo_components.TreeMaskPoints
 
 	// Opcodes

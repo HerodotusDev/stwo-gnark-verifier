@@ -14,7 +14,9 @@ import (
 )
 
 type VerifierCircuit struct {
-	Proof       variables.Proof       `gnark:",public"`
+	// Actual proof, directly deserialized from the Cairo proof file.
+	Proof variables.Proof `gnark:",public"`
+	// Additional circuit data obtained from a rust verifier run.
 	circuitData variables.CircuitData `gnark:"-"`
 }
 
@@ -26,12 +28,12 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 }
 
 func main() {
-	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsHintsProofFixture))
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
 	}
-	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsHintsProofFixture))
+	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading circuit shape:", err)
 		os.Exit(1)

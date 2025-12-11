@@ -1,11 +1,12 @@
-package variables
+package components
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 )
 
 // LogSizes returns the per-tree column log sizes for the Cairo claim.
-func (claim CairoClaim) LogSizes(circuitData CircuitData) cairo_components.TreeLogSizes {
+func LogSizes(claim variables.CairoClaim, circuitData variables.CircuitData) cairo_components.TreeLogSizes {
 	var parts []cairo_components.TreeLogSizes
 
 	// Opcodes
