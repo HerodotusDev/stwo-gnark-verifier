@@ -34,11 +34,11 @@ func (c *logupSumCircuit) Define(api frontend.API) error {
 
 func TestLogupSum(t *testing.T) {
 	assert := test.NewAssert(t)
-	raw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsHintsProofFixture))
+	raw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
-	shape, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsHintsProofFixture))
+	shape, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read circuit shape: %v", err)
 	}
