@@ -31,9 +31,14 @@ func main() {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
 	}
+	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsHintsProofFixture))
+	if err != nil {
+		fmt.Println("Error in reading circuit shape:", err)
+		os.Exit(1)
+	}
 
 	cairoProof := variables.BuildProof(*cairoProofRaw)
-	circuitData := variables.BuildCircuitData(cairoProofRaw)
+	circuitData := variables.BuildCircuitData(shapeRaw)
 	circuit := VerifierCircuit{
 		Proof:       cairoProof,
 		circuitData: circuitData,

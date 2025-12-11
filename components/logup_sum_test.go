@@ -38,9 +38,13 @@ func TestLogupSum(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
+	shape, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsHintsProofFixture))
+	if err != nil {
+		t.Fatalf("failed to read circuit shape: %v", err)
+	}
 
 	proof := variables.BuildProof(*raw)
-	logupSumCircuitData = variables.BuildCircuitData(raw)
+	logupSumCircuitData = variables.BuildCircuitData(shape)
 	logupSumClaim = proof.Claim
 	logupSumInteractionClaim = proof.InteractionClaim
 

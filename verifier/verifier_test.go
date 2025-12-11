@@ -30,12 +30,14 @@ func TestVerifier(t *testing.T) {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
 	}
+	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsHintsProofFixture))
+	if err != nil {
+		fmt.Println("Error in reading circuit shape:", err)
+		os.Exit(1)
+	}
 
 	cairoProof := variables.BuildProof(*cairoProofRaw)
-	circuitData := variables.BuildCircuitData(cairoProofRaw)
-	// TODO: have a verifier run generate a file with circuitData
-	circuitData.DedupedQueriesShape = []int{1, 2, 3, 5, 7, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}
-	circuitData.MaxLogSize = 25
+	circuitData := variables.BuildCircuitData(shapeRaw)
 
 	witness := VerifierCircuit{
 		Proof:       cairoProof,
