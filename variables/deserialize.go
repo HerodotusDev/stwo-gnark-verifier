@@ -131,14 +131,10 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 	dedupedQueriesShape := append([]int(nil), shape.DedupedQueriesShape...)
 
 	maxObservedLogSize := 0
-	maxTraceLogSize := 0
-	for treeIdx, tree := range columnLogSizes {
+	for _, tree := range columnLogSizes {
 		for _, logSize := range tree {
 			if logSize > maxObservedLogSize {
 				maxObservedLogSize = logSize
-			}
-			if (treeIdx == cairo_components.MAIN_IDX || treeIdx == cairo_components.INTERACTION_IDX) && logSize > maxTraceLogSize {
-				maxTraceLogSize = logSize
 			}
 		}
 	}
@@ -184,7 +180,7 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 		NColumnsPerLogSize:  nColumnsPerLogSize,
 		BoundsLength:        len(uniqueLogSizes),
 		DedupedQueriesShape: dedupedQueriesShape,
-		MaxLogSize:          uint8(maxTraceLogSize),
+		MaxLogSize:          uint8(maxObservedLogSize),
 	}
 }
 
