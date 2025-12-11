@@ -75,12 +75,12 @@ func compileConstraintCount(b *testing.B, circuit frontend.Circuit) uint64 {
 }
 
 func BenchmarkAccumulatorConstraintCounts(b *testing.B) {
-	addInputs := [benchAddCount]frontend.Variable{3, 5, PRIME - 7, 91}
+	addInputs := [benchAddCount]frontend.Variable{3, 5, Prime - 7, 91}
 	var mulAInputs [benchMulAddCount]frontend.Variable
 	var mulBInputs [benchMulAddCount]frontend.Variable
 
 	for i := 0; i < benchMulAddCount; i++ {
-		mulAInputs[i] = frontend.Variable(PRIME - uint32(2*i+3))
+		mulAInputs[i] = frontend.Variable(Prime - uint32(2*i+3))
 		mulBInputs[i] = frontend.Variable(i + 2)
 	}
 

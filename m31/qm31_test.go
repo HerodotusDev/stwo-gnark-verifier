@@ -26,7 +26,7 @@ func (c *qm31OpsCircuit) Define(api frontend.API) error {
 	qm1 := NewQM31Unchecked(4, 5, 6, 7)
 	m := NewM31Unchecked(8)
 	qm := NewQM31FromM31(m)
-	qm0xqm1 := NewQM31Unchecked(PRIME_U64-71, 93, PRIME_U64-16, 50)
+	qm0xqm1 := NewQM31Unchecked(PrimeU64-71, 93, PrimeU64-16, 50)
 
 	sum := qmChip.Add(qm0, qm1)
 	qmChip.AssertEqual(sum, NewQM31Unchecked(5, 7, 9, 11))
@@ -43,10 +43,10 @@ func (c *qm31OpsCircuit) Define(api frontend.API) error {
 	qmChip.AssertEqual(prodWithM, prodWithQM)
 
 	neg := qmChip.Neg(qm0)
-	qmChip.AssertEqual(neg, NewQM31Unchecked(PRIME_U64-1, PRIME_U64-2, PRIME_U64-3, PRIME_U64-4))
+	qmChip.AssertEqual(neg, NewQM31Unchecked(PrimeU64-1, PrimeU64-2, PrimeU64-3, PrimeU64-4))
 
 	diff := qmChip.Sub(qm0, qm1)
-	qmChip.AssertEqual(diff, NewQM31Unchecked(PRIME_U64-3, PRIME_U64-3, PRIME_U64-3, PRIME_U64-3))
+	qmChip.AssertEqual(diff, NewQM31Unchecked(PrimeU64-3, PrimeU64-3, PrimeU64-3, PrimeU64-3))
 
 	diffWithM31 := qmChip.Sub(qm1, NewQM31FromM31(m))
 	diffWithQM := qmChip.Sub(qm1, qm)
