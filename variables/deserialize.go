@@ -180,7 +180,7 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 		NColumnsPerLogSize:  nColumnsPerLogSize,
 		BoundsLength:        len(uniqueLogSizes),
 		DedupedQueriesShape: dedupedQueriesShape,
-		MaxLogSize:          uint8(maxObservedLogSize),
+		MaxLogSize:          uint8(maxObservedLogSize + 1),
 	}
 }
 
