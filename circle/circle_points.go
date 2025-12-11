@@ -1,53 +1,17 @@
 package circle
 
 import (
-	"math/big"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/conversion"
 	gnarkbits "github.com/consensys/gnark/std/math/bits"
-	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
-const (
-	CircleLogOrder = 31
-)
-
+// M31CircleOrderBitMask is the bit mask for the circle order (taking a point index AND this mask gives the reduced value)
 var M31CircleOrderBitMask = uints.NewU32((1 << CircleLogOrder) - 1)
-
-// ╔══════════════════════════════════╗
-// ║            Circle Chip           ║
-// ╚══════════════════════════════════╝
-
-// CircleChip wires circle operations into the circuit.
-type CircleChip struct {
-	api        frontend.API
-	uapi       *uints.BinaryField[uints.U32]
-	comparator *cmp.BoundedComparator
-	m31        *m31.M31Chip
-	qm31       *m31.QM31Chip
-}
-
-// NewCircleChip instantiates a circle chip backed by the provided field chips.
-func NewCircleChip(api frontend.API, m31Chip *m31.M31Chip, qm31Chip *m31.QM31Chip) *CircleChip {
-	uapi, err := uints.New[uints.U32](api)
-	if err != nil {
-		panic(err)
-	}
-	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
-
-	return &CircleChip{
-		api:        api,
-		uapi:       uapi,
-		comparator: comparator,
-		m31:        m31Chip,
-		qm31:       qm31Chip,
-	}
-}
 
 // ╔══════════════════════════════════╗
 // ║         QM31 Circle Point        ║
@@ -71,7 +35,7 @@ func (c *CircleChip) Add(p, q Point) Point {
 	return Point{X: xx, Y: yy}
 }
 
-// Add a base circle point to a circle point.
+// AddBasePoint adds a base circle point to a circle point.
 func (c *CircleChip) AddBasePoint(p Point, q BasePoint) Point {
 	return Point{
 		X: c.qm31.Sub(c.qm31.MulM31(p.X, q.X), c.qm31.MulM31(p.Y, q.Y)),
@@ -131,14 +95,14 @@ func NewBasePoint(x, y m31.M31) BasePoint {
 	return BasePoint{X: x, Y: y}
 }
 
-// Add adds two base circle points.
+// BaseAdd adds two base circle points.
 func (c *CircleChip) BaseAdd(p, q BasePoint) BasePoint {
 	xx := c.m31.Sub(c.m31.Mul(p.X, q.X), c.m31.Mul(p.Y, q.Y))
 	yy := c.m31.Add(c.m31.Mul(p.X, q.Y), c.m31.Mul(p.Y, q.X))
 	return BasePoint{X: xx, Y: yy}
 }
 
-// Neg negates a base circle point.
+// BaseNeg negates a base circle point.
 func (c *CircleChip) BaseNeg(p BasePoint) BasePoint {
 	return BasePoint{X: p.X, Y: c.m31.Neg(p.Y)}
 }
@@ -162,25 +126,25 @@ func (c *CircleChip) BaseMul(p BasePoint, scalar uints.U32) BasePoint {
 // ║         Circle Point Index       ║
 // ╚══════════════════════════════════╝
 
-// circlePointIndex tracks additive offsets on the circle.
-type circlePointIndex struct {
+// CirclePointIndex tracks additive offsets on the circle.
+type CirclePointIndex struct {
 	circleChip *CircleChip
 
 	value uints.U32
 }
 
 // newPointIndex creates a new point index reducing with an And since group order is a power of two.
-func newPointIndex(c *CircleChip, value uints.U32) circlePointIndex {
-	return circlePointIndex{circleChip: c, value: c.uapi.And(value, M31CircleOrderBitMask)}
+func newPointIndex(c *CircleChip, value uints.U32) CirclePointIndex {
+	return CirclePointIndex{circleChip: c, value: c.uapi.And(value, M31CircleOrderBitMask)}
 }
 
 // Point returns the circle point corresponding to the index.
-func (i circlePointIndex) Point() BasePoint {
+func (i CirclePointIndex) Point() BasePoint {
 	return i.circleChip.BaseMul(baseCircleGenerator, i.value)
 }
 
 // Neg returns the negation of the point index.
-func (i circlePointIndex) Neg() circlePointIndex {
+func (i CirclePointIndex) Neg() CirclePointIndex {
 	order := frontend.Variable(uint32(1) << CircleLogOrder)
 	valueNative := i.circleChip.uapi.ToValue(i.value)
 	unreducedNewValue := i.circleChip.api.Sub(order, valueNative)
@@ -190,10 +154,11 @@ func (i circlePointIndex) Neg() circlePointIndex {
 	}
 	negValue := uints.U32{unreducedNewValueBytes[len(unreducedNewValueBytes)-1], unreducedNewValueBytes[len(unreducedNewValueBytes)-2], unreducedNewValueBytes[len(unreducedNewValueBytes)-3], unreducedNewValueBytes[len(unreducedNewValueBytes)-4]}
 	negValue = i.circleChip.uapi.And(negValue, M31CircleOrderBitMask)
-	return circlePointIndex{circleChip: i.circleChip, value: negValue}
+	return CirclePointIndex{circleChip: i.circleChip, value: negValue}
 }
 
-func (i circlePointIndex) Mul(scalar uints.U32) circlePointIndex {
+// Mul multiplies a point index by a scalar.
+func (i CirclePointIndex) Mul(scalar uints.U32) CirclePointIndex {
 	scalarNative := i.circleChip.uapi.ToValue(scalar)
 	indexNative := i.circleChip.uapi.ToValue(i.value)
 	unreducedNewValue := i.circleChip.api.Mul(indexNative, scalarNative)
@@ -203,46 +168,20 @@ func (i circlePointIndex) Mul(scalar uints.U32) circlePointIndex {
 	}
 	reducedNewValue := uints.U32{unreducedNewValueBytes[len(unreducedNewValueBytes)-1], unreducedNewValueBytes[len(unreducedNewValueBytes)-2], unreducedNewValueBytes[len(unreducedNewValueBytes)-3], unreducedNewValueBytes[len(unreducedNewValueBytes)-4]}
 	reducedNewValue = i.circleChip.uapi.And(reducedNewValue, M31CircleOrderBitMask)
-	return circlePointIndex{circleChip: i.circleChip, value: reducedNewValue}
+	return CirclePointIndex{circleChip: i.circleChip, value: reducedNewValue}
 }
 
-func (c *CircleChip) AddPointIndex(a, b circlePointIndex) circlePointIndex {
+// AddPointIndex adds two point indices.
+func (c *CircleChip) AddPointIndex(a, b CirclePointIndex) CirclePointIndex {
 	unreducedSum := c.uapi.Add(a.value, b.value)
 	reducedSum := c.uapi.And(unreducedSum, M31CircleOrderBitMask)
-	return circlePointIndex{circleChip: c, value: reducedSum}
+	return CirclePointIndex{circleChip: c, value: reducedSum}
 }
 
-func SubgroupGenerator(circleChip *CircleChip, logSize frontend.Variable) circlePointIndex {
+// SubgroupGenerator generates the subgroup generator for a given log size.
+func SubgroupGenerator(circleChip *CircleChip, logSize frontend.Variable) CirclePointIndex {
 	expNative := circleChip.api.Sub(frontend.Variable(CircleLogOrder), logSize)
 	twoPowExp := utils.Pow(circleChip.api, circleChip.comparator, frontend.Variable(2), expNative)
 	pointIndexU32 := circleChip.uapi.ValueOf(twoPowExp)
 	return newPointIndex(circleChip, pointIndexU32)
-}
-
-// ╔══════════════════════════════════╗
-// ║       Coset Vanishing Helpers    ║
-// ╚══════════════════════════════════╝
-
-// CosetVanishing evaluates the vanishing polynomial of a coset at point p.
-func (c *CircleChip) CosetVanishing(coset Coset, p Point) m31.QM31 {
-	x := p.X
-	one := c.qm31.One()
-	for i := 1; i < CircleLogOrder; i++ {
-		isLess := c.comparator.IsLess(frontend.Variable(i), coset.LogSize())
-		square := c.qm31.Mul(x, x)
-		doubleSquare := c.qm31.Add(square, square)
-		doubleSquareMinusOne := c.qm31.Sub(doubleSquare, one)
-		x = c.qm31.Select(isLess, doubleSquareMinusOne, x)
-	}
-	return x
-}
-
-// CosetVanishingInverse returns the inverse of the vanishing evaluation.
-func (c *CircleChip) CosetVanishingInverse(coset Coset, p Point) m31.QM31 {
-	return c.qm31.Inverse(c.CosetVanishing(coset, p))
-}
-
-// CanonicVanishingInverse evaluates the canonic coset vanishing polynomial and inverts it.
-func (c *CircleChip) CanonicVanishingInverse(logSize frontend.Variable, p Point) m31.QM31 {
-	return c.CosetVanishingInverse(NewCanonicCoset(c, logSize).Coset(), p)
 }
