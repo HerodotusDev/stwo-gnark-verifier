@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	assertEqOpcodeTraceColumns       = 12
-	assertEqOpcodeInteractionColumns = 12
+	AssertEqOpcodeTraceColumns       = 12
+	AssertEqOpcodeInteractionColumns = 12
 )
 
 type AssertEqOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AssertEqOpcodeInteractionClaim struct {
@@ -24,7 +23,7 @@ type AssertEqOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -36,19 +35,19 @@ func NewAssertEqOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AssertEqOpcodeClaim,
 	interactionClaim AssertEqOpcodeInteractionClaim,
-) *AssertEqOpcodeComponent {
+) AssertEqOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AssertEqOpcodeComponent{
+	return AssertEqOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -56,8 +55,8 @@ func NewAssertEqOpcode(
 	}
 }
 
-func (c *AssertEqOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(assertEqOpcodeTraceColumns, assertEqOpcodeInteractionColumns)
+func (c AssertEqOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(AssertEqOpcodeTraceColumns, AssertEqOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -135,7 +134,7 @@ func (c *AssertEqOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
 		c.qm31.Add(mem1Base, decoded.Offset2MinusBase),
 		dstID,
-		c.memoryAddressToIdElements,
+		c.memoryAddressToIDElements,
 		sum,
 	)
 	memoryAddressSum1 := memVerify.AddressLookupSum1

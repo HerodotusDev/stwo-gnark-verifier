@@ -51,7 +51,7 @@ func ModUtilsEvaluate(
 	qm31 *m31.QM31Chip,
 	inputs ModUtilsInputs,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdElements m31.InteractionElements,
+	memoryIDElements m31.InteractionElements,
 	sum m31.QM31,
 	domainVanishInv m31.QM31,
 	randomCoeff m31.QM31,
@@ -112,7 +112,7 @@ func ModUtilsEvaluate(
 				points[i].ID,
 				points[i].Limbs,
 				memoryAddressElements,
-				memoryIdElements,
+				memoryIDElements,
 				sum,
 				domainVanishInv,
 				randomCoeff,
@@ -133,7 +133,7 @@ func ModUtilsEvaluate(
 			ptr.Limbs[1],
 			ptr.Limbs[2],
 			memoryAddressElements,
-			memoryIdElements,
+			memoryIDElements,
 		)
 		appendAddress(resPtr.AddressLookupSum)
 		appendId(resPtr.IdToBigLookupSum)
@@ -214,7 +214,7 @@ func ModUtilsEvaluate(
 			entry.Limbs[1],
 			entry.Limbs[2],
 			memoryAddressElements,
-			memoryIdElements,
+			memoryIDElements,
 			sum,
 			domainVanishInv,
 			randomCoeff,

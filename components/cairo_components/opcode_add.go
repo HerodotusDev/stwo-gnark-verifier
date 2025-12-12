@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	addOpcodeTraceColumns       = 103
-	addOpcodeInteractionColumns = 20
+	AddOpcodeTraceColumns       = 103
+	AddOpcodeInteractionColumns = 20
 )
 
 type AddOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AddOpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type AddOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -37,21 +36,21 @@ func NewAddOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AddOpcodeClaim,
 	interactionClaim AddOpcodeInteractionClaim,
-) *AddOpcodeComponent {
+) AddOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AddOpcodeComponent{
+	return AddOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -59,8 +58,8 @@ func NewAddOpcode(
 	}
 }
 
-func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addOpcodeTraceColumns, addOpcodeInteractionColumns)
+func (c AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(AddOpcodeTraceColumns, AddOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -173,8 +172,8 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
 		dstID,
 		dstLimbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memAddrSum1 := dstResult.AddressLookupSum
 	memIdBigSum2 := dstResult.IdToBigLookupSum
@@ -184,8 +183,8 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		c.qm31.Add(mem0Base, decoded.Offset1MinusBase),
 		op0ID,
 		op0Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memAddrSum3 := op0Result.AddressLookupSum
 	memIdBigSum4 := op0Result.IdToBigLookupSum
@@ -195,8 +194,8 @@ func (c *AddOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		c.qm31.Add(mem1Base, decoded.Offset2MinusBase),
 		op1ID,
 		op1Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memAddrSum5 := op1Result.AddressLookupSum
 	memIdBigSum6 := op1Result.IdToBigLookupSum

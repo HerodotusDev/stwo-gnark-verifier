@@ -15,10 +15,14 @@ import (
 	"github.com/consensys/gnark/std/rangecheck"
 )
 
-const PRIME uint32 = 1<<31 - 1
-const PRIME_U64 = uint64(PRIME)
+// Prime is the Prime modulus of the M31 field.
+const Prime uint32 = 1<<31 - 1
 
-var primeBigInt = new(big.Int).SetUint64(PRIME_U64)
+// PrimeU64 is the Prime modulus of the M31 field as a uint64.
+const PrimeU64 = uint64(Prime)
+
+// PrimeBigInt is the Prime modulus of the M31 field as a big.Int.
+var PrimeBigInt = new(big.Int).SetUint64(PrimeU64)
 
 func init() {
 	solver.RegisterHint(MulAddHint)
@@ -32,7 +36,7 @@ func init() {
 // ║        M31 Field Element         ║
 // ╚══════════════════════════════════╝
 
-// A type alias used to represent M31 field elements.
+// M31 is a type alias used to represent M31 field elements.
 type M31 struct {
 	Limb frontend.Variable
 }
@@ -42,26 +46,26 @@ func (m M31) Variable() frontend.Variable {
 	return m.Limb
 }
 
-// The zero element in the M31 field.
+// Zero returns the zero element in the M31 field.
 func Zero() M31 {
 	return NewM31Unchecked(0)
 }
 
-// The one element in the M31 field.
+// One returns the one element in the M31 field.
 func One() M31 {
 	return NewM31Unchecked(1)
 }
 
-// The negative one element in the M31 field.
+// NegOne returns the negative one element in the M31 field.
 func NegOne() M31 {
-	return NewM31Unchecked(PRIME - 1)
+	return NewM31Unchecked(Prime - 1)
 }
 
 // ╔══════════════════════════════════╗
 // ║         M31 Constructors         ║
 // ╚══════════════════════════════════╝
 
-// Creates a new M31 field element from an existing variable. Assumes that the element is
+// NewM31Unchecked creates a new M31 field element from an existing variable. Assumes that the element is
 // already reduced.
 func NewM31Unchecked(x frontend.Variable) M31 {
 	return M31{Limb: x}
@@ -71,13 +75,13 @@ func NewM31Unchecked(x frontend.Variable) M31 {
 // ║        	 M31 Chip             ║
 // ╚══════════════════════════════════╝
 
-// A chip for M31 field operations
+// M31Chip is a chip for M31 field operations
 type M31Chip struct {
 	api          frontend.API
 	rangeChecker frontend.Rangechecker
 }
 
-// Creates a new M31 chip
+// NewM31Chip creates a new M31 chip
 func NewM31Chip(api frontend.API) *M31Chip {
 	return &M31Chip{api: api, rangeChecker: rangecheck.New(api)}
 }
@@ -86,53 +90,53 @@ func NewM31Chip(api frontend.API) *M31Chip {
 // ║          M31 Arithemtics         ║
 // ╚══════════════════════════════════╝
 
-// Adds two M31 field elements without reducing the result.
+// AddUnchecked adds two M31 field elements without reducing the result.
 func (p *M31Chip) AddUnchecked(a M31, b M31) M31 {
 	return NewM31Unchecked(p.api.Add(a.Limb, b.Limb))
 }
 
-// Adds two M31 field elements and returns a value within the M31 field.
+// Add adds two M31 field elements and returns a value within the M31 field.
 func (p *M31Chip) Add(a M31, b M31) M31 {
 	return p.MulAdd(a, One(), b)
 }
 
-// Subracts two M31 field elements without reducing the result.
+// SubUnchecked subtracts two M31 field elements without reducing the result.
 func (p *M31Chip) SubUnchecked(a M31, b M31) M31 {
 	return NewM31Unchecked(p.api.Add(a.Limb, p.api.Mul(b.Limb, NegOne().Limb)))
 }
 
-// Subracts two M31 field elements and returns a value within the M31 field.
+// Sub subtracts two M31 field elements and returns a value within the M31 field.
 func (p *M31Chip) Sub(a M31, b M31) M31 {
 	return p.MulAdd(b, NegOne(), a)
 }
 
-// Negates an M31 field element and returns a value within the M31 field.
+// Neg negates an M31 field element and returns a value within the M31 field.
 func (p *M31Chip) Neg(a M31) M31 {
 	return p.Mul(a, NegOne())
 }
 
-// Negates an M31 field element without reducing the result.
+// NegUnchecked negates an M31 field element without reducing the result.
 func (p *M31Chip) NegUnchecked(a M31) M31 {
 	return p.MulUnchecked(a, NegOne())
 }
 
-// Multiplies two M31 field elements without reducing the result.
+// MulUnchecked multiplies two M31 field elements without reducing the result.
 func (p *M31Chip) MulUnchecked(a M31, b M31) M31 {
 	return NewM31Unchecked(p.api.Mul(a.Limb, b.Limb))
 }
 
-// Multiplies two M31 field elements and returns a value within the M31 field.
+// Mul multiplies two M31 field elements and returns a value within the M31 field.
 func (p *M31Chip) Mul(a M31, b M31) M31 {
 	return p.MulAdd(a, b, Zero())
 }
 
-// Performs a * b + c and returns a value without reducing the result.
+// MulAddUnchecked performs a * b + c and returns a value without reducing the result.
 func (p *M31Chip) MulAddUnchecked(a M31, b M31, c M31) M31 {
 	cLimbCopy := p.api.Mul(c.Limb, 1)
 	return NewM31Unchecked(p.api.MulAcc(cLimbCopy, a.Limb, b.Limb))
 }
 
-// Performs a * b + c and returns a value within the M31 field.
+// MulAdd performs a * b + c and returns a value within the M31 field.
 func (p *M31Chip) MulAdd(a M31, b M31, c M31) M31 {
 	result, err := p.api.Compiler().NewHint(MulAddHint, 2, a.Limb, b.Limb, c.Limb)
 	if err != nil {
@@ -144,7 +148,7 @@ func (p *M31Chip) MulAdd(a M31, b M31, c M31) M31 {
 
 	cLimbCopy := p.api.Mul(c.Limb, 1)
 	lhs := p.api.MulAcc(cLimbCopy, a.Limb, b.Limb)
-	rhs := p.api.MulAcc(remainder.Limb, PRIME, quotient.Limb)
+	rhs := p.api.MulAcc(remainder.Limb, Prime, quotient.Limb)
 	p.api.AssertIsEqual(lhs, rhs)
 
 	p.RangeCheck(quotient)
@@ -152,7 +156,7 @@ func (p *M31Chip) MulAdd(a M31, b M31, c M31) M31 {
 	return remainder
 }
 
-// The hint used to compute MulAdd.
+// MulAddHint is used to compute MulAdd.
 func MulAddHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	if len(inputs) != 3 {
 		panic("MulAddHint expects 3 input operands")
@@ -163,7 +167,7 @@ func MulAddHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	}
 
 	for _, operand := range inputs {
-		if operand.Sign() < 0 || operand.Cmp(primeBigInt) >= 0 {
+		if operand.Sign() < 0 || operand.Cmp(PrimeBigInt) >= 0 {
 			panic(fmt.Sprintf("%s is not in the field", operand.String()))
 		}
 	}
@@ -178,9 +182,9 @@ func MulAddHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	}
 	sum := product + c
 
-	primeUint := PRIME_U64
-	quotient := sum / primeUint
-	remainder := sum % primeUint
+	PrimeUint := PrimeU64
+	quotient := sum / PrimeUint
+	remainder := sum % PrimeUint
 
 	if results[0] == nil {
 		results[0] = new(big.Int)
@@ -229,7 +233,7 @@ func (p *M31Chip) BatchInverse(values []M31) []M31 {
 	return inverses
 }
 
-// Computes the inverse of a field element x such that x * x^-1 = 1.
+// Inverse computes the inverse of a field element x such that x * x^-1 = 1.
 func (p *M31Chip) Inverse(x M31) (M31, frontend.Variable) {
 	result, err := p.api.Compiler().NewHint(InverseHint, 1, x.Limb)
 	if err != nil {
@@ -247,14 +251,14 @@ func (p *M31Chip) Inverse(x M31) (M31, frontend.Variable) {
 	return inverse, hasInv
 }
 
-// The hint used to compute Inverse.
+// InverseHint is used to compute Inverse.
 func InverseHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	if len(inputs) != 1 {
 		panic("InverseHint expects 1 input operand")
 	}
 
 	input := inputs[0]
-	if input.Cmp(primeBigInt) >= 0 || input.Sign() < 0 {
+	if input.Cmp(PrimeBigInt) >= 0 || input.Sign() < 0 {
 		return fmt.Errorf("input is not in the field")
 	}
 
@@ -302,7 +306,7 @@ func (p *M31Chip) RangeCheck(x M31) {
 	p.rangeChecker.Check(p.api.Mul(hi, 2), 16)
 }
 
-// The hint used to split an M31 element into 2 16-bit limbs.
+// SplitLimbsHint is used to split an M31 element into 2 16-bit limbs.
 func SplitLimbsHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	if len(inputs) != 1 {
 		panic("SplitLimbsHint expects 1 input operand")
@@ -314,7 +318,7 @@ func SplitLimbsHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 
 	input := inputs[0]
 
-	if input.Sign() < 0 || input.Cmp(primeBigInt) >= 0 {
+	if input.Sign() < 0 || input.Cmp(PrimeBigInt) >= 0 {
 		return fmt.Errorf("input is not in the field")
 	}
 
@@ -333,19 +337,19 @@ func SplitLimbsHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 // ║          M31 Reduction           ║
 // ╚══════════════════════════════════╝
 
-// Returns val % PRIME when val is in the range [0, 2*PRIME)
+// PartialReduce returns val % Prime when val is in the range [0, 2*Prime)
 // Use to reduce the result of an addition
 func (p *M31Chip) PartialReduce(x M31) M31 {
 	return p.ReduceWithMaxBits(x, quotientBitsPerAdd)
 }
 
-// Returns val % PRIME when val is in the range [0, PRIME^2)
+// FullReduce returns val % Prime when val is in the range [0, Prime^2)
 // Use to reduce the result of a multiplication
 func (p *M31Chip) FullReduce(x M31) M31 {
 	return p.ReduceWithMaxBits(x, 32)
 }
 
-// reduceWithMaxBits reduces x modulo the field using a quotient bounded by maxNbBits.
+// ReduceWithMaxBits reduces x modulo the field using a quotient bounded by maxNbBits.
 func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 	result, err := p.api.Compiler().NewHint(ReduceHint, 2, x.Limb)
 	if err != nil {
@@ -389,7 +393,7 @@ func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 	p.api.AssertIsEqual(
 		x.Limb,
 		p.api.Add(
-			p.api.Mul(quotient, PRIME),
+			p.api.Mul(quotient, Prime),
 			remainder.Limb,
 		),
 	)
@@ -397,7 +401,7 @@ func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 	return remainder
 }
 
-// ReduceHint witnesses quotient and remainder when reducing a value modulo the field.
+// ReduceHint is used to witness quotient and remainder when reducing a value modulo the field.
 func ReduceHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	if len(inputs) != 1 {
 		return fmt.Errorf("ReduceHint expects 1 input operand")
@@ -409,14 +413,14 @@ func ReduceHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	val := new(big.Int).Set(inputs[0])
 	quotient := new(big.Int)
 	remainder := new(big.Int)
-	quotient.QuoRem(val, primeBigInt, remainder)
+	quotient.QuoRem(val, PrimeBigInt, remainder)
 
 	results[0] = quotient
 	results[1] = remainder
 	return nil
 }
 
-// Decompose16Hint decomposes a value into 16-bit limbs for range checking.
+// Decompose16Hint is used to decompose a value into 16-bit limbs for range checking.
 func Decompose16Hint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	if len(inputs) != 2 {
 		return fmt.Errorf("Decompose16Hint expects value and limb count")
@@ -552,6 +556,7 @@ func (p *M31Chip) AssertEqual(x, y M31) {
 	p.api.AssertIsEqual(x.Limb, y.Limb)
 }
 
+// Println prints the M31 element
 func (p *M31Chip) Println(x M31) {
 	p.api.Println("x", x.Limb)
 }
@@ -559,7 +564,7 @@ func (p *M31Chip) Println(x M31) {
 // ╔══════════════════════════════════╗
 // ║       M31 Helper functions       ║
 // ╚══════════════════════════════════╝
-// pow2147483645M31 computes v^147483645 mod PRIME for uint64s.
+// pow2147483645M31 computes v^147483645 mod Prime for uint64s.
 func pow2147483645M31(v uint64) uint64 {
 	t0 := mulModM31(squareNM31(v, 2), v)
 	t1 := mulModM31(squareNM31(t0, 1), t0)
@@ -570,7 +575,7 @@ func pow2147483645M31(v uint64) uint64 {
 	return mulModM31(squareNM31(t5, 7), t2)
 }
 
-// squareNM31 computes x^n mod PRIME for uint64s.
+// squareNM31 computes x^n mod Prime for uint64s.
 func squareNM31(x uint64, n int) uint64 {
 	for i := 0; i < n; i++ {
 		x = mulModM31(x, x)
@@ -578,9 +583,9 @@ func squareNM31(x uint64, n int) uint64 {
 	return x
 }
 
-// mulModM31 computes a * b mod PRIME for uint64s.
+// mulModM31 computes a * b mod Prime for uint64s.
 func mulModM31(a, b uint64) uint64 {
-	return (a * b) % PRIME_U64
+	return (a * b) % PrimeU64
 }
 
 // Returns the next multiple of 16 greater than or equal to bits.

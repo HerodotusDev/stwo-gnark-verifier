@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	poseidonFullRoundTraceColumns       = 126
-	poseidonFullRoundInteractionColumns = 24
+	PoseidonFullRoundTraceColumns       = 126
+	PoseidonFullRoundInteractionColumns = 24
 )
 
 type PoseidonFullRoundChainClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type PoseidonFullRoundChainInteractionClaim struct {
@@ -43,10 +42,10 @@ func NewPoseidonFullRoundChain(
 	vanishEvalInv m31.QM31,
 	claim PoseidonFullRoundChainClaim,
 	interactionClaim PoseidonFullRoundChainInteractionClaim,
-) *PoseidonFullRoundChainComponent {
+) PoseidonFullRoundChainComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PoseidonFullRoundChainComponent{
+	return PoseidonFullRoundChainComponent{
 		qm31:                      qm31,
 		cube252Elements:           cube252Elements,
 		poseidonRoundKeysElements: poseidonRoundKeysElements,
@@ -58,8 +57,8 @@ func NewPoseidonFullRoundChain(
 	}
 }
 
-func (c *PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(poseidonFullRoundTraceColumns, poseidonFullRoundInteractionColumns)
+func (c PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PoseidonFullRoundTraceColumns, PoseidonFullRoundInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -170,7 +169,7 @@ func (c *PoseidonFullRoundChainComponent) Evaluate(sum m31.QM31, traces *Traces,
 	)
 	sum = res0.Sum
 
-	res1 := sub.LinearCombinationN4Coefs1M1_1_1Evaluate(
+	res1 := sub.LinearCombinationN4Coefs1M11_1Evaluate(
 		c.qm31,
 		lcInput1,
 		combArr1,

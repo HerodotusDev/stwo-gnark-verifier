@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	jnzOpcodeTraceColumns       = 37
-	jnzOpcodeInteractionColumns = 12
+	JnzOpcodeTraceColumns       = 37
+	JnzOpcodeInteractionColumns = 12
 )
 
 type JnzOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type JnzOpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type JnzOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -37,21 +36,21 @@ func NewJnzOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim JnzOpcodeClaim,
 	interactionClaim JnzOpcodeInteractionClaim,
-) *JnzOpcodeComponent {
+) JnzOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &JnzOpcodeComponent{
+	return JnzOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -59,8 +58,8 @@ func NewJnzOpcode(
 	}
 }
 
-func (c *JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jnzOpcodeTraceColumns, jnzOpcodeInteractionColumns)
+func (c JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(JnzOpcodeTraceColumns, JnzOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -128,11 +127,11 @@ func (c *JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		c.qm31.Add(memDstBase, offset0MinusBase),
 		dstID,
 		dstLimbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum := dstLookup.AddressLookupSum
-	memoryIdToBigSum := dstLookup.IdToBigLookupSum
+	memoryIDToBigSum := dstLookup.IdToBigLookupSum
 
 	// dst equals zero.
 	total := dstLimbs[0]
@@ -168,8 +167,8 @@ func (c *JnzOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum, opcodesSum3))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum, enabler))
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum, opcodesSum3))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIDToBigSum, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

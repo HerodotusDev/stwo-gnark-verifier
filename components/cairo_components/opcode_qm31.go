@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	qm31OpcodeTraceColumns       = 73
-	qm31OpcodeInteractionColumns = 24
+	Qm31OpcodeTraceColumns       = 73
+	Qm31OpcodeInteractionColumns = 24
 )
 
 type Qm31OpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type Qm31OpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type Qm31OpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck4444Elements    m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
@@ -38,22 +37,22 @@ func NewQm31Opcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck4444Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim Qm31OpcodeClaim,
 	interactionClaim Qm31OpcodeInteractionClaim,
-) *Qm31OpcodeComponent {
+) Qm31OpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &Qm31OpcodeComponent{
+	return Qm31OpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck4444Elements:    rangeCheck4444Elements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
@@ -62,8 +61,8 @@ func NewQm31Opcode(
 	}
 }
 
-func (c *Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(qm31OpcodeTraceColumns, qm31OpcodeInteractionColumns)
+func (c Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(Qm31OpcodeTraceColumns, Qm31OpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -187,8 +186,8 @@ func (c *Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		dstLimbs,
 		dstDeltaABInv,
 		dstDeltaCDInv,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck4444Elements,
 		sum,
 		c.vanishEvalInv,
@@ -203,8 +202,8 @@ func (c *Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		op0Limbs,
 		op0DeltaABInv,
 		op0DeltaCDInv,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck4444Elements,
 		sum,
 		c.vanishEvalInv,
@@ -219,8 +218,8 @@ func (c *Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		op1Limbs,
 		op1DeltaABInv,
 		op1DeltaCDInv,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck4444Elements,
 		sum,
 		c.vanishEvalInv,

@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	addApOpcodeTraceColumns       = 15
-	addApOpcodeInteractionColumns = 16
+	AddApOpcodeTraceColumns       = 15
+	AddApOpcodeInteractionColumns = 16
 )
 
 type AddApOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AddApOpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type AddApOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck19Elements      m31.InteractionElements
 	rangeCheck8Elements       m31.InteractionElements
 	opcodesElements           m31.InteractionElements
@@ -39,23 +38,23 @@ func NewAddApOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	rangeCheck8Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AddApOpcodeClaim,
 	interactionClaim AddApOpcodeInteractionClaim,
-) *AddApOpcodeComponent {
+) AddApOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AddApOpcodeComponent{
+	return AddApOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck19Elements:      rangeCheck19Elements,
 		rangeCheck8Elements:       rangeCheck8Elements,
 		opcodesElements:           opcodesElements,
@@ -65,8 +64,8 @@ func NewAddApOpcode(
 	}
 }
 
-func (c *AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addApOpcodeTraceColumns, addApOpcodeInteractionColumns)
+func (c AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(AddApOpcodeTraceColumns, AddApOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -153,14 +152,14 @@ func (c *AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoef
 		op1Limb0,
 		op1Limb1,
 		op1Limb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
-	memoryAddressToIdSum := readSmall.AddressLookupSum
-	memoryIdToBigSum := readSmall.IdToBigLookupSum
+	memoryAddressToIDSum := readSmall.AddressLookupSum
+	memoryIDToBigSum := readSmall.IdToBigLookupSum
 	sum = readSmall.Sum
 
 	nextAp := c.qm31.Add(inputAp, readSmall.Value)
@@ -209,16 +208,16 @@ func (c *AddApOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoef
 
 	constraint = c.qm31.Mul(
 		part0,
-		c.qm31.Mul(verifyInstructionSum, memoryAddressToIdSum),
+		c.qm31.Mul(verifyInstructionSum, memoryAddressToIDSum),
 	)
 	constraint = c.qm31.Sub(constraint, verifyInstructionSum)
-	constraint = c.qm31.Sub(constraint, memoryAddressToIdSum)
+	constraint = c.qm31.Sub(constraint, memoryAddressToIDSum)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum, rangeCheck19Sum))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum)
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum, rangeCheck19Sum))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum)
 	constraint = c.qm31.Sub(constraint, rangeCheck19Sum)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

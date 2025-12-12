@@ -3,54 +3,55 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
-type RangeCheck3_6_6_3Claim struct{}
+type RangeCheck3663Claim struct {
+	LogSize frontend.Variable
+}
 
-type RangeCheck3_6_6_3InteractionClaim struct {
+type RangeCheck3663InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-const rangeCheck3_6_6_3LogSize = 18
+var RangeCheck3663LogSize = 18
 
-type RangeCheck3_6_6_3Component struct {
-	inner *lookupConstraintComponent
+type RangeCheck3663Component struct {
+	inner lookupConstraintComponent
 }
 
-func NewRangeCheck3_6_6_3(
+func NewRangeCheck3663(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
-	interactionClaim RangeCheck3_6_6_3InteractionClaim,
-) *RangeCheck3_6_6_3Component {
-	values := []uints.U8{
-		uints.NewU8(3),
-		uints.NewU8(6),
-		uints.NewU8(6),
-		uints.NewU8(3),
+	interactionClaim RangeCheck3663InteractionClaim,
+) RangeCheck3663Component {
+	values := []frontend.Variable{
+		frontend.Variable(3),
+		frontend.Variable(6),
+		frontend.Variable(6),
+		frontend.Variable(3),
 	}
 	preprocessed := []PreprocessedColumn{
-		NewPreprocessedColumnRangeCheck4(values, uints.NewU8(0)),
-		NewPreprocessedColumnRangeCheck4(values, uints.NewU8(1)),
-		NewPreprocessedColumnRangeCheck4(values, uints.NewU8(2)),
-		NewPreprocessedColumnRangeCheck4(values, uints.NewU8(3)),
+		NewPreprocessedColumnRangeCheck4(api, values, frontend.Variable(0)),
+		NewPreprocessedColumnRangeCheck4(api, values, frontend.Variable(1)),
+		NewPreprocessedColumnRangeCheck4(api, values, frontend.Variable(2)),
+		NewPreprocessedColumnRangeCheck4(api, values, frontend.Variable(3)),
 	}
 
-	return &RangeCheck3_6_6_3Component{
+	return RangeCheck3663Component{
 		inner: newLookupConstraintComponent(
 			api,
 			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
-			uints.NewU8(rangeCheck3_6_6_3LogSize),
+			RangeCheck3663LogSize,
 			preprocessed,
 			vanishEvalInv,
 		),
 	}
 }
 
-func (c *RangeCheck3_6_6_3Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c RangeCheck3663Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	return c.inner.Evaluate(sum, traces, randomCoeff)
 }

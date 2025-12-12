@@ -123,7 +123,7 @@ func LinearCombinationN4Coefs3111Evaluate(
 	}
 }
 
-func LinearCombinationN4Coefs1M1_1_1Evaluate(
+func LinearCombinationN4Coefs1M11_1Evaluate(
 	qm31 *m31.QM31Chip,
 	input [40]m31.QM31,
 	combination [10]m31.QM31,
@@ -227,7 +227,7 @@ func LinearCombinationN4Coefs11M2_1Evaluate(
 	}
 }
 
-func LinearCombinationN4Coefs42_1_1Evaluate(
+func LinearCombinationN4Coefs42_11Evaluate(
 	qm31 *m31.QM31Chip,
 	input [40]m31.QM31,
 	combination [10]m31.QM31,
@@ -343,7 +343,7 @@ func LinearCombinationN4Coefs42M2_1Evaluate(
 	}
 }
 
-func LinearCombinationN6Coefs42_3_1M1_1Evaluate(
+func LinearCombinationN6Coefs42_3_1M11Evaluate(
 	qm31 *m31.QM31Chip,
 	input [60]m31.QM31,
 	combination [10]m31.QM31,

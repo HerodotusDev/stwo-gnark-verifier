@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	assertEqDoubleDerefOpcodeTraceColumns       = 17
-	assertEqDoubleDerefOpcodeInteractionColumns = 16
+	AssertEqDoubleDerefOpcodeTraceColumns       = 17
+	AssertEqDoubleDerefOpcodeInteractionColumns = 16
 )
 
 type AssertEqDoubleDerefOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AssertEqDoubleDerefOpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type AssertEqDoubleDerefOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -37,21 +36,21 @@ func NewAssertEqDoubleDerefOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AssertEqDoubleDerefOpcodeClaim,
 	interactionClaim AssertEqDoubleDerefOpcodeInteractionClaim,
-) *AssertEqDoubleDerefOpcodeComponent {
+) AssertEqDoubleDerefOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AssertEqDoubleDerefOpcodeComponent{
+	return AssertEqDoubleDerefOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -59,8 +58,8 @@ func NewAssertEqDoubleDerefOpcode(
 	}
 }
 
-func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(assertEqDoubleDerefOpcodeTraceColumns, assertEqDoubleDerefOpcodeInteractionColumns)
+func (c AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(AssertEqDoubleDerefOpcodeTraceColumns, AssertEqDoubleDerefOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -147,11 +146,11 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 		mem1Limb0,
 		mem1Limb1,
 		mem1Limb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum1 := readPositive.AddressLookupSum
-	memoryIdToBigSum2 := readPositive.IdToBigLookupSum
+	memoryIDToBigSum2 := readPositive.IdToBigLookupSum
 
 	mem1Value := c.qm31.Add(mem1Limb0, c.qm31.Mul(mem1Limb1, qm31Const(512)))
 	mem1Value = c.qm31.Add(mem1Value, c.qm31.Mul(mem1Limb2, qm31Const(262144)))
@@ -161,7 +160,7 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
 		c.qm31.Add(mem1Value, decoded.Offset2MinusBase),
 		dstID,
-		c.memoryAddressToIdElements,
+		c.memoryAddressToIDElements,
 		sum,
 	)
 	memoryAddressSum3 := memVerify.AddressLookupSum1
@@ -196,8 +195,8 @@ func (c *AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trac
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, memoryAddressSum3))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum2)
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, memoryAddressSum3))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum2)
 	constraint = c.qm31.Sub(constraint, memoryAddressSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

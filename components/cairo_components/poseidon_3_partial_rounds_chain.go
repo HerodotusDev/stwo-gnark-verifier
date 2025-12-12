@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	poseidon3PartialRoundsTraceColumns       = 169
-	poseidon3PartialRoundsInteractionColumns = 36
+	Poseidon3PartialRoundsTraceColumns       = 169
+	Poseidon3PartialRoundsInteractionColumns = 36
 )
 
 type Poseidon3PartialRoundsChainClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type Poseidon3PartialRoundsChainInteractionClaim struct {
@@ -47,10 +46,10 @@ func NewPoseidon3PartialRoundsChain(
 	vanishEvalInv m31.QM31,
 	claim Poseidon3PartialRoundsChainClaim,
 	interactionClaim Poseidon3PartialRoundsChainInteractionClaim,
-) *Poseidon3PartialRoundsChainComponent {
+) Poseidon3PartialRoundsChainComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &Poseidon3PartialRoundsChainComponent{
+	return Poseidon3PartialRoundsChainComponent{
 		qm31:                           qm31,
 		poseidonRoundKeysElements:      poseidonRoundKeysElements,
 		cube252Elements:                cube252Elements,
@@ -64,8 +63,8 @@ func NewPoseidon3PartialRoundsChain(
 	}
 }
 
-func (c *Poseidon3PartialRoundsChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(poseidon3PartialRoundsTraceColumns, poseidon3PartialRoundsInteractionColumns)
+func (c Poseidon3PartialRoundsChainComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+	traceSampledValues, interactionSampledValues := traces.Take(Poseidon3PartialRoundsTraceColumns, Poseidon3PartialRoundsInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

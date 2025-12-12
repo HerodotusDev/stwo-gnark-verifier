@@ -3,184 +3,243 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
+	"github.com/consensys/gnark/std/lookup/logderivlookup"
+	"github.com/consensys/gnark/std/math/cmp"
 )
 
-var (
-	preprocessedColumnBitwiseXor        = uints.NewU8(0)
-	preprocessedColumnSeq               = uints.NewU8(1)
-	preprocessedColumnRangeCheck2       = uints.NewU8(2)
-	preprocessedColumnRangeCheck3       = uints.NewU8(3)
-	preprocessedColumnRangeCheck4       = uints.NewU8(4)
-	preprocessedColumnRangeCheck5       = uints.NewU8(5)
-	preprocessedColumnPoseidonRoundKeys = uints.NewU8(6)
-	preprocessedColumnBlakeSigma        = uints.NewU8(7)
-	preprocessedColumnPedersenPoints    = uints.NewU8(8)
-)
+// NPreprocessedColumns is the number of preprocessed columns for the Canonical layout
+const NPreprocessedColumns = 162
+
+// seqColumnMappings lists the canonical IDs for each sequence column.
+var seqColumnMappings = []struct {
+	logSize int
+	id      int
+}{
+	{logSize: 24, id: 0},
+	{logSize: 23, id: 1},
+	{logSize: 22, id: 58},
+	{logSize: 21, id: 59},
+	{logSize: 20, id: 60},
+	{logSize: 19, id: 64},
+	{logSize: 18, id: 65},
+	{logSize: 17, id: 75},
+	{logSize: 16, id: 76},
+	{logSize: 15, id: 84},
+	{logSize: 14, id: 90},
+	{logSize: 13, id: 97},
+	{logSize: 12, id: 98},
+	{logSize: 11, id: 99},
+	{logSize: 10, id: 100},
+	{logSize: 9, id: 101},
+	{logSize: 8, id: 104},
+	{logSize: 7, id: 110},
+	{logSize: 6, id: 113},
+	{logSize: 5, id: 144},
+	{logSize: 4, id: 145},
+}
 
 // ╔══════════════════════════════════╗
 // ║       Preprocessed Columns       ║
 // ╚══════════════════════════════════╝
 
-// PreprocessedColumn mimics the Cairo enum variants used to index preprocessed mask values.
+// PreprocessedColumn mimics the Cairo enum variants used to index PreprocessedSampledValues.
 type PreprocessedColumn struct {
-	kind              uints.U8   // kind of the preprocessed column encoded as a 8bit value
-	seqLogSize        uints.U8   // log size of the sequence
-	nTermBits         uints.U8   // number of bits in the term
-	term              uints.U8   // { 0 = left operand, 1 = right operand, 2 = xor result }
-	rangeCheckValues  []uints.U8 // number of bits per range checked value
-	rangeCheckIndex   uints.U8   // index of the RC column
-	simpleColumnIndex uints.U8   // round constants for hashes
+	id frontend.Variable // unique identifier of the column in [0, NPreprocessedColumns-1]
 }
 
-// NewPreprocessedColumnSeq builds a sequence column descriptor.
-func NewPreprocessedColumnSeq(logSize uints.U8) PreprocessedColumn {
+// NewPreprocessedColumnSeq builds a sequence column descriptor using the canonical
+// ordering defined in PreprocessedColumns.
+func NewPreprocessedColumnSeq(api frontend.API, logSize frontend.Variable) PreprocessedColumn {
+	id := frontend.Variable(0)
+	matchCount := frontend.Variable(0)
+	for _, mapping := range seqColumnMappings {
+		isMatch := cmp.IsEqual(api, logSize, frontend.Variable(mapping.logSize))
+		id = api.Add(id, api.Mul(isMatch, frontend.Variable(mapping.id)))
+		matchCount = api.Add(matchCount, isMatch)
+	}
+	api.AssertIsEqual(api.Mul(matchCount, api.Sub(frontend.Variable(1), matchCount)), frontend.Variable(0))
+
 	return PreprocessedColumn{
-		kind:       preprocessedColumnSeq,
-		seqLogSize: logSize,
+		id: id,
 	}
 }
 
 // NewPreprocessedColumnPedersenPoints builds a pedersen points column descriptor.
-func NewPreprocessedColumnPedersenPoints(index uints.U8) PreprocessedColumn {
+// IDs span 2 to 57 as defined by PreprocessedColumns.
+func NewPreprocessedColumnPedersenPoints(api frontend.API, index frontend.Variable) PreprocessedColumn {
+	id := api.Add(index, frontend.Variable(2))
 	return PreprocessedColumn{
-		kind:              preprocessedColumnPedersenPoints,
-		simpleColumnIndex: index,
+		id: id,
 	}
 }
 
-// NewPreprocessedColumnBitwiseXor builds a bitwise xor column descriptor.
-func NewPreprocessedColumnBitwiseXor(nTermBits, term uints.U8) PreprocessedColumn {
+// NewPreprocessedColumnBitwiseXor builds a bitwise xor column descriptor aligned
+// with the canonical ordering.
+func NewPreprocessedColumnBitwiseXor(api frontend.API, nBits, columnID frontend.Variable) PreprocessedColumn {
+	is4 := cmp.IsEqual(api, nBits, frontend.Variable(4))
+	is7 := cmp.IsEqual(api, nBits, frontend.Variable(7))
+	is8 := cmp.IsEqual(api, nBits, frontend.Variable(8))
+	is9 := cmp.IsEqual(api, nBits, frontend.Variable(9))
+	is10 := cmp.IsEqual(api, nBits, frontend.Variable(10))
+
+	base := frontend.Variable(0)
+	base = api.Add(base, api.Mul(is10, frontend.Variable(61)))
+	base = api.Add(base, api.Mul(is9, frontend.Variable(66)))
+	base = api.Add(base, api.Mul(is8, frontend.Variable(77)))
+	base = api.Add(base, api.Mul(is7, frontend.Variable(91)))
+	base = api.Add(base, api.Mul(is4, frontend.Variable(105)))
+
+	matchCount := api.Add(is10, is9)
+	matchCount = api.Add(matchCount, is8)
+	matchCount = api.Add(matchCount, is7)
+	matchCount = api.Add(matchCount, is4)
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
-		kind:      preprocessedColumnBitwiseXor,
-		nTermBits: nTermBits,
-		term:      term,
+		id: id,
 	}
 }
 
-// NewPreprocessedColumnRangeCheck2 builds a range-check (2 values) column descriptor.
-func NewPreprocessedColumnRangeCheck2(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+// NewPreprocessedColumnRangeCheck2 builds a range-check (2 values) column
+// descriptor that matches the canonical ordering.
+func NewPreprocessedColumnRangeCheck2(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
+	isFirst9 := cmp.IsEqual(api, values[0], frontend.Variable(9))
+	isFirst5 := cmp.IsEqual(api, values[0], frontend.Variable(5))
+	isFirst4 := cmp.IsEqual(api, values[0], frontend.Variable(4))
+
+	isSecond9 := cmp.IsEqual(api, values[1], frontend.Variable(9))
+	isSecond4 := cmp.IsEqual(api, values[1], frontend.Variable(4))
+	isSecond3 := cmp.IsEqual(api, values[1], frontend.Variable(3))
+
+	case99 := api.Mul(isFirst9, isSecond9)
+	case54 := api.Mul(isFirst5, isSecond4)
+	case44 := api.Mul(isFirst4, isSecond4)
+	case43 := api.Mul(isFirst4, isSecond3)
+
+	base := frontend.Variable(0)
+	base = api.Add(base, api.Mul(case99, frontend.Variable(69)))
+	base = api.Add(base, api.Mul(case54, frontend.Variable(102)))
+	base = api.Add(base, api.Mul(case44, frontend.Variable(108)))
+	base = api.Add(base, api.Mul(case43, frontend.Variable(111)))
+
+	matchCount := api.Add(api.Add(case99, case54), api.Add(case44, case43))
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
-		kind:             preprocessedColumnRangeCheck2,
-		rangeCheckValues: values,
-		rangeCheckIndex:  columnIndex,
+		id: id,
 	}
 }
 
 // NewPreprocessedColumnRangeCheck3 builds a range-check (3 values) column descriptor.
-func NewPreprocessedColumnRangeCheck3(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck3(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
+	api.AssertIsEqual(values[0], frontend.Variable(7))
+	api.AssertIsEqual(values[1], frontend.Variable(2))
+	api.AssertIsEqual(values[2], frontend.Variable(5))
+
+	base := frontend.Variable(94)
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
-		kind:             preprocessedColumnRangeCheck3,
-		rangeCheckValues: values,
-		rangeCheckIndex:  columnIndex,
+		id: id,
 	}
 }
 
 // NewPreprocessedColumnRangeCheck4 builds a range-check (4 values) column descriptor.
-func NewPreprocessedColumnRangeCheck4(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck4(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
+	isFirst3 := cmp.IsEqual(api, values[0], frontend.Variable(3))
+	isFirst4 := cmp.IsEqual(api, values[0], frontend.Variable(4))
+	isSecond6 := cmp.IsEqual(api, values[1], frontend.Variable(6))
+	isSecond4 := cmp.IsEqual(api, values[1], frontend.Variable(4))
+	isThird6 := cmp.IsEqual(api, values[2], frontend.Variable(6))
+	isThird4 := cmp.IsEqual(api, values[2], frontend.Variable(4))
+	isFourth3 := cmp.IsEqual(api, values[3], frontend.Variable(3))
+	isFourth4 := cmp.IsEqual(api, values[3], frontend.Variable(4))
+
+	case3663 := api.Mul(isFirst3, isSecond6)
+	case3663 = api.Mul(case3663, isThird6)
+	case3663 = api.Mul(case3663, isFourth3)
+
+	case4444 := api.Mul(isFirst4, isSecond4)
+	case4444 = api.Mul(case4444, isThird4)
+	case4444 = api.Mul(case4444, isFourth4)
+
+	base := frontend.Variable(0)
+	base = api.Add(base, api.Mul(case3663, frontend.Variable(71)))
+	base = api.Add(base, api.Mul(case4444, frontend.Variable(80)))
+
+	matchCount := api.Add(case3663, case4444)
+	api.AssertIsEqual(matchCount, frontend.Variable(1))
+
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
-		kind:             preprocessedColumnRangeCheck4,
-		rangeCheckValues: values,
-		rangeCheckIndex:  columnIndex,
+		id: id,
 	}
 }
 
 // NewPreprocessedColumnRangeCheck5 builds a range-check (5 values) column descriptor.
-func NewPreprocessedColumnRangeCheck5(values []uints.U8, columnIndex uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnRangeCheck5(api frontend.API, values []frontend.Variable, columnID frontend.Variable) PreprocessedColumn {
+	for i := 0; i < 5; i++ {
+		api.AssertIsEqual(values[i], frontend.Variable(3))
+	}
+	base := frontend.Variable(85)
+	id := api.Add(base, columnID)
 	return PreprocessedColumn{
-		kind:             preprocessedColumnRangeCheck5,
-		rangeCheckValues: values,
-		rangeCheckIndex:  columnIndex,
+		id: id,
 	}
 }
 
 // NewPreprocessedColumnPoseidonRoundKeys builds a poseidon round keys column descriptor.
-func NewPreprocessedColumnPoseidonRoundKeys(index uints.U8) PreprocessedColumn {
+func NewPreprocessedColumnPoseidonRoundKeys(api frontend.API, index frontend.Variable) PreprocessedColumn {
+	base := frontend.Variable(114)
+	id := api.Add(base, index)
 	return PreprocessedColumn{
-		kind:              preprocessedColumnPoseidonRoundKeys,
-		simpleColumnIndex: index,
+		id: id,
 	}
 }
 
 // NewPreprocessedColumnBlakeSigma builds a blake sigma column descriptor.
-func NewPreprocessedColumnBlakeSigma(index uints.U8) PreprocessedColumn {
+// Occupy range 146 to 161 (inclusive)
+func NewPreprocessedColumnBlakeSigma(api frontend.API, index frontend.Variable) PreprocessedColumn {
+	base := frontend.Variable(146)
+	id := api.Add(base, index)
 	return PreprocessedColumn{
-		kind:              preprocessedColumnBlakeSigma,
-		simpleColumnIndex: index,
+		id: id,
 	}
 }
 
 // Key encodes the column using the same packing logic as the Cairo PreprocessedColumnKey.
-func (column PreprocessedColumn) Key(api frontend.API) uints.U64 {
-	return column.encode(api)
-}
-
-// encode encodes a PreprocessedColumn as a 64-bit value.
-func (column PreprocessedColumn) encode(api frontend.API) uints.U64 {
-	uapi, err := uints.New[uints.U64](api)
-	if err != nil {
-		panic(err)
-	}
-	var res uints.U64
-
-	switch column.kind {
-	case preprocessedColumnBitwiseXor:
-		res = uapi.PackLSB(column.kind, column.nTermBits, column.term)
-	case preprocessedColumnSeq:
-		res = uapi.PackLSB(column.kind, column.seqLogSize)
-	case preprocessedColumnRangeCheck2:
-		res = column.rangeCheckEncode(uapi)
-	case preprocessedColumnRangeCheck3:
-		res = column.rangeCheckEncode(uapi)
-	case preprocessedColumnRangeCheck4:
-		res = column.rangeCheckEncode(uapi)
-	case preprocessedColumnRangeCheck5:
-		res = column.rangeCheckEncode(uapi)
-	case preprocessedColumnPoseidonRoundKeys:
-		res = uapi.PackLSB(column.kind, column.simpleColumnIndex)
-	case preprocessedColumnBlakeSigma:
-		res = uapi.PackLSB(column.kind, column.simpleColumnIndex)
-	case preprocessedColumnPedersenPoints:
-		res = uapi.PackLSB(column.kind, column.simpleColumnIndex)
-	default:
-		panic("unsupported preprocessed column kind")
-	}
-
-	return res
-}
-
-// rangeCheckEncode encodes a range-check column as a 64-bit value.
-func (column PreprocessedColumn) rangeCheckEncode(uapi *uints.BinaryField[uints.U64]) uints.U64 {
-	args := []uints.U8{column.kind}
-	args = append(args, column.rangeCheckValues...)
-	args = append(args, column.rangeCheckIndex)
-	res := uapi.PackLSB(args...)
-	return res
+func (column PreprocessedColumn) Key() frontend.Variable {
+	return column.id
 }
 
 // ╔══════════════════════════════════╗
 // ║    Preprocessed Sampled Values   ║
 // ╚══════════════════════════════════╝
 
-// PreprocessedSampledValues offers lookup helpers mirroring the Cairo implementation.
+// PreprocessedSampledValues is a wrapper around a table of sampled values for the preprocessed trace.
+// It provides the Get() method to access the sampled values for a given column.
+// Note that is needed since components don't always use the same preprocessed columns (e.g. MemoryAddressToID)
 type PreprocessedSampledValues struct {
-	api frontend.API
-	m31 *m31.M31Chip
+	api  frontend.API
+	qm31 *m31.QM31Chip
 
-	values map[uints.U64]m31.QM31
+	values logderivlookup.Table
 }
 
 // NewPreprocessedSampledValues builds a PreprocessedSampledValues from a slice of sampled values.
-func NewPreprocessedSampledValues(api frontend.API, m31Chip *m31.M31Chip, preprocessedSampledValuesRaw [][]m31.QM31) PreprocessedSampledValues {
-	values := make(map[uints.U64]m31.QM31, len(PreprocessedColumns))
+func NewPreprocessedSampledValues(api frontend.API, qm31 *m31.QM31Chip, preprocessedSampledValuesRaw [][]m31.QM31) PreprocessedSampledValues {
+	values := logderivlookup.New(api)
 
-	for i, column := range PreprocessedColumns {
+	for i := range NPreprocessedColumns {
 		columnValues := preprocessedSampledValuesRaw[i]
+
 		switch len(columnValues) {
 		case 0:
-			continue
+			values.Insert(frontend.Variable(0)) // unused preprocessed column
 		case 1:
-			values[column.Key(api)] = columnValues[0]
+			encodedValue := qm31.EncodeNative(columnValues[0])
+			values.Insert(encodedValue)
 		default:
 			panic("preprocessed column has more than 1 sampled value")
 		}
@@ -188,225 +247,15 @@ func NewPreprocessedSampledValues(api frontend.API, m31Chip *m31.M31Chip, prepro
 
 	return PreprocessedSampledValues{
 		api:    api,
-		m31:    m31Chip,
+		qm31:   qm31,
 		values: values,
 	}
 }
 
-// Get returns the sampled value for the provided column, panicking if it is absent.
+// Get returns the sampled value for the provided column
 func (ps PreprocessedSampledValues) Get(column PreprocessedColumn) m31.QM31 {
-	if len(ps.values) == 0 {
-		panic("preprocessed column map is empty")
-	}
-	key := column.Key(ps.api)
-	value, ok := ps.values[key]
-	if !ok {
-		panic("preprocessed column not found")
-	}
+	key := column.Key()
+	encodedValue := ps.values.Lookup(key)[0]
+	value := ps.qm31.DecodeNative(encodedValue)
 	return value
-}
-
-// ╔══════════════════════════════════╗
-// ║    Preprocessed Columns Const    ║
-// ╚══════════════════════════════════╝
-
-// PreprocessedColumns defines the ordering shared with the Cairo implementation.
-var PreprocessedColumns = []PreprocessedColumn{
-	NewPreprocessedColumnSeq(uints.NewU8(24)),
-	NewPreprocessedColumnSeq(uints.NewU8(23)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(0)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(1)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(2)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(3)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(4)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(5)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(6)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(7)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(8)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(9)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(10)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(11)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(12)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(13)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(14)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(15)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(16)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(17)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(18)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(19)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(20)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(21)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(22)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(23)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(24)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(25)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(26)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(27)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(28)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(29)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(30)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(31)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(32)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(33)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(34)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(35)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(36)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(37)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(38)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(39)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(40)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(41)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(42)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(43)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(44)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(45)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(46)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(47)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(48)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(49)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(50)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(51)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(52)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(53)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(54)),
-	NewPreprocessedColumnPedersenPoints(uints.NewU8(55)),
-	NewPreprocessedColumnSeq(uints.NewU8(22)),
-	NewPreprocessedColumnSeq(uints.NewU8(21)),
-	NewPreprocessedColumnSeq(uints.NewU8(20)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(2)),
-	NewPreprocessedColumnSeq(uints.NewU8(19)),
-	NewPreprocessedColumnSeq(uints.NewU8(18)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(9), uints.NewU8(9)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(9), uints.NewU8(9)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(3), uints.NewU8(6), uints.NewU8(6), uints.NewU8(3)}, uints.NewU8(3)),
-	NewPreprocessedColumnSeq(uints.NewU8(17)),
-	NewPreprocessedColumnSeq(uints.NewU8(16)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck4([]uints.U8{uints.NewU8(4), uints.NewU8(4), uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(3)),
-	NewPreprocessedColumnSeq(uints.NewU8(15)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(3)),
-	NewPreprocessedColumnRangeCheck5([]uints.U8{uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3), uints.NewU8(3)}, uints.NewU8(4)),
-	NewPreprocessedColumnSeq(uints.NewU8(14)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck3([]uints.U8{uints.NewU8(7), uints.NewU8(2), uints.NewU8(5)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck3([]uints.U8{uints.NewU8(7), uints.NewU8(2), uints.NewU8(5)}, uints.NewU8(1)),
-	NewPreprocessedColumnRangeCheck3([]uints.U8{uints.NewU8(7), uints.NewU8(2), uints.NewU8(5)}, uints.NewU8(2)),
-	NewPreprocessedColumnSeq(uints.NewU8(13)),
-	NewPreprocessedColumnSeq(uints.NewU8(12)),
-	NewPreprocessedColumnSeq(uints.NewU8(11)),
-	NewPreprocessedColumnSeq(uints.NewU8(10)),
-	NewPreprocessedColumnSeq(uints.NewU8(9)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(5), uints.NewU8(4)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(5), uints.NewU8(4)}, uints.NewU8(1)),
-	NewPreprocessedColumnSeq(uints.NewU8(8)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(0)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(1)),
-	NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(2)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(4)}, uints.NewU8(1)),
-	NewPreprocessedColumnSeq(uints.NewU8(7)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(3)}, uints.NewU8(0)),
-	NewPreprocessedColumnRangeCheck2([]uints.U8{uints.NewU8(4), uints.NewU8(3)}, uints.NewU8(1)),
-	NewPreprocessedColumnSeq(uints.NewU8(6)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(0)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(1)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(2)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(3)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(4)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(5)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(6)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(7)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(8)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(9)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(10)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(11)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(12)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(13)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(14)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(15)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(16)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(17)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(18)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(19)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(20)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(21)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(22)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(23)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(24)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(25)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(26)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(27)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(28)),
-	NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(29)),
-	NewPreprocessedColumnSeq(uints.NewU8(5)),
-	NewPreprocessedColumnSeq(uints.NewU8(4)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(0)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(1)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(2)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(3)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(4)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(5)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(6)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(7)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(8)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(9)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(10)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(11)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(12)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(13)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(14)),
-	NewPreprocessedColumnBlakeSigma(uints.NewU8(15)),
-}
-
-// PreprocessedLogSizes returns the log size of each canonical preprocessed column.
-func PreprocessedLogSizes() []uint32 {
-	sizes := make([]uint32, len(PreprocessedColumns))
-	for i, column := range PreprocessedColumns {
-		sizes[i] = column.logSize()
-	}
-	return sizes
-}
-
-func (column PreprocessedColumn) logSize() uint32 {
-	switch column.kind {
-	case preprocessedColumnSeq:
-		return u8Value(column.seqLogSize)
-	case preprocessedColumnPedersenPoints:
-		return pedersenPointsTableLogSize
-	case preprocessedColumnBitwiseXor:
-		return 2 * u8Value(column.nTermBits)
-	case preprocessedColumnRangeCheck2,
-		preprocessedColumnRangeCheck3,
-		preprocessedColumnRangeCheck4,
-		preprocessedColumnRangeCheck5:
-		var sum uint32
-		for _, value := range column.rangeCheckValues {
-			sum += u8Value(value)
-		}
-		return sum
-	case preprocessedColumnPoseidonRoundKeys:
-		return poseidonRoundKeysLogSize
-	case preprocessedColumnBlakeSigma:
-		return blakeRoundSigmaLogSize
-	default:
-		panic("unsupported preprocessed column kind")
-	}
 }

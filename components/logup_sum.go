@@ -1,7 +1,6 @@
 package components
 
 import (
-	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 )
@@ -16,198 +15,241 @@ func LogupSum(
 	claim variables.CairoClaim,
 	elements variables.CairoInteractionElements,
 	interactionClaim variables.CairoInteractionClaim,
+	circuitData variables.CircuitData,
 ) m31.QM31 {
+	// Public data sum
 	sum := publicDataLogupSum(qm31Chip, elements, claim.PublicData)
 
-	sum = addClaimedSum(qm31Chip, sum, sumOpcodeClaims(qm31Chip, interactionClaim.Opcodes))
-	sum = addClaimedSum(qm31Chip, sum, interactionClaim.VerifyInstruction.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, sumBlakeContext(qm31Chip, interactionClaim.BlakeContext))
-	sum = addClaimedSum(qm31Chip, sum, sumBuiltins(qm31Chip, interactionClaim.Builtins))
-	sum = addClaimedSum(qm31Chip, sum, sumPedersenContext(qm31Chip, interactionClaim.PedersenContext))
-	sum = addClaimedSum(qm31Chip, sum, sumPoseidonContext(qm31Chip, interactionClaim.PoseidonContext))
-	sum = addClaimedSum(qm31Chip, sum, interactionClaim.MemoryAddressToId.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, sumMemoryIDToValue(qm31Chip, interactionClaim.MemoryIDToValue))
-	sum = addClaimedSum(qm31Chip, sum, sumRangeChecks(qm31Chip, interactionClaim.RangeChecks))
-	sum = addClaimedSum(qm31Chip, sum, interactionClaim.VerifyBitwiseXor4.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, interactionClaim.VerifyBitwiseXor7.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, interactionClaim.VerifyBitwiseXor8.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, interactionClaim.VerifyBitwiseXor9.ClaimedSum)
+	// Opcode sums
+	if circuitData.ComponentConfig[0] {
+		sum = qm31Chip.Add(sum, interactionClaim.AddAp.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[1] {
+		sum = qm31Chip.Add(sum, interactionClaim.Add.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[2] {
+		sum = qm31Chip.Add(sum, interactionClaim.AddSmall.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[3] {
+		sum = qm31Chip.Add(sum, interactionClaim.AssertEq.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[4] {
+		sum = qm31Chip.Add(sum, interactionClaim.AssertEqImm.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[5] {
+		sum = qm31Chip.Add(sum, interactionClaim.AssertEqDoubleDeref.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[6] {
+		sum = qm31Chip.Add(sum, interactionClaim.Blake.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[7] {
+		sum = qm31Chip.Add(sum, interactionClaim.Call.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[8] {
+		sum = qm31Chip.Add(sum, interactionClaim.CallRelImm.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[9] {
+		sum = qm31Chip.Add(sum, interactionClaim.Generic.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[10] {
+		sum = qm31Chip.Add(sum, interactionClaim.Jnz.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[11] {
+		sum = qm31Chip.Add(sum, interactionClaim.JnzTaken.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[12] {
+		sum = qm31Chip.Add(sum, interactionClaim.Jump.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[13] {
+		sum = qm31Chip.Add(sum, interactionClaim.JumpDoubleDeref.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[14] {
+		sum = qm31Chip.Add(sum, interactionClaim.JumpRel.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[15] {
+		sum = qm31Chip.Add(sum, interactionClaim.JumpRelImm.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[16] {
+		sum = qm31Chip.Add(sum, interactionClaim.Mul.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[17] {
+		sum = qm31Chip.Add(sum, interactionClaim.MulSmall.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[18] {
+		sum = qm31Chip.Add(sum, interactionClaim.Qm31.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[19] {
+		sum = qm31Chip.Add(sum, interactionClaim.Ret.ClaimedSum)
+	}
+
+	// Verify instruction sum
+	if circuitData.ComponentConfig[20] {
+		sum = qm31Chip.Add(sum, interactionClaim.VerifyInstruction.ClaimedSum)
+	}
+
+	// Blake context sums
+	if circuitData.ComponentConfig[21] {
+		sum = qm31Chip.Add(sum, interactionClaim.BlakeRound.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[22] {
+		sum = qm31Chip.Add(sum, interactionClaim.BlakeG.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[23] {
+		sum = qm31Chip.Add(sum, interactionClaim.BlakeRoundSigma.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[24] {
+		sum = qm31Chip.Add(sum, interactionClaim.TripleXor32.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[25] {
+		sum = qm31Chip.Add(sum, interactionClaim.VerifyBitwiseXor12.ClaimedSum)
+	}
+
+	// Builtins sums
+	if circuitData.ComponentConfig[26] {
+		sum = qm31Chip.Add(sum, interactionClaim.AddModBuiltin.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[27] {
+		sum = qm31Chip.Add(sum, interactionClaim.BitwiseBuiltin.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[28] {
+		sum = qm31Chip.Add(sum, interactionClaim.MulModBuiltin.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[29] {
+		sum = qm31Chip.Add(sum, interactionClaim.PedersenBuiltin.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[30] {
+		sum = qm31Chip.Add(sum, interactionClaim.PoseidonBuiltin.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[31] {
+		sum = qm31Chip.Add(sum, interactionClaim.RangeCheck96.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[32] {
+		sum = qm31Chip.Add(sum, interactionClaim.RangeCheck128.ClaimedSum)
+	}
+
+	// Pedersen context sums
+	if circuitData.ComponentConfig[33] {
+		sum = qm31Chip.Add(sum, interactionClaim.PartialEcMul.ClaimedSum)
+	}
+
+	if circuitData.ComponentConfig[34] {
+		sum = qm31Chip.Add(sum, interactionClaim.PedersenPointsTable.ClaimedSum)
+	}
+
+	// Poseidon context sums
+	if circuitData.ComponentConfig[35] {
+		sum = qm31Chip.Add(sum, interactionClaim.Poseidon3PartialRoundsChain.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[36] {
+		sum = qm31Chip.Add(sum, interactionClaim.PoseidonFullRoundChain.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[37] {
+		sum = qm31Chip.Add(sum, interactionClaim.Cube252.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[38] {
+		sum = qm31Chip.Add(sum, interactionClaim.PoseidonRoundKeys.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[39] {
+		sum = qm31Chip.Add(sum, interactionClaim.RangeCheckFelt252Width27.ClaimedSum)
+	}
+
+	// Memory relations sums
+	if circuitData.ComponentConfig[40] {
+		sum = qm31Chip.Add(sum, interactionClaim.MemoryAddressToID.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[41] {
+		sum = qm31Chip.Add(sum, interactionClaim.MemoryIDToBigBig.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[42] {
+		sum = qm31Chip.Add(sum, interactionClaim.MemoryIDToBigSmall.ClaimedSum)
+	}
+
+	// Range checks sums
+	if circuitData.ComponentConfig[43] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC6.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[44] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC8.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[45] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC11.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[46] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC12.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[47] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC18.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[48] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC19.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[49] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC43.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[50] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC44.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[51] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC54.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[52] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC99.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[53] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC725.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[54] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC3663.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[55] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC4444.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[56] {
+		sum = qm31Chip.Add(sum, interactionClaim.RC33333.ClaimedSum)
+	}
+
+	// Verify bitwise XOR components
+	if circuitData.ComponentConfig[57] {
+		sum = qm31Chip.Add(sum, interactionClaim.VerifyBitwiseXor4.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[58] {
+		sum = qm31Chip.Add(sum, interactionClaim.VerifyBitwiseXor7.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[59] {
+		sum = qm31Chip.Add(sum, interactionClaim.VerifyBitwiseXor8.ClaimedSum)
+	}
+	if circuitData.ComponentConfig[60] {
+		sum = qm31Chip.Add(sum, interactionClaim.VerifyBitwiseXor9.ClaimedSum)
+	}
 
 	// publicDataLogupSum outputs a reduced sum and sum is incremented 68 times with claimed sums.
 	// So 16 * ceil(68 / 16) = 80 bits is a safe bound for the reduction quotient
 	sum = qm31Chip.ReduceWithMaxBits(sum, 80)
 	return sum
-}
-
-// ╔══════════════════════════════════╗
-// ║          Component Sums          ║
-// ╚══════════════════════════════════╝
-
-func sumOpcodeClaims(qm31Chip *m31.QM31Chip, claims variables.OpcodeInteractionClaim) m31.QM31 {
-	sum := qm31Chip.Zero()
-
-	for _, entry := range claims.Add {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.AddSmall {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.AddAp {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.AssertEq {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.AssertEqImm {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.AssertEqDoubleDeref {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Blake {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Call {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.CallRelImm {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Generic {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Jnz {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.JnzTaken {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Jump {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.JumpDoubleDeref {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.JumpRel {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.JumpRelImm {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Mul {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.MulSmall {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Qm31 {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-	for _, entry := range claims.Ret {
-		sum = addClaimedSum(qm31Chip, sum, entry.ClaimedSum)
-	}
-
-	return sum
-}
-
-func sumBlakeContext(qm31Chip *m31.QM31Chip, claim variables.BlakeContextInteractionClaim) m31.QM31 {
-	if claim.InteractionClaim == nil {
-		return qm31Chip.Zero()
-	}
-
-	sum := qm31Chip.Zero()
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.BlakeRound.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.BlakeG.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.BlakeRoundSigma.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.TripleXor32.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.VerifyBitwiseXor12.ClaimedSum)
-	return sum
-}
-
-func sumBuiltins(qm31Chip *m31.QM31Chip, claim variables.BuiltinsInteractionClaim) m31.QM31 {
-	sum := qm31Chip.Zero()
-
-	if claim.AddModBuiltin != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.AddModBuiltin.ClaimedSum)
-	}
-	if claim.BitwiseBuiltin != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.BitwiseBuiltin.ClaimedSum)
-	}
-	if claim.MulModBuiltin != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.MulModBuiltin.ClaimedSum)
-	}
-	if claim.PedersenBuiltin != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.PedersenBuiltin.ClaimedSum)
-	}
-	if claim.PoseidonBuiltin != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.PoseidonBuiltin.ClaimedSum)
-	}
-	if claim.RangeCheck96 != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.RangeCheck96.ClaimedSum)
-	}
-	if claim.RangeCheck128 != nil {
-		sum = addClaimedSum(qm31Chip, sum, claim.RangeCheck128.ClaimedSum)
-	}
-
-	return sum
-}
-
-func sumPedersenContext(qm31Chip *m31.QM31Chip, claim variables.PedersenContextInteractionClaim) m31.QM31 {
-	if claim.InteractionClaim == nil {
-		return qm31Chip.Zero()
-	}
-
-	sum := qm31Chip.Zero()
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.PartialEcMul.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.PedersenPointsTable.ClaimedSum)
-	return sum
-}
-
-func sumPoseidonContext(qm31Chip *m31.QM31Chip, claim variables.PoseidonContextInteractionClaim) m31.QM31 {
-	if claim.InteractionClaim == nil {
-		return qm31Chip.Zero()
-	}
-
-	sum := qm31Chip.Zero()
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.Poseidon3PartialRoundsChain.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.PoseidonFullRoundChain.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.Cube252.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.PoseidonRoundKeys.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.InteractionClaim.RangeCheckFelt252Width27.ClaimedSum)
-	return sum
-}
-
-func sumMemoryIDToValue(qm31Chip *m31.QM31Chip, claim cairo_components.MemoryIdToValueInteractionClaim) m31.QM31 {
-	sum := qm31Chip.Zero()
-
-	for _, entry := range claim.BigClaimedSums {
-		sum = addClaimedSum(qm31Chip, sum, entry)
-	}
-	sum = addClaimedSum(qm31Chip, sum, claim.SmallClaimedSum)
-	return sum
-}
-
-func sumRangeChecks(qm31Chip *m31.QM31Chip, claim variables.RangeChecksInteractionClaim) m31.QM31 {
-	sum := qm31Chip.Zero()
-	sum = addClaimedSum(qm31Chip, sum, claim.RC6.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC8.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC11.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC12.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC18.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC19.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC4_3.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC4_4.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC5_4.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC9_9.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC7_2_5.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC3_6_6_3.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC4_4_4_4.ClaimedSum)
-	sum = addClaimedSum(qm31Chip, sum, claim.RC3_3_3_3_3.ClaimedSum)
-	return sum
-}
-
-func addClaimedSum(qm31Chip *m31.QM31Chip, acc m31.QM31, value m31.QM31) m31.QM31 {
-	return qm31Chip.AddUnchecked(acc, value)
 }
 
 // ╔══════════════════════════════════╗
@@ -226,7 +268,7 @@ func publicDataLogupSum(
 		address := m31.NewQM31FromM31(entry.Address)
 		id := m31.NewQM31FromM31(entry.ID)
 
-		addrToID := combineAndInverse(qm31Chip, elements.MemoryAddressToId, []m31.QM31{address, id})
+		addrToID := combineAndInverse(qm31Chip, elements.MemoryAddressToID, []m31.QM31{address, id})
 
 		values := make([]m31.QM31, 1+variables.NM31InFelt252)
 		values[0] = id
@@ -261,7 +303,7 @@ func publicMemoryEntries(qm31Chip *m31.QM31Chip, publicData variables.PublicData
 	programLen := len(publicData.PublicMemory.Program)
 	outputLen := len(publicData.PublicMemory.Output)
 	safeCallLen := len(publicData.PublicMemory.SafeCall)
-	segments := publicData.PublicMemory.PublicSegments.PresentSegments()
+	segments := publicData.PublicMemory.PublicSegments.Segments()
 	requiredCapacity := programLen + outputLen + safeCallLen + len(segments)*2
 
 	entries := make([]variables.PublicMemoryEntry, 0, requiredCapacity)

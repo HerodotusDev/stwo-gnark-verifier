@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	blakeRoundTraceColumns       = 212
-	blakeRoundInteractionColumns = 120
+	BlakeRoundTraceColumns       = 212
+	BlakeRoundInteractionColumns = 120
 )
 
 type BlakeRoundClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type BlakeRoundInteractionClaim struct {
@@ -25,15 +24,15 @@ type BlakeRoundComponent struct {
 
 	blakeRoundSigmaElements m31.InteractionElements
 	rangeCheck725Elements   m31.InteractionElements
-	memoryAddressToId       m31.InteractionElements
-	memoryIdToBig           m31.InteractionElements
+	memoryAddressToID       m31.InteractionElements
+	memoryIDToBig           m31.InteractionElements
 	blakeGElements          m31.InteractionElements
 	blakeRoundElements      m31.InteractionElements
 
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewBlakeRound(
@@ -41,23 +40,23 @@ func NewBlakeRound(
 	qm31 *m31.QM31Chip,
 	blakeRoundSigma m31.InteractionElements,
 	rangeCheck725 m31.InteractionElements,
-	memoryAddressToId m31.InteractionElements,
-	memoryIdToBig m31.InteractionElements,
+	memoryAddressToID m31.InteractionElements,
+	memoryIDToBig m31.InteractionElements,
 	blakeG m31.InteractionElements,
 	blakeRound m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim BlakeRoundClaim,
 	interactionClaim BlakeRoundInteractionClaim,
-) *BlakeRoundComponent {
+) BlakeRoundComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &BlakeRoundComponent{
+	return BlakeRoundComponent{
 		qm31:                    qm31,
 		blakeRoundSigmaElements: blakeRoundSigma,
 		rangeCheck725Elements:   rangeCheck725,
-		memoryAddressToId:       memoryAddressToId,
-		memoryIdToBig:           memoryIdToBig,
+		memoryAddressToID:       memoryAddressToID,
+		memoryIDToBig:           memoryIDToBig,
 		blakeGElements:          blakeG,
 		blakeRoundElements:      blakeRound,
 		claimedSum:              interactionClaim.ClaimedSum,
@@ -67,8 +66,8 @@ func NewBlakeRound(
 	}
 }
 
-func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(blakeRoundTraceColumns, blakeRoundInteractionColumns)
+func (c BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(BlakeRoundTraceColumns, BlakeRoundInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -191,8 +190,8 @@ func (c *BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 				word.high5,
 				word.id,
 				c.rangeCheck725Elements,
-				c.memoryAddressToId,
-				c.memoryIdToBig,
+				c.memoryAddressToID,
+				c.memoryIDToBig,
 				sum,
 				domainInv,
 				randomCoeff,

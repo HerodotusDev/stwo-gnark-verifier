@@ -4,12 +4,11 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	pedersenBuiltinTraceColumns       = 351
-	pedersenBuiltinInteractionColumns = 40
+	PedersenBuiltinTraceColumns       = 351
+	PedersenBuiltinInteractionColumns = 40
 )
 
 var pedersenPartialEcMulSum10Constants = []uint64{
@@ -20,8 +19,8 @@ var pedersenPartialEcMulSum10Constants = []uint64{
 }
 
 type PedersenBuiltinClaim struct {
-	LogSize                     uints.U8
-	PedersenBuiltinSegmentStart uint32
+	LogSize                     frontend.Variable
+	PedersenBuiltinSegmentStart frontend.Variable
 }
 
 type PedersenBuiltinInteractionClaim struct {
@@ -29,11 +28,12 @@ type PedersenBuiltinInteractionClaim struct {
 }
 
 type PedersenBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	rangeCheck54Elements      m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck8Elements       m31.InteractionElements
 	partialEcMulElements      m31.InteractionElements
 
@@ -41,47 +41,48 @@ type PedersenBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewPedersenBuiltin(
 	api frontend.API,
 	qm31Chip *m31.QM31Chip,
 	rangeCheck54Elements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck8Elements m31.InteractionElements,
 	partialEcMulElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim PedersenBuiltinClaim,
 	interactionClaim PedersenBuiltinInteractionClaim,
-) *PedersenBuiltinComponent {
+) PedersenBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PedersenBuiltinComponent{
+	return PedersenBuiltinComponent{
+		api:                       api,
 		qm31:                      qm31Chip,
 		rangeCheck54Elements:      rangeCheck54Elements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck8Elements:       rangeCheck8Elements,
 		partialEcMulElements:      partialEcMulElements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PedersenBuiltinSegmentStart))),
+		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(claim.PedersenBuiltinSegmentStart)),
 		columnSizeInv:             qm31Chip.Inverse(columnSize),
 		vanishEvalInv:             vanishEvalInv,
 		logSize:                   claim.LogSize,
 	}
 }
 
-func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
+func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PedersenBuiltinTraceColumns, PedersenBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := NewPreprocessedColumnSeq(c.logSize)
+	seqColumn := NewPreprocessedColumnSeq(c.api, c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0
@@ -130,7 +131,7 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 
 	pedersenResultID := nextTrace()
 
-	if cursor != pedersenBuiltinTraceColumns {
+	if cursor != PedersenBuiltinTraceColumns {
 		panic("unexpected trace column count")
 	}
 
@@ -159,16 +160,16 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		msHighA,
 		pedersenAID,
 		c.rangeCheck54Elements,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
 	sum = readA.Sum
 	rangeCheck54Sum0 := readA.RangeCheckSum
-	memoryAddressToIdSum1 := readA.AddressLookupSum
-	memoryIdToBigSum2 := readA.IdToBigLookupSum
+	memoryAddressToIDSum1 := readA.AddressLookupSum
+	memoryIDToBigSum2 := readA.IdToBigLookupSum
 
 	readB := sub.ReadSplitEvaluate(
 		qm31,
@@ -178,16 +179,16 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		msHighB,
 		pedersenBID,
 		c.rangeCheck54Elements,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
 	sum = readB.Sum
 	rangeCheck54Sum3 := readB.RangeCheckSum
-	memoryAddressToIdSum4 := readB.AddressLookupSum
-	memoryIdToBigSum5 := readB.IdToBigLookupSum
+	memoryAddressToIDSum4 := readB.AddressLookupSum
+	memoryIDToBigSum5 := readB.IdToBigLookupSum
 
 	limbsA := make([]m31.QM31, 28)
 	copy(limbsA, valueA[:])
@@ -320,15 +321,15 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		qm31.Add(baseAddress, qm31Const(2)),
 		memInputs,
 		pedersenResultID,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
 	sum = memRes.Sum
-	memoryAddressToIdSum18 := memRes.AddressLookupSum
-	memoryIdToBigSum19 := memRes.IdToBigLookupSum
+	memoryAddressToIDSum18 := memRes.AddressLookupSum
+	memoryIDToBigSum19 := memRes.IdToBigLookupSum
 
 	// ╔══════════════════════════════════╗
 	// ║         Interaction Trace        ║
@@ -348,23 +349,23 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	}
 
 	constraint := qm31.Mul(partials[0], rangeCheck54Sum0)
-	constraint = qm31.Mul(constraint, memoryAddressToIdSum1)
+	constraint = qm31.Mul(constraint, memoryAddressToIDSum1)
 	constraint = qm31.Sub(constraint, rangeCheck54Sum0)
-	constraint = qm31.Sub(constraint, memoryAddressToIdSum1)
+	constraint = qm31.Sub(constraint, memoryAddressToIDSum1)
 	apply(constraint)
 
 	diff := qm31.Sub(partials[1], partials[0])
-	diff = qm31.Mul(diff, memoryIdToBigSum2)
+	diff = qm31.Mul(diff, memoryIDToBigSum2)
 	diff = qm31.Mul(diff, rangeCheck54Sum3)
-	diff = qm31.Sub(diff, memoryIdToBigSum2)
+	diff = qm31.Sub(diff, memoryIDToBigSum2)
 	diff = qm31.Sub(diff, rangeCheck54Sum3)
 	apply(diff)
 
 	diff = qm31.Sub(partials[2], partials[1])
-	diff = qm31.Mul(diff, memoryAddressToIdSum4)
-	diff = qm31.Mul(diff, memoryIdToBigSum5)
-	diff = qm31.Sub(diff, memoryAddressToIdSum4)
-	diff = qm31.Sub(diff, memoryIdToBigSum5)
+	diff = qm31.Mul(diff, memoryAddressToIDSum4)
+	diff = qm31.Mul(diff, memoryIDToBigSum5)
+	diff = qm31.Sub(diff, memoryAddressToIDSum4)
+	diff = qm31.Sub(diff, memoryIDToBigSum5)
 	apply(diff)
 
 	diff = qm31.Sub(partials[3], partials[2])
@@ -413,10 +414,10 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	diff = qm31.Sub(partials[9], partials[8])
 	diff = qm31.Sub(diff, partialNeg1)
 	diff = qm31.Add(diff, claimedTerm)
-	diff = qm31.Mul(diff, memoryAddressToIdSum18)
-	diff = qm31.Mul(diff, memoryIdToBigSum19)
-	diff = qm31.Sub(diff, memoryAddressToIdSum18)
-	diff = qm31.Sub(diff, memoryIdToBigSum19)
+	diff = qm31.Mul(diff, memoryAddressToIDSum18)
+	diff = qm31.Mul(diff, memoryIDToBigSum19)
+	diff = qm31.Sub(diff, memoryAddressToIDSum18)
+	diff = qm31.Sub(diff, memoryIDToBigSum19)
 	apply(diff)
 
 	return sum

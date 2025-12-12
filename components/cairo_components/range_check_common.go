@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 type lookupConstraintComponent struct {
@@ -21,17 +20,17 @@ func newLookupConstraintComponent(
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
 	claimedSum m31.QM31,
-	logSize uints.U8,
+	logSize frontend.Variable,
 	preprocessed []PreprocessedColumn,
 	vanishEvalInv m31.QM31,
-) *lookupConstraintComponent {
+) lookupConstraintComponent {
 	columnSize := computeColumnSize(api, logSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	clone := make([]PreprocessedColumn, len(preprocessed))
 	copy(clone, preprocessed)
 
-	return &lookupConstraintComponent{
+	return lookupConstraintComponent{
 		qm31:                qm31,
 		interactionElements: interactionElements,
 		claimedSum:          claimedSum,
@@ -46,7 +45,7 @@ const (
 	LookupInteractionColumns = 4
 )
 
-func (c *lookupConstraintComponent) Evaluate(
+func (c lookupConstraintComponent) Evaluate(
 	sum m31.QM31,
 	traces *Traces,
 	randomCoeff m31.QM31,
@@ -89,8 +88,4 @@ func (c *lookupConstraintComponent) Evaluate(
 
 	sum = c.qm31.Add(c.qm31.Mul(sum, randomCoeff), constraint)
 	return sum
-}
-
-func sequencePreprocessedColumn(logSize uint8) PreprocessedColumn {
-	return NewPreprocessedColumnSeq(uints.NewU8(logSize))
 }

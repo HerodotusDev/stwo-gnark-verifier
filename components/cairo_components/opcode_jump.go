@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	jumpOpcodeTraceColumns       = 13
-	jumpOpcodeInteractionColumns = 12
+	JumpOpcodeTraceColumns       = 13
+	JumpOpcodeInteractionColumns = 12
 )
 
 type JumpOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type JumpOpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type JumpOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -37,21 +36,21 @@ func NewJumpOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim JumpOpcodeClaim,
 	interactionClaim JumpOpcodeInteractionClaim,
-) *JumpOpcodeComponent {
+) JumpOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &JumpOpcodeComponent{
+	return JumpOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -59,8 +58,8 @@ func NewJumpOpcode(
 	}
 }
 
-func (c *JumpOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jumpOpcodeTraceColumns, jumpOpcodeInteractionColumns)
+func (c JumpOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(JumpOpcodeTraceColumns, JumpOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -136,11 +135,11 @@ func (c *JumpOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 		nextPcLimb0,
 		nextPcLimb1,
 		nextPcLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum1 := readNextPc.AddressLookupSum
-	memoryIdToBigSum2 := readNextPc.IdToBigLookupSum
+	memoryIDToBigSum2 := readNextPc.IdToBigLookupSum
 
 	var err error
 	opcodesSum3, err := c.qm31.Combine(
@@ -175,8 +174,8 @@ func (c *JumpOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, opcodesSum3))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum2, enabler))
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, opcodesSum3))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIDToBigSum2, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

@@ -21,10 +21,10 @@ func (c *m31ArithmeticCircuit) Define(api frontend.API) error {
 	add := m31Chip.Add(NewM31Unchecked(1), NewM31Unchecked(3))
 	m31Chip.AssertEqual(add, NewM31Unchecked(4))
 
-	addWrap := m31Chip.Add(NewM31Unchecked(PRIME-2), NewM31Unchecked(3))
+	addWrap := m31Chip.Add(NewM31Unchecked(Prime-2), NewM31Unchecked(3))
 	m31Chip.AssertEqual(addWrap, NewM31Unchecked(1))
 
-	addUnchecked := m31Chip.AddUnchecked(NewM31Unchecked(PRIME-2), NewM31Unchecked(3))
+	addUnchecked := m31Chip.AddUnchecked(NewM31Unchecked(Prime-2), NewM31Unchecked(3))
 	addReduced := m31Chip.PartialReduce(addUnchecked)
 	m31Chip.AssertEqual(addReduced, NewM31Unchecked(1))
 
@@ -33,20 +33,20 @@ func (c *m31ArithmeticCircuit) Define(api frontend.API) error {
 	m31Chip.AssertEqual(sub, NewM31Unchecked(4))
 
 	subWrap := m31Chip.Sub(NewM31Unchecked(3), NewM31Unchecked(5))
-	m31Chip.AssertEqual(subWrap, NewM31Unchecked(PRIME-2))
+	m31Chip.AssertEqual(subWrap, NewM31Unchecked(Prime-2))
 
 	subUnchecked := m31Chip.SubUnchecked(NewM31Unchecked(3), NewM31Unchecked(5))
 	subReduced := m31Chip.PartialReduce(subUnchecked)
-	m31Chip.AssertEqual(subReduced, NewM31Unchecked(PRIME-2))
+	m31Chip.AssertEqual(subReduced, NewM31Unchecked(Prime-2))
 
 	// Multiplication
 	mul := m31Chip.Mul(NewM31Unchecked(3), NewM31Unchecked(5))
 	m31Chip.AssertEqual(mul, NewM31Unchecked(15))
 
-	mulWrap := m31Chip.Mul(NewM31Unchecked(PRIME-1), NewM31Unchecked(PRIME-1))
+	mulWrap := m31Chip.Mul(NewM31Unchecked(Prime-1), NewM31Unchecked(Prime-1))
 	m31Chip.AssertEqual(mulWrap, NewM31Unchecked(1))
 
-	mulUnchecked := m31Chip.MulUnchecked(NewM31Unchecked(PRIME-1), NewM31Unchecked(PRIME-1))
+	mulUnchecked := m31Chip.MulUnchecked(NewM31Unchecked(Prime-1), NewM31Unchecked(Prime-1))
 	mulReduced := m31Chip.FullReduce(mulUnchecked)
 	m31Chip.AssertEqual(mulReduced, NewM31Unchecked(1))
 
@@ -68,7 +68,7 @@ func (c *m31ArithmeticCircuit) Define(api frontend.API) error {
 	}
 
 	checkDiv(8, 4, 2)
-	checkDiv(3, PRIME_U64-1, PRIME_U64-3)
+	checkDiv(3, PrimeU64-1, PrimeU64-3)
 
 	return nil
 }
@@ -107,9 +107,9 @@ func (c *m31SmartAccumulatorCircuit) Define(api frontend.API) error {
 		acc.AddExpression(expr, uint64(maxQuotientBits-1))
 		expected = m31Chip.Add(expected, expr)
 
-		prod := m31Chip.MulUnchecked(NewM31Unchecked(71), NewM31Unchecked(PRIME-91))
+		prod := m31Chip.MulUnchecked(NewM31Unchecked(71), NewM31Unchecked(Prime-91))
 		acc.AddExpression(prod, productBitCost(2))
-		prodReduced := m31Chip.Mul(NewM31Unchecked(71), NewM31Unchecked(PRIME-91))
+		prodReduced := m31Chip.Mul(NewM31Unchecked(71), NewM31Unchecked(Prime-91))
 		expected = m31Chip.Add(expected, prodReduced)
 
 		acc.MulExpression(NewM31Unchecked(19), 32)

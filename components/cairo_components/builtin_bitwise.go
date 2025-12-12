@@ -4,17 +4,16 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	bitwiseBuiltinTraceColumns       = 89
-	bitwiseBuiltinInteractionColumns = 76
+	BitwiseBuiltinTraceColumns       = 89
+	BitwiseBuiltinInteractionColumns = 76
 )
 
 type BitwiseBuiltinClaim struct {
-	LogSize                    uints.U8
-	BitwiseBuiltinSegmentStart uint32
+	LogSize                    frontend.Variable
+	BitwiseBuiltinSegmentStart frontend.Variable
 }
 
 type BitwiseBuiltinInteractionClaim struct {
@@ -22,12 +21,13 @@ type BitwiseBuiltinInteractionClaim struct {
 }
 
 type BitwiseBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
-	logSize uints.U8
+	logSize frontend.Variable
 
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	verifyBitwiseXorElements  m31.InteractionElements
 
 	segmentStart  m31.QM31
@@ -40,22 +40,23 @@ func NewBitwiseBuiltin(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	verifyBitwiseXorElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim BitwiseBuiltinClaim,
 	interactionClaim BitwiseBuiltinInteractionClaim,
-) *BitwiseBuiltinComponent {
+) BitwiseBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &BitwiseBuiltinComponent{
+	return BitwiseBuiltinComponent{
+		api:                       api,
 		qm31:                      qm31,
 		logSize:                   claim.LogSize,
-		memoryAddressToIdElements: memoryAddressElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		verifyBitwiseXorElements:  verifyBitwiseXorElements,
 		segmentStart: m31.NewQM31FromM31(
-			m31.NewM31Unchecked(uint64(claim.BitwiseBuiltinSegmentStart)),
+			m31.NewM31Unchecked(claim.BitwiseBuiltinSegmentStart),
 		),
 		claimedSum:    interactionClaim.ClaimedSum,
 		columnSizeInv: qm31.Inverse(columnSize),
@@ -63,13 +64,13 @@ func NewBitwiseBuiltin(
 	}
 }
 
-func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(bitwiseBuiltinTraceColumns, bitwiseBuiltinInteractionColumns)
+func (c BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(BitwiseBuiltinTraceColumns, BitwiseBuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║
@@ -106,8 +107,8 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		base,
 		op0ID,
 		op0Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 
 	op1Address := c.qm31.Add(base, c.qm31.One())
@@ -116,8 +117,8 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		op1Address,
 		op1ID,
 		op1Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 
 	bitwiseSums := make([]m31.QM31, 28)
@@ -149,8 +150,8 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		andAddress,
 		andLimbs,
 		andID,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -163,8 +164,8 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		xorAddress,
 		xorLimbs,
 		xorID,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -177,8 +178,8 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 		orAddress,
 		orLimbs,
 		orID,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -186,14 +187,14 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 	sum = orRes.Sum
 
 	lookups := bitwiseBuiltinLookups{
-		memoryAddressToId: []m31.QM31{
+		memoryAddressToID: []m31.QM31{
 			op0Lookup.AddressLookupSum,
 			op1Lookup.AddressLookupSum,
 			andRes.AddressLookupSum,
 			xorRes.AddressLookupSum,
 			orRes.AddressLookupSum,
 		},
-		memoryIdToBig: []m31.QM31{
+		memoryIDToBig: []m31.QM31{
 			op0Lookup.IdToBigLookupSum,
 			op1Lookup.IdToBigLookupSum,
 			andRes.IdToBigLookupSum,
@@ -207,8 +208,8 @@ func (c *BitwiseBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomC
 }
 
 type bitwiseBuiltinLookups struct {
-	memoryAddressToId []m31.QM31
-	memoryIdToBig     []m31.QM31
+	memoryAddressToID []m31.QM31
+	memoryIDToBig     []m31.QM31
 	bitwiseSums       []m31.QM31
 }
 
@@ -219,7 +220,7 @@ func (c *BitwiseBuiltinComponent) applyLookupConstraints(
 	randomCoeff m31.QM31,
 	lookups bitwiseBuiltinLookups,
 ) m31.QM31 {
-	if len(lookups.memoryAddressToId) != 5 || len(lookups.memoryIdToBig) != 5 {
+	if len(lookups.memoryAddressToID) != 5 || len(lookups.memoryIDToBig) != 5 {
 		panic("bitwise builtin lookup slices must have length 5")
 	}
 	if len(lookups.bitwiseSums) != 28 {
@@ -235,10 +236,10 @@ func (c *BitwiseBuiltinComponent) applyLookupConstraints(
 		sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 	}
 
-	accumulate(partials[0], lookups.memoryAddressToId[0], lookups.memoryIdToBig[0])
+	accumulate(partials[0], lookups.memoryAddressToID[0], lookups.memoryIDToBig[0])
 
 	diff := c.qm31.Sub(partials[1], partials[0])
-	accumulate(diff, lookups.memoryAddressToId[1], lookups.memoryIdToBig[1])
+	accumulate(diff, lookups.memoryAddressToID[1], lookups.memoryIDToBig[1])
 
 	for i := 0; i < 14; i++ {
 		delta := c.qm31.Sub(partials[i+2], partials[i+1])
@@ -246,15 +247,15 @@ func (c *BitwiseBuiltinComponent) applyLookupConstraints(
 	}
 
 	deltaAnd := c.qm31.Sub(partials[16], partials[15])
-	accumulate(deltaAnd, lookups.memoryAddressToId[2], lookups.memoryIdToBig[2])
+	accumulate(deltaAnd, lookups.memoryAddressToID[2], lookups.memoryIDToBig[2])
 
 	deltaXor := c.qm31.Sub(partials[17], partials[16])
-	accumulate(deltaXor, lookups.memoryAddressToId[3], lookups.memoryIdToBig[3])
+	accumulate(deltaXor, lookups.memoryAddressToID[3], lookups.memoryIDToBig[3])
 
 	lastDelta := c.qm31.Sub(partials[18], partials[17])
 	lastDelta = c.qm31.Sub(lastDelta, negPartial)
 	lastDelta = c.qm31.Add(lastDelta, c.qm31.Mul(c.claimedSum, c.columnSizeInv))
-	accumulate(lastDelta, lookups.memoryAddressToId[4], lookups.memoryIdToBig[4])
+	accumulate(lastDelta, lookups.memoryAddressToID[4], lookups.memoryIDToBig[4])
 
 	return sum
 }

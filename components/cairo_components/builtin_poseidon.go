@@ -4,17 +4,16 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	poseidonBuiltinTraceColumns       = 341
-	poseidonBuiltinInteractionColumns = 68
+	PoseidonBuiltinTraceColumns       = 341
+	PoseidonBuiltinInteractionColumns = 68
 )
 
 type PoseidonBuiltinClaim struct {
-	LogSize                     uints.U8
-	PoseidonBuiltinSegmentStart uint32
+	LogSize                     frontend.Variable
+	PoseidonBuiltinSegmentStart frontend.Variable
 }
 
 type PoseidonBuiltinInteractionClaim struct {
@@ -22,10 +21,11 @@ type PoseidonBuiltinInteractionClaim struct {
 }
 
 type PoseidonBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
-	memoryAddressToIdElements         m31.InteractionElements
-	memoryIdToBigElements             m31.InteractionElements
+	memoryAddressToIDElements         m31.InteractionElements
+	memoryIDToBigElements             m31.InteractionElements
 	poseidonFullRoundChainElements    m31.InteractionElements
 	rangeCheckFelt252Width27Elements  m31.InteractionElements
 	cube252Elements                   m31.InteractionElements
@@ -38,14 +38,14 @@ type PoseidonBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewPoseidonBuiltin(
 	api frontend.API,
 	qm31Chip *m31.QM31Chip,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	poseidonFullRoundChainElements m31.InteractionElements,
 	rangeCheckFelt252Width27Elements m31.InteractionElements,
 	cube252Elements m31.InteractionElements,
@@ -56,13 +56,14 @@ func NewPoseidonBuiltin(
 	vanishEvalInv m31.QM31,
 	claim PoseidonBuiltinClaim,
 	interactionClaim PoseidonBuiltinInteractionClaim,
-) *PoseidonBuiltinComponent {
+) PoseidonBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PoseidonBuiltinComponent{
+	return PoseidonBuiltinComponent{
+		api:                               api,
 		qm31:                              qm31Chip,
-		memoryAddressToIdElements:         memoryAddressToIdElements,
-		memoryIdToBigElements:             memoryIdToBigElements,
+		memoryAddressToIDElements:         memoryAddressToIDElements,
+		memoryIDToBigElements:             memoryIDToBigElements,
 		poseidonFullRoundChainElements:    poseidonFullRoundChainElements,
 		rangeCheckFelt252Width27Elements:  rangeCheckFelt252Width27Elements,
 		cube252Elements:                   cube252Elements,
@@ -71,30 +72,30 @@ func NewPoseidonBuiltin(
 		range44Elements:                   range44Elements,
 		poseidon3PartialRoundsChainLookup: poseidon3PartialRoundsChainElements,
 		claimedSum:                        interactionClaim.ClaimedSum,
-		segmentStart:                      m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PoseidonBuiltinSegmentStart))),
+		segmentStart:                      m31.NewQM31FromM31(m31.NewM31Unchecked(claim.PoseidonBuiltinSegmentStart)),
 		columnSizeInv:                     qm31Chip.Inverse(columnSize),
 		vanishEvalInv:                     vanishEvalInv,
 		logSize:                           claim.LogSize,
 	}
 }
 
-func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
+func (c PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PoseidonBuiltinTraceColumns, PoseidonBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 	interaction := interactionSampledValues
 
-	if len(trace) != poseidonBuiltinTraceColumns {
+	if len(trace) != PoseidonBuiltinTraceColumns {
 		panic("poseidon_builtin expects 341 trace columns")
 	}
-	if len(interaction) != poseidonBuiltinInteractionColumns {
+	if len(interaction) != PoseidonBuiltinInteractionColumns {
 		panic("poseidon_builtin expects 68 interaction columns")
 	}
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := NewPreprocessedColumnSeq(c.logSize)
+	seqColumn := NewPreprocessedColumnSeq(c.api, c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0
@@ -182,7 +183,7 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	}
 	outputStateID2 := nextTrace()
 
-	if cursor != poseidonBuiltinTraceColumns {
+	if cursor != PoseidonBuiltinTraceColumns {
 		panic("unexpected trace column count")
 	}
 
@@ -193,24 +194,24 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		baseAddress,
 		inputIDs[0],
 		inputLimbs[0][:],
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	read1 := sub.ReadPositiveNumBits252Evaluate(
 		c.qm31,
 		c.qm31.Add(baseAddress, qm31Const(1)),
 		inputIDs[1],
 		inputLimbs[1][:],
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	read2 := sub.ReadPositiveNumBits252Evaluate(
 		c.qm31,
 		c.qm31.Add(baseAddress, qm31Const(2)),
 		inputIDs[2],
 		inputLimbs[2][:],
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 
 	pack0 := packPoseidonState(c.qm31, inputLimbs[0])
@@ -273,8 +274,8 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		c.qm31.Add(baseAddress, qm31Const(3)),
 		memInput0[:],
 		outputStateID0,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -284,8 +285,8 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		c.qm31.Add(baseAddress, qm31Const(4)),
 		memInput1[:],
 		outputStateID1,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -295,8 +296,8 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		c.qm31.Add(baseAddress, qm31Const(5)),
 		memInput2[:],
 		outputStateID2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -319,12 +320,12 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 		sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 	}
 
-	memoryAddressToIdSum0 := read0.AddressLookupSum
-	memoryIdToBigSum1 := read0.IdToBigLookupSum
-	memoryAddressToIdSum2 := read1.AddressLookupSum
-	memoryIdToBigSum3 := read1.IdToBigLookupSum
-	memoryAddressToIdSum4 := read2.AddressLookupSum
-	memoryIdToBigSum5 := read2.IdToBigLookupSum
+	memoryAddressToIDSum0 := read0.AddressLookupSum
+	memoryIDToBigSum1 := read0.IdToBigLookupSum
+	memoryAddressToIDSum2 := read1.AddressLookupSum
+	memoryIDToBigSum3 := read1.IdToBigLookupSum
+	memoryAddressToIDSum4 := read2.AddressLookupSum
+	memoryIDToBigSum5 := read2.IdToBigLookupSum
 
 	poseidonFullRoundChainSum6 := hadesRes.PoseidonFullRoundChainSum0
 	poseidonFullRoundChainSum7 := hadesRes.PoseidonFullRoundChainSum1
@@ -348,31 +349,31 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	poseidonFullRoundChainSum25 := hadesRes.PoseidonFullRoundChainSum19
 	poseidonFullRoundChainSum26 := hadesRes.PoseidonFullRoundChainSum20
 
-	memoryAddressToIdSum27 := memRes0.AddressLookupSum
-	memoryIdToBigSum28 := memRes0.IdToBigLookupSum
-	memoryAddressToIdSum29 := memRes1.AddressLookupSum
-	memoryIdToBigSum30 := memRes1.IdToBigLookupSum
-	memoryAddressToIdSum31 := memRes2.AddressLookupSum
-	memoryIdToBigSum32 := memRes2.IdToBigLookupSum
+	memoryAddressToIDSum27 := memRes0.AddressLookupSum
+	memoryIDToBigSum28 := memRes0.IdToBigLookupSum
+	memoryAddressToIDSum29 := memRes1.AddressLookupSum
+	memoryIDToBigSum30 := memRes1.IdToBigLookupSum
+	memoryAddressToIDSum31 := memRes2.AddressLookupSum
+	memoryIDToBigSum32 := memRes2.IdToBigLookupSum
 
-	diff := c.qm31.Mul(partials[0], memoryAddressToIdSum0)
-	diff = c.qm31.Mul(diff, memoryIdToBigSum1)
-	diff = c.qm31.Sub(diff, memoryAddressToIdSum0)
-	diff = c.qm31.Sub(diff, memoryIdToBigSum1)
+	diff := c.qm31.Mul(partials[0], memoryAddressToIDSum0)
+	diff = c.qm31.Mul(diff, memoryIDToBigSum1)
+	diff = c.qm31.Sub(diff, memoryAddressToIDSum0)
+	diff = c.qm31.Sub(diff, memoryIDToBigSum1)
 	apply(diff)
 
 	curr := c.qm31.Sub(partials[1], partials[0])
-	curr = c.qm31.Mul(curr, memoryAddressToIdSum2)
-	curr = c.qm31.Mul(curr, memoryIdToBigSum3)
-	curr = c.qm31.Sub(curr, memoryAddressToIdSum2)
-	curr = c.qm31.Sub(curr, memoryIdToBigSum3)
+	curr = c.qm31.Mul(curr, memoryAddressToIDSum2)
+	curr = c.qm31.Mul(curr, memoryIDToBigSum3)
+	curr = c.qm31.Sub(curr, memoryAddressToIDSum2)
+	curr = c.qm31.Sub(curr, memoryIDToBigSum3)
 	apply(curr)
 
 	curr = c.qm31.Sub(partials[2], partials[1])
-	curr = c.qm31.Mul(curr, memoryAddressToIdSum4)
-	curr = c.qm31.Mul(curr, memoryIdToBigSum5)
-	curr = c.qm31.Sub(curr, memoryAddressToIdSum4)
-	curr = c.qm31.Sub(curr, memoryIdToBigSum5)
+	curr = c.qm31.Mul(curr, memoryAddressToIDSum4)
+	curr = c.qm31.Mul(curr, memoryIDToBigSum5)
+	curr = c.qm31.Sub(curr, memoryAddressToIDSum4)
+	curr = c.qm31.Sub(curr, memoryIDToBigSum5)
 	apply(curr)
 
 	curr = c.qm31.Sub(partials[3], partials[2])
@@ -447,29 +448,29 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 
 	curr = c.qm31.Sub(partials[13], partials[12])
 	curr = c.qm31.Mul(curr, poseidonFullRoundChainSum26)
-	curr = c.qm31.Mul(curr, memoryAddressToIdSum27)
+	curr = c.qm31.Mul(curr, memoryAddressToIDSum27)
 	curr = c.qm31.Sub(curr, poseidonFullRoundChainSum26)
-	curr = c.qm31.Sub(curr, memoryAddressToIdSum27)
+	curr = c.qm31.Sub(curr, memoryAddressToIDSum27)
 	apply(curr)
 
 	curr = c.qm31.Sub(partials[14], partials[13])
-	curr = c.qm31.Mul(curr, memoryIdToBigSum28)
-	curr = c.qm31.Mul(curr, memoryAddressToIdSum29)
-	curr = c.qm31.Sub(curr, memoryIdToBigSum28)
-	curr = c.qm31.Sub(curr, memoryAddressToIdSum29)
+	curr = c.qm31.Mul(curr, memoryIDToBigSum28)
+	curr = c.qm31.Mul(curr, memoryAddressToIDSum29)
+	curr = c.qm31.Sub(curr, memoryIDToBigSum28)
+	curr = c.qm31.Sub(curr, memoryAddressToIDSum29)
 	apply(curr)
 
 	curr = c.qm31.Sub(partials[15], partials[14])
-	curr = c.qm31.Mul(curr, memoryIdToBigSum30)
-	curr = c.qm31.Mul(curr, memoryAddressToIdSum31)
-	curr = c.qm31.Sub(curr, memoryIdToBigSum30)
-	curr = c.qm31.Sub(curr, memoryAddressToIdSum31)
+	curr = c.qm31.Mul(curr, memoryIDToBigSum30)
+	curr = c.qm31.Mul(curr, memoryAddressToIDSum31)
+	curr = c.qm31.Sub(curr, memoryIDToBigSum30)
+	curr = c.qm31.Sub(curr, memoryAddressToIDSum31)
 	apply(curr)
 
 	curr = c.qm31.Sub(partials[16], partials[15])
 	curr = c.qm31.Sub(curr, partialNeg1)
 	curr = c.qm31.Add(curr, c.qm31.Mul(c.claimedSum, c.columnSizeInv))
-	curr = c.qm31.Mul(curr, memoryIdToBigSum32)
+	curr = c.qm31.Mul(curr, memoryIDToBigSum32)
 	curr = c.qm31.Sub(curr, qm31Const(1))
 	apply(curr)
 

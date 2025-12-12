@@ -3,12 +3,14 @@ package fri
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
@@ -17,11 +19,14 @@ import (
 )
 
 type merkleTestVector struct {
-	Root           [32]uints.U8
-	ColumnLogSizes []uint8
-	Queries        [][]int
-	Values         []m31.M31
-	HashWitness    [][32]uints.U8
+	Root               [32]uints.U8
+	ColumnLogSizes     []frontend.Variable
+	Values             []m31.M31
+	HashWitness        [][32]uints.U8
+	BaseLayerQueries   []frontend.Variable
+	NColumnsPerLogSize []int
+	QueriesShape       []int
+	MaxLogSize         uint8
 }
 
 type rawMerkleTestVector struct {
@@ -32,29 +37,31 @@ type rawMerkleTestVector struct {
 	HashWitness    [][]uint8 `json:"hash_witness"`
 }
 
-var merkleFixture = mustLoadMerkleTestVector()
+var data = mustLoadMerkleTestVector()
 
 type merkleDecommitCircuit struct{}
 
 func (c *merkleDecommitCircuit) Define(api frontend.API) error {
-	data := merkleFixture
-	columnLogSizes := append([]uint8(nil), data.ColumnLogSizes...)
-	verifier := NewMerkleVerifier(api, data.Root, columnLogSizes)
-
-	queries := append([][]int(nil), data.Queries...)
-	values := append([]m31.M31(nil), data.Values...)
-	hashWitness := make([][32]uints.U8, len(data.HashWitness))
-	copy(hashWitness, data.HashWitness)
-
-	decommitment := variables.MerkleDecommitment{
-		HashWitness: hashWitness,
+	uapi, err := uints.New[uints.U32](api)
+	if err != nil {
+		panic(err)
 	}
 
-	verifier.Verify(queries, values, decommitment)
+	verifier := NewMerkleVerifier(api, uapi, data.Root, data.ColumnLogSizes, data.NColumnsPerLogSize)
+
+	// Generate queries
+	queries := utils.GenerateQueries(api, data.BaseLayerQueries, 10, data.QueriesShape, data.MaxLogSize)
+	queriesLookup := utils.ToLookupTable(api, queries)
+
+	decommitment := variables.MerkleDecommitment{
+		HashWitness: data.HashWitness,
+	}
+
+	verifier.Verify(queriesLookup, data.Values, decommitment, data.QueriesShape)
 	return nil
 }
 
-// test for merkle decommitment verification using fixture using modified stwo prover output
+// test for merkle decommitment verification using the first decommitment of the all_components_proof.json fixture
 func TestMerkleDecommitmentVerification(t *testing.T) {
 	assert := test.NewAssert(t)
 	circuit := &merkleDecommitCircuit{}
@@ -93,8 +100,6 @@ func mustLoadMerkleTestVector() merkleTestVector {
 		root[i] = uints.NewU8(b)
 	}
 
-	queries := raw.Queries
-
 	values := make([]m31.M31, len(raw.Values))
 	for i, v := range raw.Values {
 		values[i] = m31.NewM31Unchecked(v)
@@ -110,11 +115,75 @@ func mustLoadMerkleTestVector() merkleTestVector {
 		}
 	}
 
+	columnLogSizes := make([]frontend.Variable, len(raw.ColumnLogSizes))
+	for i, logSize := range raw.ColumnLogSizes {
+		columnLogSizes[i] = frontend.Variable(logSize)
+	}
+
+	if len(raw.Queries) == 0 {
+		panic("merkle queries must not be empty")
+	}
+	maxLogSize := len(raw.Queries) - 1
+	baseLayerQueries := make([]frontend.Variable, len(raw.Queries[maxLogSize]))
+	for i, query := range raw.Queries[maxLogSize] {
+		baseLayerQueries[i] = frontend.Variable(query)
+	}
+	queriesShape := make([]int, maxLogSize+1)
+	currentLayer := append([]int(nil), raw.Queries[maxLogSize]...)
+
+	intSlicesEqual := func(a, b []int) bool {
+		if len(a) != len(b) {
+			return false
+		}
+		for i := range a {
+			if a[i] != b[i] {
+				return false
+			}
+		}
+		return true
+	}
+
+	for layer := maxLogSize; layer >= 0; layer-- {
+		queriesShape[layer] = len(currentLayer)
+		if len(raw.Queries[layer]) > 0 && !intSlicesEqual(raw.Queries[layer], currentLayer) {
+			panic(fmt.Sprintf("query mismatch at layer %d", layer))
+		}
+		if layer == 0 {
+			break
+		}
+		nextLayer := make([]int, 0, len(currentLayer))
+		seen := make(map[int]struct{}, len(currentLayer))
+		for _, query := range currentLayer {
+			parent := query / 2
+			if _, ok := seen[parent]; ok {
+				continue
+			}
+			seen[parent] = struct{}{}
+			nextLayer = append(nextLayer, parent)
+		}
+		currentLayer = nextLayer
+	}
+
+	nColumnsPerLogSize := make([]int, maxLogSize+1)
+	for _, logSize := range raw.ColumnLogSizes {
+		if logSize <= 0 {
+			panic("column log size must be positive")
+		}
+		index := int(logSize)
+		if index >= len(nColumnsPerLogSize) {
+			panic("column log size exceeds max log size")
+		}
+		nColumnsPerLogSize[index]++
+	}
+
 	return merkleTestVector{
-		Root:           root,
-		ColumnLogSizes: append([]uint8(nil), raw.ColumnLogSizes...),
-		Queries:        queries,
-		Values:         values,
-		HashWitness:    hashWitness,
+		Root:               root,
+		ColumnLogSizes:     columnLogSizes,
+		BaseLayerQueries:   baseLayerQueries,
+		Values:             values,
+		HashWitness:        hashWitness,
+		NColumnsPerLogSize: nColumnsPerLogSize,
+		QueriesShape:       queriesShape,
+		MaxLogSize:         uint8(maxLogSize),
 	}
 }

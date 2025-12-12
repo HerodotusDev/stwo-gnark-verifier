@@ -4,19 +4,20 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
 	gnarkbits "github.com/consensys/gnark/std/math/bits"
-	"github.com/consensys/gnark/std/math/uints"
 )
+
+func qm31Const(value uint64) m31.QM31 {
+	return m31.NewQM31Unchecked(value, 0, 0, 0)
+}
+
+func accumulateConstraint(qm31 *m31.QM31Chip, sum, randomCoeff, constraint m31.QM31) m31.QM31 {
+	return qm31.Add(qm31.Mul(sum, randomCoeff), constraint)
+}
 
 // computeColumnSize computes 2^logSize inside the circuit and returns it as QM31.
 // It uses square-and-multiply over the binary decomposition of the 8-bit value.
-func computeColumnSize(api frontend.API, logSize uints.U8) m31.QM31 {
-	bytesAPI, err := uints.NewBytes(api)
-	if err != nil {
-		panic(err)
-	}
-
-	logSizeValue := bytesAPI.Value(logSize)
-	logSizeBits := gnarkbits.ToBinary(api, logSizeValue, gnarkbits.WithNbDigits(8))
+func computeColumnSize(api frontend.API, logSize frontend.Variable) m31.QM31 {
+	logSizeBits := gnarkbits.ToBinary(api, logSize, gnarkbits.WithNbDigits(8))
 
 	// Square and multiply to compute the column size
 	columnSize := frontend.Variable(1)

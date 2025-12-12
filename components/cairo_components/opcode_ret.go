@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	retOpcodeTraceColumns       = 12
-	retOpcodeInteractionColumns = 16
+	RetOpcodeTraceColumns       = 12
+	RetOpcodeInteractionColumns = 16
 )
 
 type RetOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type RetOpcodeInteractionClaim struct {
@@ -24,8 +23,8 @@ type RetOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -37,21 +36,21 @@ func NewRetOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim RetOpcodeClaim,
 	interactionClaim RetOpcodeInteractionClaim,
-) *RetOpcodeComponent {
+) RetOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &RetOpcodeComponent{
+	return RetOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -59,8 +58,8 @@ func NewRetOpcode(
 	}
 }
 
-func (c *RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(retOpcodeTraceColumns, retOpcodeInteractionColumns)
+func (c RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(RetOpcodeTraceColumns, RetOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -113,11 +112,11 @@ func (c *RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		nextPcLimb0,
 		nextPcLimb1,
 		nextPcLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum1 := readNextPc.AddressLookupSum
-	memoryIdToBigSum2 := readNextPc.IdToBigLookupSum
+	memoryIDToBigSum2 := readNextPc.IdToBigLookupSum
 
 	readNextFp := sub.ReadPositiveNumBits27Evaluate(
 		c.qm31,
@@ -126,11 +125,11 @@ func (c *RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		nextFpLimb0,
 		nextFpLimb1,
 		nextFpLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum3 := readNextFp.AddressLookupSum
-	memoryIdToBigSum4 := readNextFp.IdToBigLookupSum
+	memoryIDToBigSum4 := readNextFp.IdToBigLookupSum
 
 	var err error
 	opcodesSum5, err := c.qm31.Combine(
@@ -162,15 +161,15 @@ func (c *RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, memoryAddressSum3))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum2)
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, memoryAddressSum3))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum2)
 	constraint = c.qm31.Sub(constraint, memoryAddressSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff2 := c.qm31.Sub(part2, part1)
-	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIdToBigSum4, opcodesSum5))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum4, enabler))
+	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIDToBigSum4, opcodesSum5))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIDToBigSum4, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum5)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

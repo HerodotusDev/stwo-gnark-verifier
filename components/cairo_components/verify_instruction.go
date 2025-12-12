@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	verifyInstructionTraceColumns       = 17
-	verifyInstructionInteractionColumns = 12
+	VerifyInstructionTraceColumns       = 17
+	VerifyInstructionInteractionColumns = 12
 )
 
 type VerifyInstructionClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type VerifyInstructionInteractionClaim struct {
@@ -23,10 +22,10 @@ type VerifyInstructionInteractionClaim struct {
 type VerifyInstructionComponent struct {
 	qm31 *m31.QM31Chip
 
-	rangeCheck7_2_5Elements   m31.InteractionElements
-	rangeCheck4_3Elements     m31.InteractionElements
+	rangeCheck725Elements     m31.InteractionElements
+	rangeCheck43Elements      m31.InteractionElements
 	memoryAddressElements     m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	verifyInstructionElements m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -37,23 +36,23 @@ type VerifyInstructionComponent struct {
 func NewVerifyInstruction(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
-	rangeCheck7_2_5Elements m31.InteractionElements,
-	rangeCheck4_3Elements m31.InteractionElements,
+	rangeCheck725Elements m31.InteractionElements,
+	rangeCheck43Elements m31.InteractionElements,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	verifyInstructionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim VerifyInstructionClaim,
 	interactionClaim VerifyInstructionInteractionClaim,
-) *VerifyInstructionComponent {
+) VerifyInstructionComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &VerifyInstructionComponent{
+	return VerifyInstructionComponent{
 		qm31:                      qm31,
-		rangeCheck7_2_5Elements:   rangeCheck7_2_5Elements,
-		rangeCheck4_3Elements:     rangeCheck4_3Elements,
+		rangeCheck725Elements:     rangeCheck725Elements,
+		rangeCheck43Elements:      rangeCheck43Elements,
 		memoryAddressElements:     memoryAddressElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		verifyInstructionElements: verifyInstructionElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             qm31.Inverse(columnSize),
@@ -61,8 +60,8 @@ func NewVerifyInstruction(
 	}
 }
 
-func (c *VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(verifyInstructionTraceColumns, verifyInstructionInteractionColumns)
+func (c VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(VerifyInstructionTraceColumns, VerifyInstructionInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -115,8 +114,8 @@ func (c *VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 		offset2Low,
 		offset2Mid,
 		offset2High,
-		c.rangeCheck7_2_5Elements,
-		c.rangeCheck4_3Elements,
+		c.rangeCheck725Elements,
+		c.rangeCheck43Elements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -144,7 +143,7 @@ func (c *VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 		valueLimbs,
 		instructionID,
 		c.memoryAddressElements,
-		c.memoryIdToBigElements,
+		c.memoryIDToBigElements,
 		offsets.Sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -167,9 +166,9 @@ func (c *VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, rand
 		panic(err)
 	}
 
-	constraint := c.qm31.Mul(part0, c.qm31.Mul(offsets.Range7_2_5Sum, offsets.Range4_3Sum))
-	constraint = c.qm31.Sub(constraint, offsets.Range7_2_5Sum)
-	constraint = c.qm31.Sub(constraint, offsets.Range4_3Sum)
+	constraint := c.qm31.Mul(part0, c.qm31.Mul(offsets.Range725Sum, offsets.Range43Sum))
+	constraint = c.qm31.Sub(constraint, offsets.Range725Sum)
+	constraint = c.qm31.Sub(constraint, offsets.Range43Sum)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 

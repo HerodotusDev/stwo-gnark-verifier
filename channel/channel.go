@@ -4,40 +4,50 @@
 package channel
 
 import (
+	"math/big"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+// Blake2sHash is a 256-bit hash.
+// TODO: at many places in the code we rather use [32]uints.U8, perhaps there should be a hash type handling both.
 type Blake2sHash [8]uints.U32
 
-type ChannelTime struct {
+// TranscriptTime tracks the number of challenges and sent messages.
+type TranscriptTime struct {
 	nChallenges uints.U32
 	nSent       uints.U32
 }
 
 // incChallenges bumps the number of issued challenges.
-func (ct *ChannelTime) incChallenges(uapi *uints.BinaryField[uints.U32]) {
+func (ct *TranscriptTime) incChallenges(uapi *uints.BinaryField[uints.U32]) {
 	ct.nChallenges = uapi.Add(ct.nChallenges, uints.NewU32(1))
 	ct.nSent = uints.NewU32(0)
 }
 
 // incSent bumps the counter used for deriving fresh randomness.
-func (ct *ChannelTime) incSent(uapi *uints.BinaryField[uints.U32]) {
+func (ct *TranscriptTime) incSent(uapi *uints.BinaryField[uints.U32]) {
 	ct.nSent = uapi.Add(ct.nSent, uints.NewU32(1))
 }
 
+// Channel is the Fiat-Shamir channel transcript.
 type Channel struct {
 	api         frontend.API
 	blake2sChip *blake2s.Blake2sChip
 	m31Chip     *m31.M31Chip
 	uapi        *uints.BinaryField[uints.U32]
+	comparator  *cmp.BoundedComparator
 
 	digest      Blake2sHash
-	channelTime ChannelTime
+	channelTime TranscriptTime
 }
 
+// Digest returns the current digest of the channel. Useful for debugging.
 func (c *Channel) Digest() Blake2sHash {
 	return c.digest
 }
@@ -54,14 +64,16 @@ func NewChannel(api frontend.API) *Channel {
 	if err != nil {
 		panic(err)
 	}
+	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
 
 	return &Channel{
 		api:         api,
 		blake2sChip: blake2sChip,
 		m31Chip:     m31Chip,
 		uapi:        uapi,
+		comparator:  comparator,
 		digest:      zeroHash(),
-		channelTime: ChannelTime{
+		channelTime: TranscriptTime{
 			nChallenges: uints.NewU32(0),
 			nSent:       uints.NewU32(0),
 		},
@@ -168,6 +180,34 @@ func checkProofOfWork(uapi *uints.BinaryField[uints.U32], digest Blake2sHash, in
 	mask := uints.NewU32((1 << interactionPowBits) - 1)
 	masked := uapi.And(lsw, mask)
 	uapi.AssertEq(masked, uints.NewU32(0))
+}
+
+// ╔══════════════════════════════════╗
+// ║              Queries             ║
+// ╚══════════════════════════════════╝
+
+// GenerateBaseLayerQueries the largest layer of queries used by the verifier (folding happens outside of this function)
+func (c *Channel) GenerateBaseLayerQueries(maxLogSize frontend.Variable, nQueries uint8) []frontend.Variable {
+	queries := make([]frontend.Variable, 0)
+	queryCount := uint8(0)
+	maxQuery := c.api.Sub(utils.Pow(c.api, c.comparator, frontend.Variable(2), maxLogSize), frontend.Variable(1))
+	maxQueryU32 := c.uapi.ValueOf(maxQuery)
+	// TODO: this fails with probability ~1/2^32. The prover should hint how many and which queries are duplicates.
+	//       This information should be provided through circuitData.
+	nDuplicates := uint8(0)
+	for queryCount < nQueries+nDuplicates {
+		randomBytes := c.DrawRandomBytes()
+		for i := 0; i < len(randomBytes); i += 4 {
+			query := c.uapi.PackLSB(randomBytes[i], randomBytes[i+1], randomBytes[i+2], randomBytes[i+3])
+			quotientQuery := c.uapi.And(query, maxQueryU32)
+			queries = append(queries, c.uapi.ToValue(quotientQuery))
+			queryCount++
+			if queryCount == nQueries+nDuplicates {
+				break
+			}
+		}
+	}
+	return queries
 }
 
 // ╔══════════════════════════════════╗

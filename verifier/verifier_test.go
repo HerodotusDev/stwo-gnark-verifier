@@ -5,37 +5,48 @@ import (
 	"os"
 	"testing"
 
-	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
 )
 
+// This circuit reproduces the verifier circuit used in the main.go file.
+// It runs by default with the `DefaultPcsConfig`, that is, with 10 queries.
 type VerifierCircuit struct {
-	proof variables.Proof `gnark:"-"`
+	Proof       variables.Proof       `gnark:",public"`
+	circuitData variables.CircuitData `gnark:"-"`
 }
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := NewVerifierChip(api)
-	verifierChip.Verify(c.proof, fri.DefaultPcsConfig())
+	verifierChip.Verify(c.Proof, variables.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }
 
 func TestVerifier(t *testing.T) {
-	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsHintsProofFixture))
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
 	}
+	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsProofFixture))
+	if err != nil {
+		fmt.Println("Error in reading circuit shape:", err)
+		os.Exit(1)
+	}
 
-	cairoProof := variables.BuildProof(cairoProofRaw)
+	cairoProof := variables.BuildProof(*cairoProofRaw)
+	circuitData := variables.BuildCircuitData(shapeRaw)
+
 	witness := VerifierCircuit{
-		proof: *cairoProof,
+		Proof:       cairoProof,
+		circuitData: circuitData,
 	}
 	circuit := VerifierCircuit{
-		proof: *cairoProof,
+		Proof:       cairoProof,
+		circuitData: circuitData,
 	}
 	assert := test.NewAssert(t)
 
