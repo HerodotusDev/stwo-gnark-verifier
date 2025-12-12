@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
@@ -21,7 +20,7 @@ type VerifierCircuit struct {
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := NewVerifierChip(api)
-	verifierChip.Verify(c.Proof, fri.DefaultPcsConfig(), c.circuitData)
+	verifierChip.Verify(c.Proof, variables.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }

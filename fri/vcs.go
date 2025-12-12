@@ -11,6 +11,7 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+// MerkleVerifier is a circuit gadget for verifying a Merkle decommitment
 type MerkleVerifier struct {
 	api         frontend.API
 	uapi        *uints.BinaryField[uints.U32]
@@ -24,6 +25,7 @@ type MerkleVerifier struct {
 	maxLogSize         int
 }
 
+// NewMerkleVerifier initializes a new MerkleVerifier
 func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], root [32]uints.U8, columnLogSizes []frontend.Variable, nColumnsPerLogSize []int) *MerkleVerifier {
 	m31Chip := m31.NewM31Chip(api)
 	blake2sChip := blake2s.NewBlake2sChip(api)

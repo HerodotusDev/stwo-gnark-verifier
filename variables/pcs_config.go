@@ -1,4 +1,4 @@
-package fri
+package variables
 
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
@@ -13,8 +13,6 @@ type FriConfig struct {
 	NQueries                uint8
 }
 
-var zero = uints.NewU8(0)
-
 // MixInto absorbs the FRI configuration words into the Fiat-Shamir channel.
 func (cfg FriConfig) MixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32]) {
 	ch.MixU32s([]uints.U32{uapi32.ValueOf(cfg.LogBlowupFactor), uints.NewU32(0)})
@@ -23,7 +21,6 @@ func (cfg FriConfig) MixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uint
 }
 
 // PcsConfig stores the polynomial commitment scheme parameters.
-// TODO: known right after VM execution so should be a constant
 type PcsConfig struct {
 	PowBits   uint8
 	FriConfig FriConfig
@@ -43,6 +40,18 @@ func DefaultPcsConfig() PcsConfig {
 			LogBlowupFactor:         frontend.Variable(1),
 			LogLastLayerDegreeBound: 0,
 			NQueries:                10,
+		},
+	}
+}
+
+// ProdPcsConfig returns the production PCS configuration used by the prover.
+func ProdPcsConfig() PcsConfig {
+	return PcsConfig{
+		PowBits: 26,
+		FriConfig: FriConfig{
+			LogBlowupFactor:         frontend.Variable(1),
+			LogLastLayerDegreeBound: 0,
+			NQueries:                70,
 		},
 	}
 }

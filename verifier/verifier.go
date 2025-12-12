@@ -51,7 +51,7 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	}
 }
 
-func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, circuitData variables.CircuitData) {
+func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConfig, circuitData variables.CircuitData) {
 	// Mix PCS configuration into the channel
 	pcsConfig.MixInto(c.channel, c.uapi)
 

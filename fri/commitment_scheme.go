@@ -13,13 +13,13 @@ import (
 type CommitmentSchemeVerifier struct {
 	api         frontend.API
 	uapi        *uints.BinaryField[uints.U32]
-	PcsConfig   PcsConfig
+	PcsConfig   variables.PcsConfig
 	Trees       [cairo_components.N_TREES]*MerkleVerifier
 	circuitData variables.CircuitData
 }
 
 // NewCommitmentSchemeVerifier initializes the commitment scheme verifier.
-func NewCommitmentSchemeVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], pcsConfig PcsConfig, circuitData variables.CircuitData) *CommitmentSchemeVerifier {
+func NewCommitmentSchemeVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], pcsConfig variables.PcsConfig, circuitData variables.CircuitData) *CommitmentSchemeVerifier {
 	return &CommitmentSchemeVerifier{
 		api:         api,
 		uapi:        uapi,
@@ -48,6 +48,7 @@ func (v *CommitmentSchemeVerifier) Commit(treeIndex int, root [32]uints.U8, logS
 	v.Trees[treeIndex] = NewMerkleVerifier(v.api, v.uapi, root, columnLogSizes, nDomainPerLogSize)
 }
 
+// ColumnLogSizes returns the column log sizes for the given tree (and optionally blew up)
 func (v *CommitmentSchemeVerifier) ColumnLogSizes(blowup bool) [][]frontend.Variable {
 	columnLogSizes := make([][]frontend.Variable, 4)
 	for treeIndex, merkleVerifier := range v.Trees {
@@ -64,6 +65,7 @@ func (v *CommitmentSchemeVerifier) ColumnLogSizes(blowup bool) [][]frontend.Vari
 	return columnLogSizes
 }
 
+// Bounds returns the deduplicated and ordered column bounds
 func (v *CommitmentSchemeVerifier) Bounds() []frontend.Variable {
 	columnLogSizes := v.ColumnLogSizes(false)
 	columnLogSizesFlattened := utils.FlattenTree(columnLogSizes)
