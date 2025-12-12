@@ -25,7 +25,7 @@ type VerifyInstructionComponent struct {
 	rangeCheck725Elements     m31.InteractionElements
 	rangeCheck43Elements      m31.InteractionElements
 	memoryAddressElements     m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	verifyInstructionElements m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -39,7 +39,7 @@ func NewVerifyInstruction(
 	rangeCheck725Elements m31.InteractionElements,
 	rangeCheck43Elements m31.InteractionElements,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	verifyInstructionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim VerifyInstructionClaim,
@@ -52,7 +52,7 @@ func NewVerifyInstruction(
 		rangeCheck725Elements:     rangeCheck725Elements,
 		rangeCheck43Elements:      rangeCheck43Elements,
 		memoryAddressElements:     memoryAddressElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		verifyInstructionElements: verifyInstructionElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             qm31.Inverse(columnSize),
@@ -143,7 +143,7 @@ func (c VerifyInstructionComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 		valueLimbs,
 		instructionID,
 		c.memoryAddressElements,
-		c.memoryIdToBigElements,
+		c.memoryIDToBigElements,
 		offsets.Sum,
 		c.vanishEvalInv,
 		randomCoeff,

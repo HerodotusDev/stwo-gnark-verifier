@@ -25,8 +25,8 @@ type GenericOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck99Elements      m31.InteractionElements
 	rangeCheck19Elements      m31.InteractionElements
 	opcodesElements           m31.InteractionElements
@@ -40,8 +40,8 @@ func NewGenericOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck99Elements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
@@ -55,8 +55,8 @@ func NewGenericOpcode(
 	return GenericOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck99Elements:      rangeCheck99Elements,
 		rangeCheck19Elements:      rangeCheck19Elements,
 		opcodesElements:           opcodesElements,
@@ -162,8 +162,8 @@ func (c GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 		traceSampledValues.Get(168),
 		carries,
 		resLimbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck99Elements,
 		c.rangeCheck19Elements,
 		sum,
@@ -256,7 +256,7 @@ func (c GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 		c.columnSizeInv,
 		verifyInstructionSum,
 		evalRes.MemoryAddressSums,
-		evalRes.MemoryIdSums,
+		evalRes.MemoryIDSums,
 		evalRes.RangeCheck99,
 		evalRes.RangeCheck19,
 		opcodesSum63,
@@ -276,7 +276,7 @@ func (c *GenericOpcodeComponent) lookupConstraints(
 	columnSizeInv m31.QM31,
 	verifyInstructionSum m31.QM31,
 	memoryAddressSums [3]m31.QM31,
-	memoryIdSums [3]m31.QM31,
+	memoryIDSums [3]m31.QM31,
 	rangeCheck99 [28]m31.QM31,
 	rangeCheck19 [28]m31.QM31,
 	opcodesSum63 m31.QM31,
@@ -329,22 +329,22 @@ func (c *GenericOpcodeComponent) lookupConstraints(
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff := c.qm31.Sub(partials[1], partials[0])
-	constraint = c.qm31.Mul(diff, c.qm31.Mul(memoryIdSums[0], memoryAddressSums[1]))
-	constraint = c.qm31.Sub(constraint, memoryIdSums[0])
+	constraint = c.qm31.Mul(diff, c.qm31.Mul(memoryIDSums[0], memoryAddressSums[1]))
+	constraint = c.qm31.Sub(constraint, memoryIDSums[0])
 	constraint = c.qm31.Sub(constraint, memoryAddressSums[1])
 	constraint = c.qm31.Mul(constraint, domainVanishInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff = c.qm31.Sub(partials[2], partials[1])
-	constraint = c.qm31.Mul(diff, c.qm31.Mul(memoryIdSums[1], memoryAddressSums[2]))
-	constraint = c.qm31.Sub(constraint, memoryIdSums[1])
+	constraint = c.qm31.Mul(diff, c.qm31.Mul(memoryIDSums[1], memoryAddressSums[2]))
+	constraint = c.qm31.Sub(constraint, memoryIDSums[1])
 	constraint = c.qm31.Sub(constraint, memoryAddressSums[2])
 	constraint = c.qm31.Mul(constraint, domainVanishInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff = c.qm31.Sub(partials[3], partials[2])
-	constraint = c.qm31.Mul(diff, c.qm31.Mul(memoryIdSums[2], rangeCheck99[0]))
-	constraint = c.qm31.Sub(constraint, memoryIdSums[2])
+	constraint = c.qm31.Mul(diff, c.qm31.Mul(memoryIDSums[2], rangeCheck99[0]))
+	constraint = c.qm31.Sub(constraint, memoryIDSums[2])
 	constraint = c.qm31.Sub(constraint, rangeCheck99[0])
 	constraint = c.qm31.Mul(constraint, domainVanishInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

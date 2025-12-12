@@ -68,8 +68,8 @@ type CairoInteractionClaim struct {
 
 	// Memory
 	MemoryAddressToID  cairo_components.MemoryAddressToIDInteractionClaim
-	MemoryIDToBigBig   cairo_components.MemoryIdToBigBigInteractionClaim
-	MemoryIDToBigSmall cairo_components.MemoryIdToBigSmallInteractionClaim
+	MemoryIDToBigBig   cairo_components.MemoryIDToBigBigInteractionClaim
+	MemoryIDToBigSmall cairo_components.MemoryIDToBigSmallInteractionClaim
 
 	// Range checks
 	RC6     cairo_components.RangeCheck6InteractionClaim
@@ -246,8 +246,8 @@ func BuildInteractionClaim(interactionClaimRaw *InteractionClaimRaw) CairoIntera
 
 	// Memory ID to value interaction claim
 	// TODO: handle multiple big claims
-	interactionClaim.MemoryIDToBigBig = cairo_components.MemoryIdToBigBigInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryIDToValue.BigClaimedSums[0])}
-	interactionClaim.MemoryIDToBigSmall = cairo_components.MemoryIdToBigSmallInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryIDToValue.SmallClaimedSum)}
+	interactionClaim.MemoryIDToBigBig = cairo_components.MemoryIDToBigBigInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryIDToValue.BigClaimedSums[0])}
+	interactionClaim.MemoryIDToBigSmall = cairo_components.MemoryIDToBigSmallInteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.MemoryIDToValue.SmallClaimedSum)}
 
 	// Range checks interaction claim
 	interactionClaim.RC6 = cairo_components.RangeCheck6InteractionClaim{ClaimedSum: m31.NewQM31FromArrays(interactionClaimRaw.RangeChecks["rc_6"].ClaimedSum)}
@@ -279,6 +279,7 @@ func BuildInteractionClaim(interactionClaimRaw *InteractionClaimRaw) CairoIntera
 // ╚══════════════════════════════════╝
 
 // MixInto absorbs the Cairo interaction claim into the transcript channel.
+// This is highly order dependent, so the components need to be correctly ordered
 func (claim CairoInteractionClaim) MixInto(ch *channel.Channel, circuitData CircuitData) {
 
 	// Mix opcodes

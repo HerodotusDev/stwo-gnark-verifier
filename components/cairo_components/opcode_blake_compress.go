@@ -24,8 +24,8 @@ type BlakeCompressOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck725Elements     m31.InteractionElements
 	verifyBitwiseXor8Elements m31.InteractionElements
 	blakeRoundElements        m31.InteractionElements
@@ -42,8 +42,8 @@ func NewBlakeCompressOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck725Elements m31.InteractionElements,
 	verifyBitwiseXor8Elements m31.InteractionElements,
 	blakeRoundElements m31.InteractionElements,
@@ -60,8 +60,8 @@ func NewBlakeCompressOpcode(
 		api:                       api,
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck725Elements:     rangeCheck725Elements,
 		verifyBitwiseXor8Elements: verifyBitwiseXor8Elements,
 		blakeRoundElements:        blakeRoundElements,
@@ -175,8 +175,8 @@ func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 			Word: dstWord,
 		},
 		c.verifyInstructionElements,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck725Elements,
 		sum,
 		c.vanishEvalInv,
@@ -185,15 +185,15 @@ func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 	sum = decodeRes.Sum
 
 	verifyInstructionSum := decodeRes.Instruction.VerifySum
-	memoryAddressToIdSum1 := decodeRes.Op0Lookup.AddressLookupSum
-	memoryIdToBigSum2 := decodeRes.Op0Lookup.IdToBigLookupSum
-	memoryAddressToIdSum3 := decodeRes.Op1Lookup.AddressLookupSum
-	memoryIdToBigSum4 := decodeRes.Op1Lookup.IdToBigLookupSum
-	memoryAddressToIdSum5 := decodeRes.ApLookup.AddressLookupSum
-	memoryIdToBigSum6 := decodeRes.ApLookup.IdToBigLookupSum
+	memoryAddressToIDSum1 := decodeRes.Op0Lookup.AddressLookupSum
+	memoryIDToBigSum2 := decodeRes.Op0Lookup.IdToBigLookupSum
+	memoryAddressToIDSum3 := decodeRes.Op1Lookup.AddressLookupSum
+	memoryIDToBigSum4 := decodeRes.Op1Lookup.IdToBigLookupSum
+	memoryAddressToIDSum5 := decodeRes.ApLookup.AddressLookupSum
+	memoryIDToBigSum6 := decodeRes.ApLookup.IdToBigLookupSum
 	rangeCheckSum7 := decodeRes.DstLookup.RangeCheckSum
-	memoryAddressToIdSum8 := decodeRes.DstLookup.AddressLookupSum
-	memoryIdToBigSum9 := decodeRes.DstLookup.IdToBigLookupSum
+	memoryAddressToIDSum8 := decodeRes.DstLookup.AddressLookupSum
+	memoryIDToBigSum9 := decodeRes.DstLookup.IdToBigLookupSum
 
 	decodeOutputs := decodeRes.Outputs
 
@@ -237,8 +237,8 @@ func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 		ms8Bits,
 		xorValues,
 		c.rangeCheck725Elements,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.verifyBitwiseXor8Elements,
 		sum,
 		c.vanishEvalInv,
@@ -330,8 +330,8 @@ func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 			newState[i].High5,
 			newState[i].ID,
 			c.rangeCheck725Elements,
-			c.memoryAddressToIdElements,
-			c.memoryIdToBigElements,
+			c.memoryAddressToIDElements,
+			c.memoryIDToBigElements,
 			sum,
 			c.vanishEvalInv,
 			randomCoeff,
@@ -364,15 +364,15 @@ func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ran
 
 	pairs := c.buildBlakeCompressPairs(
 		verifyInstructionSum,
-		memoryAddressToIdSum1,
-		memoryIdToBigSum2,
-		memoryAddressToIdSum3,
-		memoryIdToBigSum4,
-		memoryAddressToIdSum5,
-		memoryIdToBigSum6,
+		memoryAddressToIDSum1,
+		memoryIDToBigSum2,
+		memoryAddressToIDSum3,
+		memoryIDToBigSum4,
+		memoryAddressToIDSum5,
+		memoryIDToBigSum6,
 		rangeCheckSum7,
-		memoryAddressToIdSum8,
-		memoryIdToBigSum9,
+		memoryAddressToIDSum8,
+		memoryIDToBigSum9,
 		rangeCheckInput,
 		addressInput,
 		idInput,
@@ -503,15 +503,15 @@ type blakeCompressPair struct {
 
 func (c *BlakeCompressOpcodeComponent) buildBlakeCompressPairs(
 	verifyInstructionSum m31.QM31,
-	memoryAddressToIdSum1 m31.QM31,
-	memoryIdToBigSum2 m31.QM31,
-	memoryAddressToIdSum3 m31.QM31,
-	memoryIdToBigSum4 m31.QM31,
-	memoryAddressToIdSum5 m31.QM31,
-	memoryIdToBigSum6 m31.QM31,
+	memoryAddressToIDSum1 m31.QM31,
+	memoryIDToBigSum2 m31.QM31,
+	memoryAddressToIDSum3 m31.QM31,
+	memoryIDToBigSum4 m31.QM31,
+	memoryAddressToIDSum5 m31.QM31,
+	memoryIDToBigSum6 m31.QM31,
 	rangeCheckSum7 m31.QM31,
-	memoryAddressToIdSum8 m31.QM31,
-	memoryIdToBigSum9 m31.QM31,
+	memoryAddressToIDSum8 m31.QM31,
+	memoryIDToBigSum9 m31.QM31,
 	rangeCheckInput [8]m31.QM31,
 	addressInput [8]m31.QM31,
 	idInput [8]m31.QM31,
@@ -524,11 +524,11 @@ func (c *BlakeCompressOpcodeComponent) buildBlakeCompressPairs(
 	idNew []m31.QM31,
 ) []blakeCompressPair {
 	pairs := []blakeCompressPair{
-		{First: verifyInstructionSum, Second: memoryAddressToIdSum1},
-		{First: memoryIdToBigSum2, Second: memoryAddressToIdSum3},
-		{First: memoryIdToBigSum4, Second: memoryAddressToIdSum5},
-		{First: memoryIdToBigSum6, Second: rangeCheckSum7},
-		{First: memoryAddressToIdSum8, Second: memoryIdToBigSum9},
+		{First: verifyInstructionSum, Second: memoryAddressToIDSum1},
+		{First: memoryIDToBigSum2, Second: memoryAddressToIDSum3},
+		{First: memoryIDToBigSum4, Second: memoryAddressToIDSum5},
+		{First: memoryIDToBigSum6, Second: rangeCheckSum7},
+		{First: memoryAddressToIDSum8, Second: memoryIDToBigSum9},
 	}
 
 	for idx := 0; idx < len(rangeCheckInput); idx += 2 {

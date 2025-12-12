@@ -71,8 +71,8 @@ type CairoClaim struct {
 
 	// Memory
 	MemoryAddressToID  cairo_components.MemoryAddressToIDClaim
-	MemoryIDToBigBig   cairo_components.MemoryIdToBigBigClaim
-	MemoryIDToBigSmall cairo_components.MemoryIdToBigSmallClaim
+	MemoryIDToBigBig   cairo_components.MemoryIDToBigBigClaim
+	MemoryIDToBigSmall cairo_components.MemoryIDToBigSmallClaim
 
 	// Range checks
 	RC6     cairo_components.RangeCheck6Claim
@@ -259,13 +259,13 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 
 	// Build ID to Big Big memory components
 	// TODO: Handle multiple id to big tables
-	claim.MemoryIDToBigBig = cairo_components.MemoryIdToBigBigClaim{
+	claim.MemoryIDToBigBig = cairo_components.MemoryIDToBigBigClaim{
 		LogSize: frontend.Variable(claimRaw.MemoryIDToValue.BigLogSizes[0]),
 		Offset:  uint32(0),
 	}
 
 	// Build ID to Big Small memory components
-	claim.MemoryIDToBigSmall = cairo_components.MemoryIdToBigSmallClaim{
+	claim.MemoryIDToBigSmall = cairo_components.MemoryIDToBigSmallClaim{
 		LogSize: frontend.Variable(claimRaw.MemoryIDToValue.SmallLogSize),
 	}
 
@@ -299,9 +299,8 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 // ╚══════════════════════════════════╝
 
 // MixInto absorbs the Cairo claim into the transcript channel.
+// This is highly order dependent, so the components need to be correctly ordered
 func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitData CircuitData) {
-	// Used for uint conversions (M31, frontend.Variable, u32, u64, etc.)
-	// TODO: for each new api, a lookup table is created so it would be better to have a unique uapi over the entire verifier circuit
 	uapi32, err := uints.New[uints.U32](api)
 	if err != nil {
 		panic(err)

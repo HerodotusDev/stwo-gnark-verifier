@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/HerodotusDev/stwo-gnark-verifier/verifier"
 	"github.com/consensys/gnark-crypto/ecc"
@@ -13,6 +12,7 @@ import (
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 )
 
+// VerifierCircuit is the circuit for verifying a Cairo proof
 type VerifierCircuit struct {
 	// Actual proof, directly deserialized from the Cairo proof file.
 	Proof variables.Proof `gnark:",public"`
@@ -20,9 +20,10 @@ type VerifierCircuit struct {
 	circuitData variables.CircuitData `gnark:"-"`
 }
 
+// Define defines the circuit for verifying a Cairo proof
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := verifier.NewVerifierChip(api)
-	verifierChip.Verify(c.Proof, fri.DefaultPcsConfig(), c.circuitData)
+	verifierChip.Verify(c.Proof, variables.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }

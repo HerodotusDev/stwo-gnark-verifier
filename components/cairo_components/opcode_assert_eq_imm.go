@@ -23,7 +23,7 @@ type AssertEqImmOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -35,7 +35,7 @@ func NewAssertEqImmOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AssertEqImmOpcodeClaim,
@@ -47,7 +47,7 @@ func NewAssertEqImmOpcode(
 	return AssertEqImmOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -120,7 +120,7 @@ func (c AssertEqImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
 		c.qm31.Add(inputPc, c.qm31.One()),
 		dstID,
-		c.memoryAddressToIdElements,
+		c.memoryAddressToIDElements,
 		sum,
 	)
 	memoryAddressSum1 := memVerify.AddressLookupSum1

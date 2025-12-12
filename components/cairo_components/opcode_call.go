@@ -23,8 +23,8 @@ type CallOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -36,8 +36,8 @@ func NewCallOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim CallOpcodeClaim,
@@ -49,8 +49,8 @@ func NewCallOpcode(
 	return CallOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -127,11 +127,11 @@ func (c CallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		storedFpLimb0,
 		storedFpLimb1,
 		storedFpLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum1 := readStoredFp.AddressLookupSum
-	memoryIdToBigSum2 := readStoredFp.IdToBigLookupSum
+	memoryIDToBigSum2 := readStoredFp.IdToBigLookupSum
 
 	storedFpValue := c.qm31.Add(
 		c.qm31.Add(
@@ -151,11 +151,11 @@ func (c CallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		storedRetPcLimb0,
 		storedRetPcLimb1,
 		storedRetPcLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum3 := readStoredRet.AddressLookupSum
-	memoryIdToBigSum4 := readStoredRet.IdToBigLookupSum
+	memoryIDToBigSum4 := readStoredRet.IdToBigLookupSum
 
 	storedRetPcValue := c.qm31.Add(
 		c.qm31.Add(
@@ -183,11 +183,11 @@ func (c CallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		nextPcLimb0,
 		nextPcLimb1,
 		nextPcLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum5 := readNextPc.AddressLookupSum
-	memoryIdToBigSum6 := readNextPc.IdToBigLookupSum
+	memoryIDToBigSum6 := readNextPc.IdToBigLookupSum
 
 	var err error
 	opcodesSum7, err := c.qm31.Combine(
@@ -222,22 +222,22 @@ func (c CallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, memoryAddressSum3))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum2)
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, memoryAddressSum3))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum2)
 	constraint = c.qm31.Sub(constraint, memoryAddressSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff2 := c.qm31.Sub(part2, part1)
-	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIdToBigSum4, memoryAddressSum5))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum4)
+	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIDToBigSum4, memoryAddressSum5))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum4)
 	constraint = c.qm31.Sub(constraint, memoryAddressSum5)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff3 := c.qm31.Sub(part3, part2)
-	constraint = c.qm31.Mul(diff3, c.qm31.Mul(memoryIdToBigSum6, opcodesSum7))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum6, enabler))
+	constraint = c.qm31.Mul(diff3, c.qm31.Mul(memoryIDToBigSum6, opcodesSum7))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIDToBigSum6, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum7)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

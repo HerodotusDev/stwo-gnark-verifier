@@ -6,6 +6,14 @@ import (
 	gnarkbits "github.com/consensys/gnark/std/math/bits"
 )
 
+func qm31Const(value uint64) m31.QM31 {
+	return m31.NewQM31Unchecked(value, 0, 0, 0)
+}
+
+func accumulateConstraint(qm31 *m31.QM31Chip, sum, randomCoeff, constraint m31.QM31) m31.QM31 {
+	return qm31.Add(qm31.Mul(sum, randomCoeff), constraint)
+}
+
 // computeColumnSize computes 2^logSize inside the circuit and returns it as QM31.
 // It uses square-and-multiply over the binary decomposition of the 8-bit value.
 func computeColumnSize(api frontend.API, logSize frontend.Variable) m31.QM31 {

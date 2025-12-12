@@ -3,6 +3,7 @@ package fri
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
+	"github.com/HerodotusDev/stwo-gnark-verifier/components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
@@ -113,7 +114,7 @@ type SampleData struct {
 //   - randomCoeff: random coefficient used to batch lines with the same sample point and quotients with the same log size
 func (f *FriVerifier) FriQuotientEvaluations(
 	sampledValues [][][]m31.QM31,
-	sampledPoints cairo_components.TreeMaskPoints,
+	sampledPoints components.TreeMaskPoints,
 	queries [][]frontend.Variable,
 	queriedValues [][]m31.M31,
 	randomCoeff m31.QM31,

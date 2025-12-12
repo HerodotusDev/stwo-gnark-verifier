@@ -24,8 +24,8 @@ type BlakeRoundComponent struct {
 
 	blakeRoundSigmaElements m31.InteractionElements
 	rangeCheck725Elements   m31.InteractionElements
-	memoryAddressToId       m31.InteractionElements
-	memoryIdToBig           m31.InteractionElements
+	memoryAddressToID       m31.InteractionElements
+	memoryIDToBig           m31.InteractionElements
 	blakeGElements          m31.InteractionElements
 	blakeRoundElements      m31.InteractionElements
 
@@ -40,8 +40,8 @@ func NewBlakeRound(
 	qm31 *m31.QM31Chip,
 	blakeRoundSigma m31.InteractionElements,
 	rangeCheck725 m31.InteractionElements,
-	memoryAddressToId m31.InteractionElements,
-	memoryIdToBig m31.InteractionElements,
+	memoryAddressToID m31.InteractionElements,
+	memoryIDToBig m31.InteractionElements,
 	blakeG m31.InteractionElements,
 	blakeRound m31.InteractionElements,
 	vanishEvalInv m31.QM31,
@@ -55,8 +55,8 @@ func NewBlakeRound(
 		qm31:                    qm31,
 		blakeRoundSigmaElements: blakeRoundSigma,
 		rangeCheck725Elements:   rangeCheck725,
-		memoryAddressToId:       memoryAddressToId,
-		memoryIdToBig:           memoryIdToBig,
+		memoryAddressToID:       memoryAddressToID,
+		memoryIDToBig:           memoryIDToBig,
 		blakeGElements:          blakeG,
 		blakeRoundElements:      blakeRound,
 		claimedSum:              interactionClaim.ClaimedSum,
@@ -190,8 +190,8 @@ func (c BlakeRoundComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 				word.high5,
 				word.id,
 				c.rangeCheck725Elements,
-				c.memoryAddressToId,
-				c.memoryIdToBig,
+				c.memoryAddressToID,
+				c.memoryIDToBig,
 				sum,
 				domainInv,
 				randomCoeff,

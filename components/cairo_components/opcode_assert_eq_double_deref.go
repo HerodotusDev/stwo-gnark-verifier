@@ -23,8 +23,8 @@ type AssertEqDoubleDerefOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -36,8 +36,8 @@ func NewAssertEqDoubleDerefOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AssertEqDoubleDerefOpcodeClaim,
@@ -49,8 +49,8 @@ func NewAssertEqDoubleDerefOpcode(
 	return AssertEqDoubleDerefOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -146,11 +146,11 @@ func (c AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trace
 		mem1Limb0,
 		mem1Limb1,
 		mem1Limb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum1 := readPositive.AddressLookupSum
-	memoryIdToBigSum2 := readPositive.IdToBigLookupSum
+	memoryIDToBigSum2 := readPositive.IdToBigLookupSum
 
 	mem1Value := c.qm31.Add(mem1Limb0, c.qm31.Mul(mem1Limb1, qm31Const(512)))
 	mem1Value = c.qm31.Add(mem1Value, c.qm31.Mul(mem1Limb2, qm31Const(262144)))
@@ -160,7 +160,7 @@ func (c AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trace
 		c.qm31.Add(memDstBase, decoded.Offset0MinusBase),
 		c.qm31.Add(mem1Value, decoded.Offset2MinusBase),
 		dstID,
-		c.memoryAddressToIdElements,
+		c.memoryAddressToIDElements,
 		sum,
 	)
 	memoryAddressSum3 := memVerify.AddressLookupSum1
@@ -195,8 +195,8 @@ func (c AssertEqDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Trace
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, memoryAddressSum3))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum2)
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, memoryAddressSum3))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum2)
 	constraint = c.qm31.Sub(constraint, memoryAddressSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

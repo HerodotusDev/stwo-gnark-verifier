@@ -23,8 +23,8 @@ type JumpRelOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -36,8 +36,8 @@ func NewJumpRelOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim JumpRelOpcodeClaim,
@@ -49,8 +49,8 @@ func NewJumpRelOpcode(
 	return JumpRelOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -139,14 +139,14 @@ func (c JumpRelOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 		nextPcLimb0,
 		nextPcLimb1,
 		nextPcLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
 	memoryAddressSum1 := readNextPc.AddressLookupSum
-	memoryIdToBigSum2 := readNextPc.IdToBigLookupSum
+	memoryIDToBigSum2 := readNextPc.IdToBigLookupSum
 	sum = readNextPc.Sum
 
 	var err error
@@ -179,8 +179,8 @@ func (c JumpRelOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, opcodesSum3))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum2, enabler))
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, opcodesSum3))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIDToBigSum2, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

@@ -6,21 +6,21 @@ import (
 )
 
 const (
-	MemoryAddressToIdTraceColumns       = 16
-	MemoryAddressToIdInteractionColumns = 16
+	MemoryAddressToIDTraceColumns       = 16
+	MemoryAddressToIDInteractionColumns = 16
 )
 
-// MemoryAddressToIdClaim carries the circuit-facing claim for the component.
+// MemoryAddressToIDClaim carries the circuit-facing claim for the component.
 type MemoryAddressToIDClaim struct {
 	LogSize frontend.Variable
 }
 
-// MemoryAddressToIdInteractionClaim carries the interaction claim data.
+// MemoryAddressToIDInteractionClaim carries the interaction claim data.
 type MemoryAddressToIDInteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-// MemoryAddressToIdComponent embeds the constraints for the memory_address_to_id table.
+// MemoryAddressToIDComponent embeds the constraints for the memory_address_to_id table.
 type MemoryAddressToIDComponent struct {
 	api  frontend.API
 	qm31 *m31.QM31Chip
@@ -32,8 +32,8 @@ type MemoryAddressToIDComponent struct {
 	vanishEvalInv       m31.QM31
 }
 
-// NewMemoryAddressToId wires the component constraints into the circuit.
-func NewMemoryAddressToId(
+// NewMemoryAddressToID wires the component constraints into the circuit.
+func NewMemoryAddressToID(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
@@ -55,8 +55,8 @@ func NewMemoryAddressToId(
 }
 
 // Evaluate enforces the component constraints at the sampled point.
-func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(MemoryAddressToIdTraceColumns, MemoryAddressToIdInteractionColumns)
+func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(MemoryAddressToIDTraceColumns, MemoryAddressToIDInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
@@ -169,7 +169,7 @@ func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	)
 	constraint_0 := c.qm31.Add(c.qm31.Mul(diff_0, denom_0), num_0)
 	sum = c.qm31.Add(
-		c.qm31.Mul(sum, random_coeff),
+		c.qm31.Mul(sum, randomCoeff),
 		c.qm31.Mul(constraint_0, c.vanishEvalInv),
 	)
 
@@ -181,7 +181,7 @@ func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	)
 	constraint_1 := c.qm31.Add(c.qm31.Mul(diff_1, denom_1), num_1)
 	sum = c.qm31.Add(
-		c.qm31.Mul(sum, random_coeff),
+		c.qm31.Mul(sum, randomCoeff),
 		c.qm31.Mul(constraint_1, c.vanishEvalInv),
 	)
 
@@ -193,7 +193,7 @@ func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	)
 	constraint_2 := c.qm31.Add(c.qm31.Mul(diff_2, denom_2), num_2)
 	sum = c.qm31.Add(
-		c.qm31.Mul(sum, random_coeff),
+		c.qm31.Mul(sum, randomCoeff),
 		c.qm31.Mul(constraint_2, c.vanishEvalInv),
 	)
 
@@ -205,7 +205,7 @@ func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, rando
 	)
 	constraint_3 := c.qm31.Add(c.qm31.Mul(diff_3, denom_3), num_3)
 	sum = c.qm31.Add(
-		c.qm31.Mul(sum, random_coeff),
+		c.qm31.Mul(sum, randomCoeff),
 		c.qm31.Mul(constraint_3, c.vanishEvalInv),
 	)
 
