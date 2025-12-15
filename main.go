@@ -46,6 +46,10 @@ func main() {
 		Proof:       cairoProof,
 		circuitData: circuitData,
 	}
+	assignment := VerifierCircuit{
+		Proof:       cairoProof,
+		circuitData: circuitData,
+	}
 
 	// ╔══════════════════════════════════╗
 	// ║        Circuit Compilation       ║
@@ -68,7 +72,7 @@ func main() {
 	// ╔══════════════════════════════════╗
 	// ║        Witness Generation        ║
 	// ╚══════════════════════════════════╝
-	witness, err := frontend.NewWitness(&circuit, ecc.BN254.ScalarField())
+	witness, err := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	if err != nil {
 		fmt.Println("Error in witness generation:", err)
 		os.Exit(1)
