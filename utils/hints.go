@@ -3,7 +3,15 @@ package utils
 import (
 	"math/big"
 	"sort"
+
+	"github.com/consensys/gnark/constraint/solver"
 )
+
+func init() {
+	solver.RegisterHint(DeduplicationHint)
+	solver.RegisterHint(AscendingOrderHint)
+	solver.RegisterHint(DescendingOrderHint)
+}
 
 // DeduplicationHint takes a list of big.Ints and returns its deduplicated version.
 func DeduplicationHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {

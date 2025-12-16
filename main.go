@@ -40,14 +40,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	cairoProof := variables.BuildProof(*cairoProofRaw)
+	// Build two separate proof instances: frontend.Compile mutates the circuit struct
+	// in-place, so sharing with the witness assignment would corrupt its values.
+	circuitProof := variables.BuildProof(*cairoProofRaw)
+	witnessProof := variables.BuildProof(*cairoProofRaw)
 	circuitData := variables.BuildCircuitData(shapeRaw)
 	circuit := VerifierCircuit{
-		Proof:       cairoProof,
+		Proof:       circuitProof,
 		circuitData: circuitData,
 	}
 	assignment := VerifierCircuit{
-		Proof:       cairoProof,
+		Proof:       witnessProof,
 		circuitData: circuitData,
 	}
 
