@@ -4,8 +4,14 @@ import (
 	"math/big"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/constraint/solver"
 	"github.com/consensys/gnark/frontend"
 )
+
+func init() {
+	solver.RegisterHint(friWitnessHint)
+	solver.RegisterHint(WitnessHint)
+}
 
 // EncodeFriAnswers encodes the FRI answers into a slice of slices of frontend.Variables according to the QM31 encoding.
 func EncodeFriAnswers(qm31Chip *m31.QM31Chip, friAnswers [][]m31.QM31) [][]frontend.Variable {
