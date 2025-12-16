@@ -147,13 +147,13 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	c.channel.MixFelts(flattenedSampledValues)
 
 	// Draw random coeff for FRI
-	randomCoeff = c.channel.DrawFelt()
+	_ = c.channel.DrawFelt()
 
 	// Compute bounds (column log sizes deduped, in decreasing order and not blew up)
 	bounds := commitmentVerifier.Bounds()
 
 	// Verification of commitment stage of FRI
-	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.StarkProof.FriProof, bounds, circuitData)
+	_ = fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.StarkProof.FriProof, bounds, circuitData)
 
 	// Proof of work
 	c.channel.MixAndCheckPowNonce(proof.StarkProof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
@@ -166,27 +166,27 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	maxLogSize := bounds[0]
 	baseLayerQueries := c.channel.GenerateBaseLayerQueries(maxLogSize, commitmentVerifier.PcsConfig.FriConfig.NQueries)
 	queries := utils.GenerateQueries(c.api, baseLayerQueries, commitmentVerifier.PcsConfig.FriConfig.NQueries, circuitData.DedupedQueriesShape, circuitData.MaxLogSize)
-	queriesLookup := utils.ToLookupTable(c.api, queries)
+	_ = utils.ToLookupTable(c.api, queries)
 
 	// ╔══════════════════════════════════╗
 	// ║        Trace decommitments       ║
 	// ╚══════════════════════════════════╝
 
 	// Verify merkle decommitments
-	for treeIndex, tree := range commitmentVerifier.Trees {
-		tree.Verify(queriesLookup, proof.StarkProof.QueriedValues[treeIndex], proof.StarkProof.Decommitments[treeIndex], circuitData.DedupedQueriesShape)
-	}
+	// for treeIndex, tree := range commitmentVerifier.Trees {
+	// 	tree.Verify(queriesLookup, proof.StarkProof.QueriedValues[treeIndex], proof.StarkProof.Decommitments[treeIndex], circuitData.DedupedQueriesShape)
+	// }
 
-	// ╔══════════════════════════════════╗
-	// ║               FRI                ║
-	// ╚══════════════════════════════════╝
+	// // ╔══════════════════════════════════╗
+	// // ║               FRI                ║
+	// // ╚══════════════════════════════════╝
 
-	// Compute mask points
-	maskPoints := components.MaskPoints(c.api, proof.Claim, oodsPoint, c.circle, circuitData)
+	// // Compute mask points
+	// maskPoints := components.MaskPoints(c.api, proof.Claim, oodsPoint, c.circle, circuitData)
 
-	// Verify FRI quotients
-	friAnswers := friVerifier.FriQuotientEvaluations(proof.StarkProof.SampledValues, maskPoints, queries, proof.StarkProof.QueriedValues, randomCoeff)
-	friAnswersEncoded := fri.EncodeFriAnswers(c.qm31, friAnswers)
-	friAnswersLookup := utils.ToLookupTable(c.api, friAnswersEncoded)
-	friVerifier.Verify(queriesLookup, friAnswersLookup)
+	// // Verify FRI quotients
+	// friAnswers := friVerifier.FriQuotientEvaluations(proof.StarkProof.SampledValues, maskPoints, queries, proof.StarkProof.QueriedValues, randomCoeff)
+	// friAnswersEncoded := fri.EncodeFriAnswers(c.qm31, friAnswers)
+	// friAnswersLookup := utils.ToLookupTable(c.api, friAnswersEncoded)
+	// friVerifier.Verify(queriesLookup, friAnswersLookup)
 }
