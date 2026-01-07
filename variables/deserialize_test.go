@@ -65,7 +65,6 @@ func TestBuildProofHDP(t *testing.T) {
 	}
 
 	_ = BuildProof(*raw)
-	_ = BuildCircuitData(raw)
 }
 
 func TestBuildProofAllComponentsHints(t *testing.T) {
@@ -73,7 +72,11 @@ func TestBuildProofAllComponentsHints(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
+	shape, err := ReadCircuitShape(ShapeFixturePath(AllComponentsHintsProofFixture))
+	if err != nil {
+		t.Fatalf("failed to read shape: %v", err)
+	}
 
 	_ = BuildProof(*raw)
-	_ = BuildCircuitData(raw)
+	_ = BuildCircuitData(shape)
 }
