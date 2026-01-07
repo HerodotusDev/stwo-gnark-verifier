@@ -103,7 +103,12 @@ func NewQM31FromM31(m M31) QM31 {
 
 // NewQM31FromArrays creates a new QM31 field element from a 2x2 array of uint64s.
 func NewQM31FromArrays(a [][]uint64) QM31 {
-	return NewQM31Unchecked(a[0][0], a[0][1], a[1][0], a[1][1])
+	return NewQM31Unchecked(
+		reduceToM31(a[0][0]),
+		reduceToM31(a[0][1]),
+		reduceToM31(a[1][0]),
+		reduceToM31(a[1][1]),
+	)
 }
 
 // NewQM31FromComponents builds a QM31 element from its four M31 coordinates.
@@ -114,6 +119,10 @@ func NewQM31FromComponents(aReal, aImag, bReal, bImag M31) QM31 {
 		BReal: bReal,
 		BImag: bImag,
 	}
+}
+
+func reduceToM31(value uint64) uint64 {
+	return value % PrimeU64
 }
 
 // Components returns the four M31 coordinates of the extension element.

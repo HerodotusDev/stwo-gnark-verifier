@@ -174,7 +174,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 
 	// Verify merkle decommitments
 	for treeIndex, tree := range commitmentVerifier.Trees {
-		tree.Verify(queriesLookup, proof.StarkProof.QueriedValues[treeIndex], proof.StarkProof.Decommitments[treeIndex], circuitData.DedupedQueriesShape)
+		tree.Verify(queriesLookup, proof.StarkProof.QueriedValues[treeIndex], proof.StarkProof.Decommitments[treeIndex], circuitData.DedupedQueriesShape, circuitData.QueriesBranching)
 	}
 
 	// ╔══════════════════════════════════╗

@@ -19,13 +19,14 @@ import (
 )
 
 type merkleTestVector struct {
-	Root               [32]uints.U8
-	ColumnLogSizes     []frontend.Variable
-	Values             []m31.M31
-	HashWitness        [][32]uints.U8
-	BaseLayerQueries   []frontend.Variable
+	Root               [32]uints.U8        `gnark:",public"`
+	ColumnLogSizes     []frontend.Variable `gnark:",public"`
+	Values             []m31.M31           `gnark:",public"`
+	HashWitness        [][32]uints.U8      `gnark:",public"`
+	BaseLayerQueries   []frontend.Variable `gnark:",public"`
 	NColumnsPerLogSize []int
 	QueriesShape       []int
+	QueriesBranching   [][]uint8
 	MaxLogSize         uint8
 }
 
@@ -57,7 +58,7 @@ func (c *merkleDecommitCircuit) Define(api frontend.API) error {
 		HashWitness: data.HashWitness,
 	}
 
-	verifier.Verify(queriesLookup, data.Values, decommitment, data.QueriesShape)
+	verifier.Verify(queriesLookup, data.Values, decommitment, data.QueriesShape, data.QueriesBranching)
 	return nil
 }
 
@@ -129,6 +130,7 @@ func mustLoadMerkleTestVector() merkleTestVector {
 		baseLayerQueries[i] = frontend.Variable(query)
 	}
 	queriesShape := make([]int, maxLogSize+1)
+	queriesByLayer := make([][]int, maxLogSize+1)
 	currentLayer := append([]int(nil), raw.Queries[maxLogSize]...)
 
 	intSlicesEqual := func(a, b []int) bool {
@@ -145,6 +147,7 @@ func mustLoadMerkleTestVector() merkleTestVector {
 
 	for layer := maxLogSize; layer >= 0; layer-- {
 		queriesShape[layer] = len(currentLayer)
+		queriesByLayer[layer] = append([]int(nil), currentLayer...)
 		if len(raw.Queries[layer]) > 0 && !intSlicesEqual(raw.Queries[layer], currentLayer) {
 			panic(fmt.Sprintf("query mismatch at layer %d", layer))
 		}
@@ -162,6 +165,28 @@ func mustLoadMerkleTestVector() merkleTestVector {
 			nextLayer = append(nextLayer, parent)
 		}
 		currentLayer = nextLayer
+	}
+
+	queriesBranching := make([][]uint8, maxLogSize+1)
+	for layer := 0; layer < maxLogSize; layer++ {
+		parents := queriesByLayer[layer]
+		children := queriesByLayer[layer+1]
+		childSet := make(map[int]struct{}, len(children))
+		for _, child := range children {
+			childSet[child] = struct{}{}
+		}
+		for _, parent := range parents {
+			left := parent * 2
+			right := left + 1
+			var code uint8
+			if _, ok := childSet[left]; ok {
+				code |= 1
+			}
+			if _, ok := childSet[right]; ok {
+				code |= 2
+			}
+			queriesBranching[layer] = append(queriesBranching[layer], code)
+		}
 	}
 
 	nColumnsPerLogSize := make([]int, maxLogSize+1)
@@ -184,6 +209,7 @@ func mustLoadMerkleTestVector() merkleTestVector {
 		HashWitness:        hashWitness,
 		NColumnsPerLogSize: nColumnsPerLogSize,
 		QueriesShape:       queriesShape,
+		QueriesBranching:   queriesBranching,
 		MaxLogSize:         uint8(maxLogSize),
 	}
 }

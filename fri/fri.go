@@ -12,7 +12,6 @@ import (
 	"github.com/consensys/gnark/std/conversion"
 	"github.com/consensys/gnark/std/lookup/logderivlookup"
 	"github.com/consensys/gnark/std/math/bits"
-	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -276,7 +275,7 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 	decommitmentPositions := make([]logderivlookup.Table, 32)
 	sparseEvaluationsFlattened := make([]m31.M31, 0)
 	sparseEvaluations := make([]SparseEvaluations, 0)
-	previousFriWitnessIndex := frontend.Variable(0)
+	previousFriWitnessIndex := 0
 
 	columnBoundsIndex := 0
 	maxLogSize := f.circuitData.ColumnBounds[0]
@@ -364,7 +363,11 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 
 	// verify the merkle decommitment
 	merkleVerifier := NewMerkleVerifier(f.api, f.uapi, f.FirstLayerVerifier.proof.Commitment, columnLogSizes, nColumnsPerLogSize)
-	merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.FirstLayerVerifier.proof.Decommitment, queriesShape)
+	firstLayerBranching := f.circuitData.FriFirstLayerBranching
+	if len(firstLayerBranching) == 0 {
+		panic("missing FRI first layer branching data")
+	}
+	merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.FirstLayerVerifier.proof.Decommitment, queriesShape, firstLayerBranching)
 
 	return sparseEvaluations
 }
@@ -487,7 +490,11 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 		nColumnsPerLogSize[logSize+1] = 4
 
 		merkleVerifier := NewMerkleVerifier(f.api, f.uapi, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Commitment, columnLogSizes, nColumnsPerLogSize)
-		merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Decommitment, queryShape)
+		if innerLayerVerifier.layerIndex >= len(f.circuitData.FriInnerLayerBranching) {
+			panic("missing FRI inner layer branching data")
+		}
+		innerBranching := f.circuitData.FriInnerLayerBranching[innerLayerVerifier.layerIndex]
+		merkleVerifier.Verify(decommitmentPositions, sparseEvaluationsFlattened, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Decommitment, queryShape, innerBranching)
 
 		// currentLayerEvals contains g_{i-1}(x_j) folded
 		currentLayerEvals = make([]m31.QM31, f.circuitData.DedupedQueriesShape[logSize])
@@ -535,23 +542,34 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 	layerQueries logderivlookup.Table,
 	evalAtQueries logderivlookup.Table,
 	witnessEvals []m31.QM31,
-	previousFriWitnessIndex frontend.Variable,
+	previousFriWitnessIndex int,
 	layerQueriesShape int,
 	logSize int,
-) (logderivlookup.Table, []m31.M31, SparseEvaluations, frontend.Variable) {
+) (logderivlookup.Table, []m31.M31, SparseEvaluations, int) {
 	layerDecommitmentPositions := logderivlookup.New(f.api)
 	pairedEvalsFlattened := make([]m31.M31, 0)
 	pairedEvals := make([][2]m31.QM31, 0)
 	queryInitials := make([]uints.U32, 0)
-	offset := frontend.Variable(0)
+	offset := 0
 	witnessIndex := previousFriWitnessIndex
+	if logSize <= 0 {
+		panic("log size must be positive for decommitment branching")
+	}
+	if logSize-1 >= len(f.circuitData.QueriesBranching) {
+		panic("queries branching missing layer data")
+	}
+	branching := f.circuitData.QueriesBranching[logSize-1]
+	if layerQueriesShape > len(branching) {
+		panic("queries branching length mismatch")
+	}
 
 	for i := 0; i < layerQueriesShape; i++ {
-		base := f.api.Add(offset, frontend.Variable(i))
+		base := offset + i
 
 		// get the query initial (query >> 1)
-		leftQuery := layerQueries.Lookup(base)[0]
-		rightQuery := layerQueries.Lookup(f.api.Add(base, frontend.Variable(1)))[0]
+		leftQuery := layerQueries.Lookup(frontend.Variable(base))[0]
+		rightQuery := layerQueries.Lookup(frontend.Variable(base + 1))[0]
+		_ = rightQuery // keep lookup constraints even though branching is static
 		queryU32 := f.uapi.ValueOf(leftQuery)
 		queryInitialU32 := f.uapi.Rshift(queryU32, 1)
 		queryInitial := f.uapi.ToValue(queryInitialU32)
@@ -562,40 +580,39 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 		layerDecommitmentPositions.Insert(leftCandidate)
 		layerDecommitmentPositions.Insert(rightCandidate)
 
-		isLeftQueried := cmp.IsEqual(f.api, leftQuery, leftCandidate)
-		isRightQueried := cmp.IsEqual(f.api, rightQuery, rightCandidate)
+		branchCode := branching[i]
+		leftPresent := branchCode&1 == 1
+		rightPresent := branchCode&2 == 2
 
-		// aggregate the arguments to comply with the hint signature
-		args := []frontend.Variable{isLeftQueried, isRightQueried, witnessIndex}
-		for _, witnessEval := range witnessEvals {
-			args = append(args, witnessEval.AReal.Limb, witnessEval.AImag.Limb, witnessEval.BReal.Limb, witnessEval.BImag.Limb)
+		witness := f.qm31Chip.Zero()
+		if !leftPresent || !rightPresent {
+			witness = witnessEvals[witnessIndex]
+			witnessIndex++
 		}
-		// the soundness relies on the fact that it is too costly to forge a valid witness for a given query, so it doesn't need to be checked
-		hintedFriWitness, err := f.api.Compiler().NewHint(friWitnessHint, 4+1, args...)
-		if err != nil {
-			panic(err)
-		}
-		witness := m31.NewQM31FromComponents(
-			m31.NewM31Unchecked(hintedFriWitness[0]),
-			m31.NewM31Unchecked(hintedFriWitness[1]),
-			m31.NewM31Unchecked(hintedFriWitness[2]),
-			m31.NewM31Unchecked(hintedFriWitness[3]),
-		)
-		witnessIndex = hintedFriWitness[4]
 
 		eval0Native := evalAtQueries.Lookup(base)[0]
 		eval0 := f.qm31Chip.DecodeNative(eval0Native)
-		eval1Native := evalAtQueries.Lookup(f.api.Add(base, frontend.Variable(1)))[0]
+		eval1Native := evalAtQueries.Lookup(frontend.Variable(base + 1))[0]
 		eval1 := f.qm31Chip.DecodeNative(eval1Native)
 
-		leftEval := f.qm31Chip.Select(isLeftQueried, eval0, witness)
-		intermediate := f.qm31Chip.Select(isRightQueried, eval1, witness)
-		rightEval := f.qm31Chip.Select(isLeftQueried, intermediate, eval0)
+		var leftEval m31.QM31
+		var rightEval m31.QM31
+		if leftPresent {
+			leftEval = eval0
+			if rightPresent {
+				rightEval = eval1
+			} else {
+				rightEval = witness
+			}
+		} else {
+			leftEval = witness
+			rightEval = eval0
+		}
 
 		// update the offset
-		offsetPlusOne := f.api.Add(offset, frontend.Variable(1))
-		intermediate2 := f.api.Select(isRightQueried, offsetPlusOne, offset)
-		offset = f.api.Select(isLeftQueried, intermediate2, offset)
+		if leftPresent && rightPresent {
+			offset++
+		}
 
 		// flatten the evaluations into 4 M31 elements for use in the merkle decommitment verifier
 		leftEvalComponents := leftEval.Components()
