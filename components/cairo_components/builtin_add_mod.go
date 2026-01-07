@@ -26,8 +26,8 @@ type AddModBuiltinComponent struct {
 
 	logSize frontend.Variable
 
-	memoryAddressToIdElems m31.InteractionElements
-	memoryIdToBigElems     m31.InteractionElements
+	memoryAddressToIDElems m31.InteractionElements
+	memoryIDToBigElems     m31.InteractionElements
 
 	segmentStart  m31.QM31
 	claimedSum    m31.QM31
@@ -39,7 +39,7 @@ func NewAddModBuiltin(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdElements m31.InteractionElements,
+	memoryIDElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim AddModBuiltinClaim,
 	interactionClaim AddModBuiltinInteractionClaim,
@@ -55,8 +55,8 @@ func NewAddModBuiltin(
 		api:                    api,
 		qm31:                   qm31,
 		logSize:                claim.LogSize,
-		memoryAddressToIdElems: memoryAddressElements,
-		memoryIdToBigElems:     memoryIdElements,
+		memoryAddressToIDElems: memoryAddressElements,
+		memoryIDToBigElems:     memoryIDElements,
 		segmentStart:           segmentStart,
 		claimedSum:             interactionClaim.ClaimedSum,
 		columnSizeInv:          columnSizeInv,
@@ -194,8 +194,8 @@ func (c AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 	res := sub.ModUtilsEvaluate(
 		c.qm31,
 		modInput,
-		c.memoryAddressToIdElems,
-		c.memoryIdToBigElems,
+		c.memoryAddressToIDElems,
+		c.memoryIDToBigElems,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,

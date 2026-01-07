@@ -26,8 +26,8 @@ type MulModBuiltinComponent struct {
 
 	logSize frontend.Variable
 
-	memoryAddressToIdElems m31.InteractionElements
-	memoryIdToBigElems     m31.InteractionElements
+	memoryAddressToIDElems m31.InteractionElements
+	memoryIDToBigElems     m31.InteractionElements
 	rangeCheck12Elems      m31.InteractionElements
 	rangeCheck3Elems       m31.InteractionElements
 	rangeCheck18Elems      m31.InteractionElements
@@ -55,7 +55,7 @@ func NewMulModBuiltin(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdElements m31.InteractionElements,
+	memoryIDElements m31.InteractionElements,
 	rangeCheck12Elements m31.InteractionElements,
 	rangeCheck3Elements m31.InteractionElements,
 	rangeCheck18Elements m31.InteractionElements,
@@ -74,8 +74,8 @@ func NewMulModBuiltin(
 		api:                    api,
 		qm31:                   qm31,
 		logSize:                claim.LogSize,
-		memoryAddressToIdElems: memoryAddressElements,
-		memoryIdToBigElems:     memoryIdElements,
+		memoryAddressToIDElems: memoryAddressElements,
+		memoryIDToBigElems:     memoryIDElements,
 		rangeCheck12Elems:      rangeCheck12Elements,
 		rangeCheck3Elems:       rangeCheck3Elements,
 		rangeCheck18Elems:      rangeCheck18Elements,
@@ -219,8 +219,8 @@ func (c MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoe
 	res := sub.ModUtilsEvaluate(
 		c.qm31,
 		modInput,
-		c.memoryAddressToIdElems,
-		c.memoryIdToBigElems,
+		c.memoryAddressToIDElems,
+		c.memoryIDToBigElems,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,

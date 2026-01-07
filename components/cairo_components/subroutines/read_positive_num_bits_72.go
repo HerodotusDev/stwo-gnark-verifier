@@ -21,7 +21,7 @@ func ReadPositiveNumBits72Evaluate(
 	limb6 m31.QM31,
 	limb7 m31.QM31,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	sum m31.QM31,
 	_ m31.QM31,
 	_ m31.QM31,
@@ -47,7 +47,7 @@ func ReadPositiveNumBits72Evaluate(
 		values = append(values, qm31Const(0))
 	}
 
-	idToBigLookupSum, err := qm31.Combine(memoryIdToBigElements, values)
+	idToBigLookupSum, err := qm31.Combine(memoryIDToBigElements, values)
 	if err != nil {
 		panic(err)
 	}

@@ -26,8 +26,8 @@ type RangeCheck128BuiltinComponent struct {
 
 	logSize frontend.Variable
 
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 
 	segmentStart  m31.QM31
 	claimedSum    m31.QM31
@@ -38,8 +38,8 @@ type RangeCheck128BuiltinComponent struct {
 func NewRangeCheck128Builtin(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim RangeCheck128BuiltinClaim,
 	interactionClaim RangeCheck128BuiltinInteractionClaim,
@@ -55,8 +55,8 @@ func NewRangeCheck128Builtin(
 		api:                       api,
 		qm31:                      qm31,
 		logSize:                   claim.LogSize,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		segmentStart:              segmentStart,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -124,8 +124,8 @@ func (c RangeCheck128BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 		limb13,
 		limb14,
 		msb,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,

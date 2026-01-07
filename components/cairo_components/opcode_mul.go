@@ -23,8 +23,8 @@ type MulOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck19Elements      m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
@@ -37,8 +37,8 @@ func NewMulOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
@@ -50,8 +50,8 @@ func NewMulOpcode(
 	return MulOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck19Elements:      rangeCheck19Elements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
@@ -173,8 +173,8 @@ func (c MulOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m
 		dstAddr,
 		dstID,
 		dstLimbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memAddrSum1 := dstRes.AddressLookupSum
 	memIdBigSum2 := dstRes.IdToBigLookupSum
@@ -184,8 +184,8 @@ func (c MulOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m
 		op0Addr,
 		op0ID,
 		op0Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memAddrSum3 := op0Res.AddressLookupSum
 	memIdBigSum4 := op0Res.IdToBigLookupSum
@@ -195,8 +195,8 @@ func (c MulOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m
 		op1Addr,
 		op1ID,
 		op1Limbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memAddrSum5 := op1Res.AddressLookupSum
 	memIdBigSum6 := op1Res.IdToBigLookupSum

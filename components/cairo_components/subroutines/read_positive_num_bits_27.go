@@ -15,7 +15,7 @@ func ReadPositiveNumBits27Evaluate(
 	limb1 m31.QM31,
 	limb2 m31.QM31,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 ) ReadPositiveNumBits27Result {
 	var err error
 
@@ -36,7 +36,7 @@ func ReadPositiveNumBits27Evaluate(
 		values = append(values, qm31Const(0))
 	}
 
-	idToBigLookupSum, err := qm31.Combine(memoryIdToBigElements, values)
+	idToBigLookupSum, err := qm31.Combine(memoryIDToBigElements, values)
 	if err != nil {
 		panic(err)
 	}

@@ -51,7 +51,7 @@ func DecodeBlakeOpcodeEvaluate(
 	dst BlakeDstInput,
 	verifyInstructionElements m31.InteractionElements,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdElements m31.InteractionElements,
+	memoryIDElements m31.InteractionElements,
 	rangeCheckElements m31.InteractionElements,
 	sum m31.QM31,
 	domainVanishInv m31.QM31,
@@ -109,7 +109,7 @@ func DecodeBlakeOpcodeEvaluate(
 		op0.Limbs[1],
 		op0.Limbs[2],
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 	)
 
 	// mem1_base relation
@@ -130,7 +130,7 @@ func DecodeBlakeOpcodeEvaluate(
 		op1.Limbs[1],
 		op1.Limbs[2],
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 	)
 
 	apLookup := ReadPositiveNumBits27Evaluate(
@@ -141,7 +141,7 @@ func DecodeBlakeOpcodeEvaluate(
 		apOperand.Limbs[1],
 		apOperand.Limbs[2],
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 	)
 
 	// mem_dst_base relation
@@ -165,7 +165,7 @@ func DecodeBlakeOpcodeEvaluate(
 		dst.Word.StateID,
 		rangeCheckElements,
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 		sum,
 		domainVanishInv,
 		randomCoeff,

@@ -8,7 +8,7 @@ import (
 	"github.com/consensys/gnark/frontend"
 )
 
-// A chip for OODS
+// Components is a chip for OODS
 type Components struct {
 	api    frontend.API
 	m31    *m31.M31Chip
@@ -37,9 +37,9 @@ type Components struct {
 	jumpOpcodes                 cairo_components.JumpOpcodeComponent
 	jumpRelImmOpcodes           cairo_components.JumpRelImmOpcodeComponent
 	jumpRelOpcodes              cairo_components.JumpRelOpcodeComponent
-	memoryAddressToId           cairo_components.MemoryAddressToIDComponent
-	memoryIdToBigBigComponents  cairo_components.MemoryIdToBigBigComponent
-	memoryIdToBigSmallComponent cairo_components.MemoryIdToBigSmallComponent
+	memoryAddressToID           cairo_components.MemoryAddressToIDComponent
+	memoryIDToBigBigComponents  cairo_components.MemoryIDToBigBigComponent
+	memoryIDToBigSmallComponent cairo_components.MemoryIDToBigSmallComponent
 	mulModBuiltin               cairo_components.MulModBuiltinComponent
 	mulOpcodes                  cairo_components.MulOpcodeComponent
 	mulSmallOpcodes             cairo_components.MulSmallOpcodeComponent
@@ -78,7 +78,7 @@ type Components struct {
 	verifyInstruction           cairo_components.VerifyInstructionComponent
 }
 
-// Creates a new OODS chip
+// NewComponents creates a new OODS chip
 func NewComponents(
 	api frontend.API,
 	m31Chip *m31.M31Chip,
@@ -654,7 +654,7 @@ func NewComponents(
 
 	// Memory ID components
 	if circuitData.ComponentConfig[40] {
-		comp.memoryAddressToId = cairo_components.NewMemoryAddressToId(
+		comp.memoryAddressToID = cairo_components.NewMemoryAddressToID(
 			api,
 			qm31Chip,
 			cairoInteractionElements.MemoryAddressToID,
@@ -664,7 +664,7 @@ func NewComponents(
 		)
 	}
 	if circuitData.ComponentConfig[41] {
-		comp.memoryIdToBigBigComponents = cairo_components.NewMemoryIdToBigBigComponent(
+		comp.memoryIDToBigBigComponents = cairo_components.NewMemoryIDToBigBigComponent(
 			api,
 			qm31Chip,
 			cairoInteractionElements.MemoryIDToValue,
@@ -676,7 +676,7 @@ func NewComponents(
 	}
 
 	if circuitData.ComponentConfig[42] {
-		comp.memoryIdToBigSmallComponent = cairo_components.NewMemoryIdToBigSmallComponent(
+		comp.memoryIDToBigSmallComponent = cairo_components.NewMemoryIDToBigSmallComponent(
 			api,
 			qm31Chip,
 			cairoInteractionElements.MemoryIDToValue,
@@ -856,7 +856,10 @@ func NewComponents(
 	return comp
 }
 
-func (c Components) Evaluate(sampledValues [][][]m31.QM31, random_coeff m31.QM31, circuitData variables.CircuitData) m31.QM31 {
+// Evaluate evaluates the components at the sampled values
+// Each component has an Evaluate method that pops the front of the sampled values and evaluates the constraints adding the result to the running sum
+// This is highly order dependent, so the components need to be correctly ordered
+func (c Components) Evaluate(sampledValues [][][]m31.QM31, randomCoeff m31.QM31, circuitData variables.CircuitData) m31.QM31 {
 	// Prepare sampled values
 	preprocessedSampledValuesRaw := sampledValues[cairo_components.PREPROCESSED_IDX]
 	preprocessedSampledValues := cairo_components.NewPreprocessedSampledValues(c.api, c.qm31, preprocessedSampledValuesRaw)
@@ -870,203 +873,203 @@ func (c Components) Evaluate(sampledValues [][][]m31.QM31, random_coeff m31.QM31
 
 	// Opcode components
 	if circuitData.ComponentConfig[0] {
-		sum = c.addOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.addOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[1] {
-		sum = c.addSmallOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.addSmallOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[2] {
-		sum = c.addApOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.addApOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[3] {
-		sum = c.assertEqOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.assertEqOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[4] {
-		sum = c.assertEqImmOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.assertEqImmOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[5] {
-		sum = c.assertEqDoubleDerefOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.assertEqDoubleDerefOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[6] {
-		sum = c.blakeCompressOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.blakeCompressOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[7] {
-		sum = c.callOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.callOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[8] {
-		sum = c.callRelImmOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.callRelImmOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[9] {
-		sum = c.genericOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.genericOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[10] {
-		sum = c.jnzOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.jnzOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[11] {
-		sum = c.jnzTakenOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.jnzTakenOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[12] {
-		sum = c.jumpOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.jumpOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[13] {
-		sum = c.jumpDoubleDerefOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.jumpDoubleDerefOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[14] {
-		sum = c.jumpRelOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.jumpRelOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[15] {
-		sum = c.jumpRelImmOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.jumpRelImmOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[16] {
-		sum = c.mulOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.mulOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[17] {
-		sum = c.mulSmallOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.mulSmallOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[18] {
-		sum = c.qm31Opcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.qm31Opcodes.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[19] {
-		sum = c.retOpcodes.Evaluate(sum, traces, random_coeff)
+		sum = c.retOpcodes.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Verify instruction
 	if circuitData.ComponentConfig[20] {
-		sum = c.verifyInstruction.Evaluate(sum, traces, random_coeff)
+		sum = c.verifyInstruction.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Blake context
 	if circuitData.ComponentConfig[21] {
-		sum = c.blakeRound.Evaluate(sum, traces, random_coeff)
+		sum = c.blakeRound.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[22] {
-		sum = c.blakeG.Evaluate(sum, traces, random_coeff)
+		sum = c.blakeG.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[23] {
-		sum = c.blakeRoundSigma.Evaluate(sum, traces, random_coeff)
+		sum = c.blakeRoundSigma.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[24] {
-		sum = c.tripleXor32.Evaluate(sum, traces, random_coeff)
+		sum = c.tripleXor32.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[25] {
-		sum = c.verifyBitwiseXor12.Evaluate(sum, traces, random_coeff)
+		sum = c.verifyBitwiseXor12.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Builtins
 	if circuitData.ComponentConfig[26] {
-		sum = c.addModBuiltin.Evaluate(sum, traces, random_coeff)
+		sum = c.addModBuiltin.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[27] {
-		sum = c.bitwiseBuiltin.Evaluate(sum, traces, random_coeff)
+		sum = c.bitwiseBuiltin.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[28] {
-		sum = c.mulModBuiltin.Evaluate(sum, traces, random_coeff)
+		sum = c.mulModBuiltin.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[29] {
-		sum = c.pedersenBuiltin.Evaluate(sum, traces, random_coeff)
+		sum = c.pedersenBuiltin.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[30] {
-		sum = c.poseidonBuiltin.Evaluate(sum, traces, random_coeff)
+		sum = c.poseidonBuiltin.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[31] {
-		sum = c.rangeCheckBuiltin96.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheckBuiltin96.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[32] {
-		sum = c.rangeCheckBuiltin128.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheckBuiltin128.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Pedersen context
 	if circuitData.ComponentConfig[33] {
-		sum = c.partialEcMul.Evaluate(sum, traces, random_coeff)
+		sum = c.partialEcMul.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[34] {
-		sum = c.pedersenPointsTable.Evaluate(sum, traces, random_coeff)
+		sum = c.pedersenPointsTable.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Poseidon context
 	if circuitData.ComponentConfig[35] {
-		sum = c.poseidon3PartialRoundsChain.Evaluate(sum, traces, random_coeff)
+		sum = c.poseidon3PartialRoundsChain.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[36] {
-		sum = c.poseidonFullRoundChain.Evaluate(sum, traces, random_coeff)
+		sum = c.poseidonFullRoundChain.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[37] {
-		sum = c.cube252.Evaluate(sum, traces, random_coeff)
+		sum = c.cube252.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[38] {
-		sum = c.poseidonRoundKeys.Evaluate(sum, traces, random_coeff)
+		sum = c.poseidonRoundKeys.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[39] {
-		sum = c.rangeCheckFelt252Width27.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheckFelt252Width27.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Memory relations
 	if circuitData.ComponentConfig[40] {
-		sum = c.memoryAddressToId.Evaluate(sum, traces, random_coeff)
+		sum = c.memoryAddressToID.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[41] {
-		sum = c.memoryIdToBigBigComponents.Evaluate(sum, traces, random_coeff)
+		sum = c.memoryIDToBigBigComponents.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[42] {
-		sum = c.memoryIdToBigSmallComponent.Evaluate(sum, traces, random_coeff)
+		sum = c.memoryIDToBigSmallComponent.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Range check components
 	if circuitData.ComponentConfig[43] {
-		sum = c.rangeCheck6.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck6.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[44] {
-		sum = c.rangeCheck8.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck8.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[45] {
-		sum = c.rangeCheck11.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck11.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[46] {
-		sum = c.rangeCheck12.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck12.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[47] {
-		sum = c.rangeCheck18.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck18.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[48] {
-		sum = c.rangeCheck19.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck19.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[49] {
-		sum = c.rangeCheck43.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck43.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[50] {
-		sum = c.rangeCheck44.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck44.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[51] {
-		sum = c.rangeCheck54.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck54.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[52] {
-		sum = c.rangeCheck99.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck99.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[53] {
-		sum = c.rangeCheck725.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck725.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[54] {
-		sum = c.rangeCheck3663.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck3663.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[55] {
-		sum = c.rangeCheck4444.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck4444.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[56] {
-		sum = c.rangeCheck33333.Evaluate(sum, traces, random_coeff)
+		sum = c.rangeCheck33333.Evaluate(sum, traces, randomCoeff)
 	}
 
 	// Verify bitwise XOR components
 	if circuitData.ComponentConfig[57] {
-		sum = c.verifyBitwiseXor4.Evaluate(sum, traces, random_coeff)
+		sum = c.verifyBitwiseXor4.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[58] {
-		sum = c.verifyBitwiseXor7.Evaluate(sum, traces, random_coeff)
+		sum = c.verifyBitwiseXor7.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[59] {
-		sum = c.verifyBitwiseXor8.Evaluate(sum, traces, random_coeff)
+		sum = c.verifyBitwiseXor8.Evaluate(sum, traces, randomCoeff)
 	}
 	if circuitData.ComponentConfig[60] {
-		sum = c.verifyBitwiseXor9.Evaluate(sum, traces, random_coeff)
+		sum = c.verifyBitwiseXor9.Evaluate(sum, traces, randomCoeff)
 	}
 	return sum
 }

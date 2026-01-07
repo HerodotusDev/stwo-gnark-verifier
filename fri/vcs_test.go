@@ -61,7 +61,7 @@ func (c *merkleDecommitCircuit) Define(api frontend.API) error {
 	return nil
 }
 
-// test for merkle decommitment verification using fixture using modified stwo prover output
+// test for merkle decommitment verification using the first decommitment of the all_components_proof.json fixture
 func TestMerkleDecommitmentVerification(t *testing.T) {
 	assert := test.NewAssert(t)
 	circuit := &merkleDecommitCircuit{}

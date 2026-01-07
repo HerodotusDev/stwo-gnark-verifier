@@ -24,7 +24,7 @@ type EvalOperandsParams struct {
 type EvalOperandsResult struct {
 	Sum               m31.QM31
 	MemoryAddressSums [3]m31.QM31
-	MemoryIdSums      [3]m31.QM31
+	MemoryIDSums      [3]m31.QM31
 	RangeCheck99      [28]m31.QM31
 	RangeCheck19      [28]m31.QM31
 }
@@ -48,7 +48,7 @@ func EvalOperandsEvaluate(
 	carries []m31.QM31,
 	resLimbs []m31.QM31,
 	memoryAddressElements m31.InteractionElements,
-	memoryIdElements m31.InteractionElements,
+	memoryIDElements m31.InteractionElements,
 	rangeCheck99Elements m31.InteractionElements,
 	rangeCheck19Elements m31.InteractionElements,
 	sum m31.QM31,
@@ -80,10 +80,10 @@ func EvalOperandsEvaluate(
 		dstID,
 		dstLimbs,
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 	)
 	result.MemoryAddressSums[0] = dstRead.AddressLookupSum
-	result.MemoryIdSums[0] = dstRead.IdToBigLookupSum
+	result.MemoryIDSums[0] = dstRead.IdToBigLookupSum
 
 	op0Expected := qm31.Add(
 		qm31.Mul(params.Op0BaseFP, params.InputFP),
@@ -100,10 +100,10 @@ func EvalOperandsEvaluate(
 		op0ID,
 		op0Limbs,
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 	)
 	result.MemoryAddressSums[1] = op0Read.AddressLookupSum
-	result.MemoryIdSums[1] = op0Read.IdToBigLookupSum
+	result.MemoryIDSums[1] = op0Read.IdToBigLookupSum
 
 	op0AddrLimbs := make([]m31.QM31, 29)
 	copy(op0AddrLimbs, op0Limbs)
@@ -136,10 +136,10 @@ func EvalOperandsEvaluate(
 		op1ID,
 		op1Limbs,
 		memoryAddressElements,
-		memoryIdElements,
+		memoryIDElements,
 	)
 	result.MemoryAddressSums[2] = op1Read.AddressLookupSum
-	result.MemoryIdSums[2] = op1Read.IdToBigLookupSum
+	result.MemoryIDSums[2] = op1Read.IdToBigLookupSum
 
 	addRes := Add252Evaluate(
 		qm31,

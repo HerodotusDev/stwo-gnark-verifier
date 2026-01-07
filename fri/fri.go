@@ -3,6 +3,7 @@ package fri
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
+	"github.com/HerodotusDev/stwo-gnark-verifier/components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
@@ -15,6 +16,7 @@ import (
 	"github.com/consensys/gnark/std/math/uints"
 )
 
+// FriVerifier is a circuit gadget for verifying a FRI proof
 type FriVerifier struct {
 	api        frontend.API
 	uapi       *uints.BinaryField[uints.U32]
@@ -22,7 +24,7 @@ type FriVerifier struct {
 	qm31Chip   *m31.QM31Chip
 	circleChip *circle.CircleChip
 
-	friConfig           FriConfig
+	friConfig           variables.FriConfig
 	FirstLayerVerifier  FriFirstLayerVerifier
 	InnerLayerVerifiers []FriInnerLayerVerifier
 	LastLayerPoly       circle.LinePoly
@@ -30,7 +32,8 @@ type FriVerifier struct {
 	circuitData variables.CircuitData
 }
 
-func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig FriConfig, friProof variables.FriProof, bounds []frontend.Variable, circuitData variables.CircuitData) *FriVerifier {
+// NewFriVerifier initializes a new FriVerifier
+func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig variables.FriConfig, friProof variables.FriProof, bounds []frontend.Variable, circuitData variables.CircuitData) *FriVerifier {
 	// First layer commitment
 	channelChip.MixRootBytes(friProof.FirstLayerProof.Commitment[:])
 
@@ -83,6 +86,7 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	}
 }
 
+// Verify verifies the FRI proof for the given queries and evaluations
 func (f *FriVerifier) Verify(queries []logderivlookup.Table, evaluations []logderivlookup.Table) {
 	firstLayerEvaluations := f.verifyFirstLayer(queries, evaluations)
 	lastEvaluations := f.verifyInnerLayers(queries, firstLayerEvaluations)
@@ -93,6 +97,7 @@ func (f *FriVerifier) Verify(queries []logderivlookup.Table, evaluations []logde
 // ║           FRI Quotients          ║
 // ╚══════════════════════════════════╝
 
+// SampleData is a data structure for storing sample data
 type SampleData struct {
 	point            circle.Point
 	columnIndex      int
@@ -109,7 +114,7 @@ type SampleData struct {
 //   - randomCoeff: random coefficient used to batch lines with the same sample point and quotients with the same log size
 func (f *FriVerifier) FriQuotientEvaluations(
 	sampledValues [][][]m31.QM31,
-	sampledPoints cairo_components.TreeMaskPoints,
+	sampledPoints components.TreeMaskPoints,
 	queries [][]frontend.Variable,
 	queriedValues [][]m31.M31,
 	randomCoeff m31.QM31,
@@ -192,6 +197,9 @@ func (f *FriVerifier) FriQuotientEvaluations(
 	return quotientEvaluations
 }
 
+// GetLineCoefficients computes the line coefficients for a given sample point and sampled value
+// Specifically, `a, b, and c, s.t. a*x + b -c*y = 0` for (x,y) being (sample.y, sample.value) and
+// (conj(sample.y), conj(sample.value)). Returns `[a*alpha, b*alpha, c*alpha]`.
 func GetLineCoefficients(qm31Chip *m31.QM31Chip, samplePoint circle.Point, sampledValue m31.QM31, alpha m31.QM31) [3]m31.QM31 {
 	a := qm31Chip.Sub(qm31Chip.ComplexConjugate(sampledValue), sampledValue)
 	c := qm31Chip.Sub(qm31Chip.ComplexConjugate(samplePoint.Y), samplePoint.Y)
@@ -249,6 +257,7 @@ func (f *FriVerifier) quotientEvaluation(samples [][]SampleData, valuesAtQueryPo
 // ║           First Layer            ║
 // ╚══════════════════════════════════╝
 
+// FriFirstLayerVerifier is a circuit gadget for verifying the first layer of a FRI proof
 type FriFirstLayerVerifier struct {
 	columnBounds            []frontend.Variable
 	columnCommitmentDomains []circle.CircleDomain
@@ -256,6 +265,7 @@ type FriFirstLayerVerifier struct {
 	foldingAlpha            m31.QM31
 }
 
+// SparseEvaluations is a data structure for storing sparse evaluations
 type SparseEvaluations struct {
 	queryInitials []uints.U32
 	evals         [][2]m31.QM31
@@ -273,6 +283,10 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 
 	queriesShape := make([]int, 32)
 
+	// build the merkle tree decommitment for the fri answers
+	// for each layer there either is FRI answers or not
+	// if there are FRI answers, we compute the decommitment positions and the sparse evaluations from the FRI answers
+	// if there are no FRI answers, we just fold the previous layer queries
 	for logSize := maxLogSize; logSize >= 0; logSize-- {
 		if columnBoundsIndex < len(f.circuitData.ColumnBounds) && logSize == f.circuitData.ColumnBounds[columnBoundsIndex] {
 			layerQueries := queries[logSize]
@@ -295,9 +309,12 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 			decommitmentPositions[logSize] = layerDecommitmentPositions
 			sparseEvaluations = append(sparseEvaluations, sparseEvaluation)
 			sparseEvaluationsFlattened = append(sparseEvaluationsFlattened, layerSparseEvaluationsFlattened...)
+			// the trick here is to note that when building all the pairs of queries in a layer, we end up with
+			// 2 times the number of queries in the next layer
 			queriesShape[logSize] = 2 * f.circuitData.DedupedQueriesShape[logSize-1]
 			columnBoundsIndex++
 		} else {
+			// if there are no FRI answers, we just fold the previous layer queries
 			// convert the lookup table to a slice of frontend.Variable
 			previousLayerQueriesLookup := decommitmentPositions[logSize+1]
 			previousLayerQueries := make([]frontend.Variable, 0)
@@ -355,6 +372,8 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 // ╔══════════════════════════════════╗
 // ║            Inner Layers          ║
 // ╚══════════════════════════════════╝
+
+// FriInnerLayerVerifier is a circuit gadget for verifying an inner layer of a FRI proof
 type FriInnerLayerVerifier struct {
 	degreeBound  frontend.Variable
 	domain       circle.LineDomain
@@ -363,6 +382,7 @@ type FriInnerLayerVerifier struct {
 	proof        variables.FriLayerProof
 }
 
+// VerifyInnerLayers verifies the inner layers of a FRI proof
 func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLayerEvaluations []SparseEvaluations) []m31.QM31 {
 	columnBoundsIndex := 0
 	previousAlpha := f.FirstLayerVerifier.foldingAlpha
@@ -429,7 +449,11 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 			logSize+1,
 		)
 
-		// build the decommitment positions and query shape
+		// build the decommitment positions and query shape for merkle decommitment verification
+		// the merkle tree is built with just 4 columns on the largest layer
+		// so decommitment positions on the largest layer are the paires queries computed in layerDecommitmentPositions
+		// then the next layer is the folded queries from the previous layer
+		// and the rest of the layers are the regular queries (no pairs) that can be taken from the queries table
 		queryShape := make([]int, 32)
 
 		// first layer is layerDecommitmentPositions

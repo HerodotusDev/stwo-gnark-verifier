@@ -23,8 +23,8 @@ type JnzTakenOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
 	claimedSum    m31.QM31
@@ -36,8 +36,8 @@ func NewJnzTakenOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	claim JnzTakenOpcodeClaim,
@@ -49,8 +49,8 @@ func NewJnzTakenOpcode(
 	return JnzTakenOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
 		columnSizeInv:             columnSizeInv,
@@ -135,11 +135,11 @@ func (c JnzTakenOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		c.qm31.Add(memDstBase, offset0MinusBase),
 		dstID,
 		dstLimbs,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 	)
 	memoryAddressSum1 := dstLookup.AddressLookupSum
-	memoryIdToBigSum2 := dstLookup.IdToBigLookupSum
+	memoryIDToBigSum2 := dstLookup.IdToBigLookupSum
 
 	// dst != 0 by enforcing inverse.
 	sumLimbs := dstLimbs[0]
@@ -177,14 +177,14 @@ func (c JnzTakenOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		nextPcLimb0,
 		nextPcLimb1,
 		nextPcLimb2,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
 	)
 	memoryAddressSum3 := readSmall.AddressLookupSum
-	memoryIdToBigSum4 := readSmall.IdToBigLookupSum
+	memoryIDToBigSum4 := readSmall.IdToBigLookupSum
 	sum = readSmall.Sum
 	nextPcValue := readSmall.Value
 
@@ -214,15 +214,15 @@ func (c JnzTakenOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff1 := c.qm31.Sub(part1, part0)
-	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIdToBigSum2, memoryAddressSum3))
-	constraint = c.qm31.Sub(constraint, memoryIdToBigSum2)
+	constraint = c.qm31.Mul(diff1, c.qm31.Mul(memoryIDToBigSum2, memoryAddressSum3))
+	constraint = c.qm31.Sub(constraint, memoryIDToBigSum2)
 	constraint = c.qm31.Sub(constraint, memoryAddressSum3)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)
 
 	diff2 := c.qm31.Sub(part2, part1)
-	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIdToBigSum4, opcodesSum5))
-	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIdToBigSum4, enabler))
+	constraint = c.qm31.Mul(diff2, c.qm31.Mul(memoryIDToBigSum4, opcodesSum5))
+	constraint = c.qm31.Sub(constraint, c.qm31.Mul(memoryIDToBigSum4, enabler))
 	constraint = c.qm31.Sub(constraint, opcodesSum5)
 	constraint = c.qm31.Mul(constraint, c.vanishEvalInv)
 	sum = accumulateConstraint(c.qm31, sum, randomCoeff, constraint)

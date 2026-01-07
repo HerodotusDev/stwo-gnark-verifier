@@ -13,8 +13,8 @@ func MemVerifyEvaluate(
 	address m31.QM31,
 	valueLimbs []m31.QM31,
 	id m31.QM31,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	sum m31.QM31,
 	_ m31.QM31,
 	_ m31.QM31,
@@ -24,7 +24,7 @@ func MemVerifyEvaluate(
 	}
 
 	addressSum, err := qm31.Combine(
-		memoryAddressToIdElements,
+		memoryAddressToIDElements,
 		[]m31.QM31{address, id},
 	)
 	if err != nil {
@@ -35,7 +35,7 @@ func MemVerifyEvaluate(
 	values[0] = id
 	copy(values[1:], valueLimbs)
 
-	idToBigSum, err := qm31.Combine(memoryIdToBigElements, values)
+	idToBigSum, err := qm31.Combine(memoryIDToBigElements, values)
 	if err != nil {
 		panic(err)
 	}

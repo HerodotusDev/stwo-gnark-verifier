@@ -23,8 +23,8 @@ type Qm31OpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck4444Elements    m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
@@ -37,8 +37,8 @@ func NewQm31Opcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck4444Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
@@ -51,8 +51,8 @@ func NewQm31Opcode(
 	return Qm31OpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck4444Elements:    rangeCheck4444Elements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
@@ -186,8 +186,8 @@ func (c Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		dstLimbs,
 		dstDeltaABInv,
 		dstDeltaCDInv,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck4444Elements,
 		sum,
 		c.vanishEvalInv,
@@ -202,8 +202,8 @@ func (c Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		op0Limbs,
 		op0DeltaABInv,
 		op0DeltaCDInv,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck4444Elements,
 		sum,
 		c.vanishEvalInv,
@@ -218,8 +218,8 @@ func (c Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff 
 		op1Limbs,
 		op1DeltaABInv,
 		op1DeltaCDInv,
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		c.rangeCheck4444Elements,
 		sum,
 		c.vanishEvalInv,

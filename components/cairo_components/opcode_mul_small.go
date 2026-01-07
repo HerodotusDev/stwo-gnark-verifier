@@ -23,8 +23,8 @@ type MulSmallOpcodeComponent struct {
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
-	memoryAddressToIdElements m31.InteractionElements
-	memoryIdToBigElements     m31.InteractionElements
+	memoryAddressToIDElements m31.InteractionElements
+	memoryIDToBigElements     m31.InteractionElements
 	rangeCheck11Elements      m31.InteractionElements
 	opcodesElements           m31.InteractionElements
 
@@ -37,8 +37,8 @@ func NewMulSmallOpcode(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	verifyInstructionElements m31.InteractionElements,
-	memoryAddressToIdElements m31.InteractionElements,
-	memoryIdToBigElements m31.InteractionElements,
+	memoryAddressToIDElements m31.InteractionElements,
+	memoryIDToBigElements m31.InteractionElements,
 	rangeCheck11Elements m31.InteractionElements,
 	opcodesElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
@@ -51,8 +51,8 @@ func NewMulSmallOpcode(
 	return MulSmallOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
-		memoryAddressToIdElements: memoryAddressToIdElements,
-		memoryIdToBigElements:     memoryIdToBigElements,
+		memoryAddressToIDElements: memoryAddressToIDElements,
+		memoryIDToBigElements:     memoryIDToBigElements,
 		rangeCheck11Elements:      rangeCheck11Elements,
 		opcodesElements:           opcodesElements,
 		claimedSum:                interactionClaim.ClaimedSum,
@@ -177,8 +177,8 @@ func (c MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		dstID,
 		dstLimbs[0], dstLimbs[1], dstLimbs[2], dstLimbs[3],
 		dstLimbs[4], dstLimbs[5], dstLimbs[6], dstLimbs[7],
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -192,8 +192,8 @@ func (c MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		op0Addr,
 		op0ID,
 		op0Limbs[0], op0Limbs[1], op0Limbs[2], op0Limbs[3],
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,
@@ -207,8 +207,8 @@ func (c MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCo
 		op1Addr,
 		op1ID,
 		op1Limbs[0], op1Limbs[1], op1Limbs[2], op1Limbs[3],
-		c.memoryAddressToIdElements,
-		c.memoryIdToBigElements,
+		c.memoryAddressToIDElements,
+		c.memoryIDToBigElements,
 		sum,
 		c.vanishEvalInv,
 		randomCoeff,

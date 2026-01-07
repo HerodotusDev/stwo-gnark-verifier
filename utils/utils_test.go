@@ -32,8 +32,8 @@ func (c *hashSplitRebuildCircuit) Define(api frontend.API) error {
 	return nil
 }
 
-// test for merkle decommitment verification using fixture using modified stwo prover output
-func TestMerkleDecommitmentVerification(t *testing.T) {
+// TestHashSplitRebuild tests that RebuildHash(SplitHash(hash)) = hash.
+func TestHashSplitRebuild(t *testing.T) {
 	assert := test.NewAssert(t)
 	circuit := &hashSplitRebuildCircuit{}
 	witness := &hashSplitRebuildCircuit{}

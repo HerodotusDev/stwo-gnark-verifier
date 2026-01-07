@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/HerodotusDev/stwo-gnark-verifier/verifier"
 	"github.com/consensys/gnark-crypto/ecc"
@@ -13,25 +12,29 @@ import (
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 )
 
+// VerifierCircuit is the circuit for verifying a Cairo proof
 type VerifierCircuit struct {
-	Proof       variables.Proof       `gnark:",public"`
+	// Actual proof, directly deserialized from the Cairo proof file.
+	Proof variables.Proof `gnark:",public"`
+	// Additional circuit data obtained from a rust verifier run.
 	circuitData variables.CircuitData `gnark:"-"`
 }
 
+// Define defines the circuit for verifying a Cairo proof
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := verifier.NewVerifierChip(api)
-	verifierChip.Verify(c.Proof, fri.DefaultPcsConfig(), c.circuitData)
+	verifierChip.Verify(c.Proof, variables.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }
 
 func main() {
-	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsHintsProofFixture))
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
 	}
-	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsHintsProofFixture))
+	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading circuit shape:", err)
 		os.Exit(1)

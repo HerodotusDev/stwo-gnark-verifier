@@ -70,9 +70,9 @@ func TestCairoComponentAtomicEvaluations(t *testing.T) {
 		newJumpOpcodeFixture(expectedSums["jump_opcode"]),
 		newJumpRelImmOpcodeFixture(expectedSums["jump_opcode_rel_imm"]),
 		newJumpRelOpcodeFixture(expectedSums["jump_opcode_rel"]),
-		newMemoryAddressToIdFixture(expectedSums["memory_address_to_id"]),
-		newMemoryIdToBigBigFixture(expectedSums["memory_id_to_big_big_component"]),
-		newMemoryIdToBigSmallFixture(expectedSums["memory_id_to_big_small_component"]),
+		newMemoryAddressToIDFixture(expectedSums["memory_address_to_id"]),
+		newMemoryIDToBigBigFixture(expectedSums["memory_id_to_big_big_component"]),
+		newMemoryIDToBigSmallFixture(expectedSums["memory_id_to_big_small_component"]),
 		newMulModBuiltinFixture(expectedSums["mul_mod_builtin"]),
 		newMulOpcodeFixture(expectedSums["mul_opcode"]),
 		newMulSmallOpcodeFixture(expectedSums["mul_opcode_small"]),
@@ -205,7 +205,7 @@ func (f *addApOpcodeFixture) Name() string {
 func (f *addApOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	rangeCheck8 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
@@ -218,7 +218,7 @@ func (f *addApOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck19,
 		rangeCheck8,
 		opcodes,
@@ -270,7 +270,7 @@ func (f *addSmallOpcodeFixture) Name() string {
 func (f *addSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.AddSmallOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -281,7 +281,7 @@ func (f *addSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -331,7 +331,7 @@ func (f *mulSmallOpcodeFixture) Name() string {
 func (f *mulSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck11 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
@@ -343,7 +343,7 @@ func (f *mulSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck11,
 		opcodes,
 		ctx.qm31Chip.One(),
@@ -394,7 +394,7 @@ func (f *mulOpcodeFixture) Name() string {
 func (f *mulOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
@@ -406,7 +406,7 @@ func (f *mulOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck19,
 		opcodes,
 		ctx.qm31Chip.One(),
@@ -457,7 +457,7 @@ func (f *qm31OpcodeFixture) Name() string {
 func (f *qm31OpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck4444 := ctx.qm31Chip.DummyInteractionElements(4)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
@@ -469,7 +469,7 @@ func (f *qm31OpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck4444,
 		opcodes,
 		ctx.qm31Chip.One(),
@@ -519,7 +519,7 @@ func (f *addModBuiltinFixture) Name() string {
 
 func (f *addModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
 	claim := cairo_components.AddModBuiltinClaim{
 		LogSize:                   frontend.Variable(4),
@@ -533,7 +533,7 @@ func (f *addModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.api,
 		ctx.qm31Chip,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
@@ -581,7 +581,7 @@ func (f *bitwiseBuiltinFixture) Name() string {
 
 func (f *bitwiseBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	verifyBitwise := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.BitwiseBuiltinClaim{
@@ -596,7 +596,7 @@ func (f *bitwiseBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.api,
 		ctx.qm31Chip,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		verifyBitwise,
 		ctx.qm31Chip.One(),
 		claim,
@@ -645,7 +645,7 @@ func (f *mulModBuiltinFixture) Name() string {
 
 func (f *mulModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck12 := ctx.qm31Chip.DummyInteractionElements(1)
 	rangeCheck3 := ctx.qm31Chip.DummyInteractionElements(4)
 	rangeCheck18 := ctx.qm31Chip.DummyInteractionElements(1)
@@ -662,7 +662,7 @@ func (f *mulModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.api,
 		ctx.qm31Chip,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck12,
 		rangeCheck3,
 		rangeCheck18,
@@ -775,7 +775,7 @@ func (f *assertEqDoubleDerefOpcodeFixture) Name() string {
 func (f *assertEqDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -788,7 +788,7 @@ func (f *assertEqDoubleDerefOpcodeFixture) Build(ctx componentContext) component
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -899,7 +899,7 @@ func (f *retOpcodeFixture) Name() string {
 func (f *retOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.RetOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -912,7 +912,7 @@ func (f *retOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -962,7 +962,7 @@ func (f *callOpcodeFixture) Name() string {
 func (f *callOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.CallOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -975,7 +975,7 @@ func (f *callOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1025,7 +1025,7 @@ func (f *callRelImmOpcodeFixture) Name() string {
 func (f *callRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.CallRelImmOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1038,7 +1038,7 @@ func (f *callRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1088,7 +1088,7 @@ func (f *jumpOpcodeFixture) Name() string {
 func (f *jumpOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.JumpOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1101,7 +1101,7 @@ func (f *jumpOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1151,7 +1151,7 @@ func (f *jumpRelOpcodeFixture) Name() string {
 func (f *jumpRelOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.JumpRelOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1164,7 +1164,7 @@ func (f *jumpRelOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1214,7 +1214,7 @@ func (f *jumpRelImmOpcodeFixture) Name() string {
 func (f *jumpRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.JumpRelImmOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1227,7 +1227,7 @@ func (f *jumpRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1277,7 +1277,7 @@ func (f *jumpDoubleDerefOpcodeFixture) Name() string {
 func (f *jumpDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1290,7 +1290,7 @@ func (f *jumpDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnde
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1340,7 +1340,7 @@ func (f *jnzOpcodeFixture) Name() string {
 func (f *jnzOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.JnzOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1353,7 +1353,7 @@ func (f *jnzOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1403,7 +1403,7 @@ func (f *jnzTakenOpcodeFixture) Name() string {
 func (f *jnzTakenOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.JnzTakenOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -1416,7 +1416,7 @@ func (f *jnzTakenOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1451,31 +1451,31 @@ func (f *jnzTakenOpcodeFixture) ExpectedSum() qm31Literal {
 // ║   Memory Id To Big (Small)       ║
 // ╚══════════════════════════════════╝
 
-type memoryIdToBigSmallFixture struct {
+type memoryIDToBigSmallFixture struct {
 	expectedSum qm31Literal
 }
 
-func newMemoryIdToBigSmallFixture(expectedSum qm31Literal) componentFixture {
-	return &memoryIdToBigSmallFixture{expectedSum: expectedSum}
+func newMemoryIDToBigSmallFixture(expectedSum qm31Literal) componentFixture {
+	return &memoryIDToBigSmallFixture{expectedSum: expectedSum}
 }
 
-func (f *memoryIdToBigSmallFixture) Name() string {
+func (f *memoryIDToBigSmallFixture) Name() string {
 	return "memory_id_to_big_small_component"
 }
 
-func (f *memoryIdToBigSmallFixture) Build(ctx componentContext) componentUnderTest {
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+func (f *memoryIDToBigSmallFixture) Build(ctx componentContext) componentUnderTest {
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck := ctx.qm31Chip.DummyInteractionElements(2)
 
-	claim := cairo_components.MemoryIdToBigSmallClaim{LogSize: frontend.Variable(4)}
-	interactionClaim := cairo_components.MemoryIdToBigSmallInteractionClaim{
+	claim := cairo_components.MemoryIDToBigSmallClaim{LogSize: frontend.Variable(4)}
+	interactionClaim := cairo_components.MemoryIDToBigSmallInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-	return cairo_components.NewMemoryIdToBigSmallComponent(
+	return cairo_components.NewMemoryIDToBigSmallComponent(
 		ctx.api,
 		ctx.qm31Chip,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1483,7 +1483,7 @@ func (f *memoryIdToBigSmallFixture) Build(ctx componentContext) componentUnderTe
 	)
 }
 
-func (f *memoryIdToBigSmallFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
+func (f *memoryIDToBigSmallFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
 	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 9)
@@ -1502,7 +1502,7 @@ func (f *memoryIdToBigSmallFixture) SampledValues(ctx componentContext) ([][]m31
 	return preprocessed, trace, interaction
 }
 
-func (f *memoryIdToBigSmallFixture) ExpectedSum() qm31Literal {
+func (f *memoryIDToBigSmallFixture) ExpectedSum() qm31Literal {
 	return f.expectedSum
 }
 
@@ -1510,34 +1510,34 @@ func (f *memoryIdToBigSmallFixture) ExpectedSum() qm31Literal {
 // ║    Memory Id To Big (Big)        ║
 // ╚══════════════════════════════════╝
 
-type memoryIdToBigBigFixture struct {
+type memoryIDToBigBigFixture struct {
 	expectedSum qm31Literal
 }
 
-func newMemoryIdToBigBigFixture(expectedSum qm31Literal) componentFixture {
-	return &memoryIdToBigBigFixture{expectedSum: expectedSum}
+func newMemoryIDToBigBigFixture(expectedSum qm31Literal) componentFixture {
+	return &memoryIDToBigBigFixture{expectedSum: expectedSum}
 }
 
-func (f *memoryIdToBigBigFixture) Name() string {
+func (f *memoryIDToBigBigFixture) Name() string {
 	return "memory_id_to_big_big_component"
 }
 
-func (f *memoryIdToBigBigFixture) Build(ctx componentContext) componentUnderTest {
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+func (f *memoryIDToBigBigFixture) Build(ctx componentContext) componentUnderTest {
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck := ctx.qm31Chip.DummyInteractionElements(2)
 
-	claim := cairo_components.MemoryIdToBigBigClaim{
+	claim := cairo_components.MemoryIDToBigBigClaim{
 		LogSize: frontend.Variable(4),
 		Offset:  0,
 	}
-	interactionClaim := cairo_components.MemoryIdToBigBigInteractionClaim{
+	interactionClaim := cairo_components.MemoryIDToBigBigInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-	return cairo_components.NewMemoryIdToBigBigComponent(
+	return cairo_components.NewMemoryIDToBigBigComponent(
 		ctx.api,
 		ctx.qm31Chip,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck,
 		ctx.qm31Chip.One(),
 		claim,
@@ -1545,7 +1545,7 @@ func (f *memoryIdToBigBigFixture) Build(ctx componentContext) componentUnderTest
 	)
 }
 
-func (f *memoryIdToBigBigFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
+func (f *memoryIDToBigBigFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
 	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 29)
@@ -1564,7 +1564,7 @@ func (f *memoryIdToBigBigFixture) SampledValues(ctx componentContext) ([][]m31.Q
 	return preprocessed, trace, interaction
 }
 
-func (f *memoryIdToBigBigFixture) ExpectedSum() qm31Literal {
+func (f *memoryIDToBigBigFixture) ExpectedSum() qm31Literal {
 	return f.expectedSum
 }
 
@@ -2119,7 +2119,7 @@ func (f *verifyInstructionFixture) Build(ctx componentContext) componentUnderTes
 	range7 := ctx.qm31Chip.DummyInteractionElements(3)
 	range4 := ctx.qm31Chip.DummyInteractionElements(2)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryId := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryID := ctx.qm31Chip.DummyInteractionElements(29)
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 
 	claim := cairo_components.VerifyInstructionClaim{LogSize: frontend.Variable(3)}
@@ -2133,7 +2133,7 @@ func (f *verifyInstructionFixture) Build(ctx componentContext) componentUnderTes
 		range7,
 		range4,
 		memoryAddress,
-		memoryId,
+		memoryID,
 		verifyInstruction,
 		ctx.qm31Chip.One(),
 		claim,
@@ -2302,8 +2302,8 @@ func (f *blakeRoundFixture) Name() string {
 func (f *blakeRoundFixture) Build(ctx componentContext) componentUnderTest {
 	blakeRoundSigma := ctx.qm31Chip.DummyInteractionElements(17)
 	rangeCheck725 := ctx.qm31Chip.DummyInteractionElements(3)
-	memoryAddressToId := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryAddressToID := ctx.qm31Chip.DummyInteractionElements(2)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	blakeG := ctx.qm31Chip.DummyInteractionElements(20)
 	blakeRound := ctx.qm31Chip.DummyInteractionElements(35)
 
@@ -2317,8 +2317,8 @@ func (f *blakeRoundFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		blakeRoundSigma,
 		rangeCheck725,
-		memoryAddressToId,
-		memoryIdToBig,
+		memoryAddressToID,
+		memoryIDToBig,
 		blakeG,
 		blakeRound,
 		ctx.qm31Chip.One(),
@@ -2368,8 +2368,8 @@ func (f *blakeCompressOpcodeFixture) Name() string {
 
 func (f *blakeCompressOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
-	memoryAddressToId := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryAddressToID := ctx.qm31Chip.DummyInteractionElements(2)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck725 := ctx.qm31Chip.DummyInteractionElements(3)
 	verifyBitwiseXor8 := ctx.qm31Chip.DummyInteractionElements(3)
 	blakeRound := ctx.qm31Chip.DummyInteractionElements(35)
@@ -2385,8 +2385,8 @@ func (f *blakeCompressOpcodeFixture) Build(ctx componentContext) componentUnderT
 		ctx.api,
 		ctx.qm31Chip,
 		verifyInstruction,
-		memoryAddressToId,
-		memoryIdToBig,
+		memoryAddressToID,
+		memoryIDToBig,
 		rangeCheck725,
 		verifyBitwiseXor8,
 		blakeRound,
@@ -2440,7 +2440,7 @@ func (f *genericOpcodeFixture) Name() string {
 func (f *genericOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck99 := ctx.qm31Chip.DummyInteractionElements(2)
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
@@ -2452,7 +2452,7 @@ func (f *genericOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		rangeCheck99,
 		rangeCheck19,
 		opcodes,
@@ -2556,7 +2556,7 @@ func (f *addOpcodeFixture) Name() string {
 func (f *addOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.AddOpcodeClaim{LogSize: frontend.Variable(3)}
@@ -2567,7 +2567,7 @@ func (f *addOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 		ctx.qm31Chip,
 		verifyInstruction,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		opcodes,
 		ctx.qm31Chip.One(),
 		claim,
@@ -2602,19 +2602,19 @@ func (f *addOpcodeFixture) ExpectedSum() qm31Literal {
 // ║       Memory Address To ID       ║
 // ╚══════════════════════════════════╝
 
-type memoryAddressToIdFixture struct {
+type memoryAddressToIDFixture struct {
 	expectedSum qm31Literal
 }
 
-func newMemoryAddressToIdFixture(expectedSum qm31Literal) componentFixture {
-	return &memoryAddressToIdFixture{expectedSum: expectedSum}
+func newMemoryAddressToIDFixture(expectedSum qm31Literal) componentFixture {
+	return &memoryAddressToIDFixture{expectedSum: expectedSum}
 }
 
-func (f *memoryAddressToIdFixture) Name() string {
+func (f *memoryAddressToIDFixture) Name() string {
 	return "memory_address_to_id"
 }
 
-func (f *memoryAddressToIdFixture) Build(ctx componentContext) componentUnderTest {
+func (f *memoryAddressToIDFixture) Build(ctx componentContext) componentUnderTest {
 	interactionElements := ctx.qm31Chip.DummyInteractionElements(2)
 	claim := cairo_components.MemoryAddressToIDClaim{
 		LogSize: frontend.Variable(4),
@@ -2623,7 +2623,7 @@ func (f *memoryAddressToIdFixture) Build(ctx componentContext) componentUnderTes
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
-	return cairo_components.NewMemoryAddressToId(
+	return cairo_components.NewMemoryAddressToID(
 		ctx.api,
 		ctx.qm31Chip,
 		interactionElements,
@@ -2633,7 +2633,7 @@ func (f *memoryAddressToIdFixture) Build(ctx componentContext) componentUnderTes
 	)
 }
 
-func (f *memoryAddressToIdFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
+func (f *memoryAddressToIDFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
 	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 16)
@@ -2652,7 +2652,7 @@ func (f *memoryAddressToIdFixture) SampledValues(ctx componentContext) ([][]m31.
 	return preprocessed, trace, interaction
 }
 
-func (f *memoryAddressToIdFixture) ExpectedSum() qm31Literal {
+func (f *memoryAddressToIDFixture) ExpectedSum() qm31Literal {
 	return f.expectedSum
 }
 
@@ -2950,7 +2950,7 @@ func (f *rangeCheckBuiltin96Fixture) Name() string {
 func (f *rangeCheckBuiltin96Fixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	rangeCheck6 := ctx.qm31Chip.DummyInteractionElements(1)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
 	claim := cairo_components.RangeCheck96BuiltinClaim{
 		LogSize:                frontend.Variable(4),
@@ -2965,7 +2965,7 @@ func (f *rangeCheckBuiltin96Fixture) Build(ctx componentContext) componentUnderT
 		ctx.qm31Chip,
 		memoryAddress,
 		rangeCheck6,
-		memoryIdToBig,
+		memoryIDToBig,
 		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
@@ -3009,7 +3009,7 @@ func (f *rangeCheckBuiltin128Fixture) Name() string {
 
 func (f *rangeCheckBuiltin128Fixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
-	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
+	memoryIDToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
 	claim := cairo_components.RangeCheck128BuiltinClaim{
 		LogSize:                frontend.Variable(4),
@@ -3023,7 +3023,7 @@ func (f *rangeCheckBuiltin128Fixture) Build(ctx componentContext) componentUnder
 		ctx.api,
 		ctx.qm31Chip,
 		memoryAddress,
-		memoryIdToBig,
+		memoryIDToBig,
 		ctx.qm31Chip.One(),
 		claim,
 		interactionClaim,
