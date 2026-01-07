@@ -52,6 +52,10 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	commitmentVerifier := NewCommitmentSchemeVerifier(c.api, pcsConfig)
 	logSizes := proof.Claim.LogSizes()
 
+	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
+	// This should not include the preprocessed trace (hence calling MAX before adding preprocessed trace log sizes)
+	compositionLogDegreeBound := cairo_components.MaxLogSize(logSizes) + 1
+
 	// Verify preprocessed trace commitment
 	logSizes[cairo_components.PREPROCESSED_IDX] = cairo_components.PreprocessedLogSizes()
 	preprocessedLogSizes := logSizes[cairo_components.PREPROCESSED_IDX]
@@ -83,8 +87,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
 	// Draw random coeff from channel for OODS
 	randomCoeff := c.channelChip.DrawFelt()
 
-	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
-	compositionLogDegreeBound := cairo_components.MaxLogSize(logSizes) + 1
+	// Verify composition polynomial commitment
 	compositionLogSizes := []uint32{compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound}
 	commitmentVerifier.Commit(cairo_components.CP_IDX, proof.StarkProof.Commitments[cairo_components.CP_IDX], compositionLogSizes, c.channelChip)
 
@@ -137,4 +140,10 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 	// Generate base layer queries and verify they match the hinted queries
 	baseLayerQueries := friVerifier.GenerateBaseLayerQueries(c.channelChip, c.uapi, commitmentVerifier.pcsConfig.FriConfig.NQueries)
 	friVerifier.VerifyQueries(queries[len(queries)-1], baseLayerQueries)
+
+	// Verify merkle decommitments
+	for treeIndex, tree := range commitmentVerifier.trees {
+		tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
+	}
+
 }

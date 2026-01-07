@@ -206,7 +206,7 @@ func (claim BlakeGClaim) LogSizes() TreeLogSizes {
 }
 
 func (BlakeRoundSigmaClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(blakeRoundSigmaLogSize, blakeRoundSigmaTraceColumns, blakeRoundSigmaInteractionColumns)
+	return NewTreeLogSizesFromCounts(blakeRoundSigmaLogSize, BlakeRoundSigmaTraceColumns, BlakeRoundSigmaInteractionColumns)
 }
 
 func (claim TripleXor32Claim) LogSizes() TreeLogSizes {
@@ -222,7 +222,7 @@ func (claim PartialEcMulClaim) LogSizes() TreeLogSizes {
 }
 
 func (PedersenPointsTableClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(pedersenPointsTableLogSize, pedersenPointsTableTraceColumns, pedersenPointsTableInteractionColumns)
+	return NewTreeLogSizesFromCounts(pedersenPointsTableLogSize, PedersenPointsTableTraceColumns, PedersenPointsTableInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
@@ -242,7 +242,7 @@ func (claim Cube252Claim) LogSizes() TreeLogSizes {
 }
 
 func (PoseidonRoundKeysClaim) LogSizes() TreeLogSizes {
-	return NewTreeLogSizesFromCounts(poseidonRoundKeysLogSize, poseidonRoundKeysTraceColumns, poseidonRoundKeysInteractionColumns)
+	return NewTreeLogSizesFromCounts(poseidonRoundKeysLogSize, PoseidonRoundKeysTraceColumns, PoseidonRoundKeysInteractionColumns)
 }
 
 func (claim RangeCheckFelt252Width27Claim) LogSizes() TreeLogSizes {
