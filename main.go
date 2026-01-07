@@ -29,12 +29,12 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 }
 
 func main() {
-	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsProofFixture))
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponents1QueryProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
 	}
-	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponentsProofFixture))
+	shapeRaw, err := variables.ReadCircuitShape(variables.ShapeFixturePath(variables.AllComponents1QueryProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading circuit shape:", err)
 		os.Exit(1)

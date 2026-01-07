@@ -26,8 +26,10 @@ const (
 const (
 	// HdpProofFixture : hdp proof
 	HdpProofFixture = "hdp_proof.json"
-	// AllComponentsHintsProofFixture : uses all the components (good for exhaustive testing)
+	// AllComponentsProofFixture : uses all the components (good for exhaustive testing)
 	AllComponentsProofFixture = "all_components_proof.json"
+	// AllComponents1QueryProofFixture : uses all the components with 1 query (good for quick testing)
+	AllComponents1QueryProofFixture = "all_components_one_query.json"
 )
 
 // ProofFixturePath returns the path to the proof fixture with the given name.

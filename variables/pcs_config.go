@@ -39,7 +39,7 @@ func DefaultPcsConfig() PcsConfig {
 		FriConfig: FriConfig{
 			LogBlowupFactor:         frontend.Variable(1),
 			LogLastLayerDegreeBound: 0,
-			NQueries:                10,
+			NQueries:                1,
 		},
 	}
 }

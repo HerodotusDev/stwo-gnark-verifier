@@ -29,6 +29,13 @@ type CircuitData struct {
 	// DedupedQueriesShape contains the deduplicated number of queries per log size.
 	// Meaning there is DedupedQueriesShape[i] queries for log size i.
 	DedupedQueriesShape []int
+	// QueriesBranching contains the branching pattern for queries per log size.
+	// Each entry is a bitmask: bit 0 for left child present, bit 1 for right child present.
+	QueriesBranching [][]uint8
+	// FriFirstLayerBranching contains branching patterns for the first FRI merkle verification.
+	FriFirstLayerBranching [][]uint8
+	// FriInnerLayerBranching contains branching patterns for each inner FRI layer merkle verification.
+	FriInnerLayerBranching [][][]uint8
 	// ComponentConfig holds as many booleans as there are components in the circuit.
 	// True if the component is used in the circuit, false otherwise.
 	ComponentConfig ComponentConfig
@@ -121,6 +128,21 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 
 	// extract the deduped queries shape
 	dedupedQueriesShape := append([]int(nil), shape.DedupedQueriesShape...)
+	queriesBranching := make([][]uint8, len(shape.QueriesBranching))
+	for i, layer := range shape.QueriesBranching {
+		queriesBranching[i] = append([]uint8(nil), layer...)
+	}
+	friFirstLayerBranching := make([][]uint8, len(shape.FriFirstLayerBranching))
+	for i, layer := range shape.FriFirstLayerBranching {
+		friFirstLayerBranching[i] = append([]uint8(nil), layer...)
+	}
+	friInnerLayerBranching := make([][][]uint8, len(shape.FriInnerLayerBranching))
+	for i, layer := range shape.FriInnerLayerBranching {
+		friInnerLayerBranching[i] = make([][]uint8, len(layer))
+		for j, inner := range layer {
+			friInnerLayerBranching[i][j] = append([]uint8(nil), inner...)
+		}
+	}
 
 	// compute the maximum blew up log size
 	maxObservedLogSize := 0
@@ -170,13 +192,16 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 	sort.Sort(sort.Reverse(sort.IntSlice(columnBounds)))
 
 	return CircuitData{
-		ComponentConfig:     componentConfig,
-		PreprocessedConfig:  preprocessedConfig,
-		ColumnLogSizes:      columnLogSizes,
-		ColumnBounds:        columnBounds,
-		NColumnsPerLogSize:  nColumnsPerLogSize,
-		BoundsLength:        len(uniqueLogSizes),
-		DedupedQueriesShape: dedupedQueriesShape,
-		MaxLogSize:          uint8(maxObservedLogSize + 1),
+		ComponentConfig:        componentConfig,
+		PreprocessedConfig:     preprocessedConfig,
+		ColumnLogSizes:         columnLogSizes,
+		ColumnBounds:           columnBounds,
+		NColumnsPerLogSize:     nColumnsPerLogSize,
+		BoundsLength:           len(uniqueLogSizes),
+		DedupedQueriesShape:    dedupedQueriesShape,
+		QueriesBranching:       queriesBranching,
+		FriFirstLayerBranching: friFirstLayerBranching,
+		FriInnerLayerBranching: friInnerLayerBranching,
+		MaxLogSize:             uint8(maxObservedLogSize + 1),
 	}
 }

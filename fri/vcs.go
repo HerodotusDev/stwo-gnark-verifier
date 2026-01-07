@@ -7,7 +7,6 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/lookup/logderivlookup"
-	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -58,15 +57,18 @@ func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], roo
 //   - queries[l] contains the queries for the layer of log size l, len(queries) should be the number of layers (from root to leaves).
 //     For all l, queries[l] is sorted ascending with a dummy query at the end. IMPORTANT: queries[l] is never empty and should be generated from GenerateQueries.
 //   - queriesShape[l] = len(queries[l]) - 1 (-1 for the dummy query)
-func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []m31.M31, decommitment variables.MerkleDecommitment, queriesShape []int) {
+//   - queriesBranching[l][i] encodes which children are present for queries[l][i]:
+//     bit 0 for left, bit 1 for right
+func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []m31.M31, decommitment variables.MerkleDecommitment, queriesShape []int, queriesBranching [][]uint8) {
 	remainingValues := queriedValues
-	// there is no constraints on witnessIndex, it's just used as an external pointer for the hint function (frontend.Variable is
-	// not needed but convenient for hint signature)
-	witnessIndex := frontend.Variable(0)
+	witnessIndex := 0
+	zeroHash := [32]uints.U8{}
+	for i := range zeroHash {
+		zeroHash[i] = uints.NewU8(0)
+	}
 
 	// storage for the hashes per layer, keyed by log size
 	layerHashes := make([]logderivlookup.Table, v.maxLogSize+1)
-
 	// decommit layer by layer, doing all queries at once
 	for layerLog := v.maxLogSize; ; layerLog-- {
 		// initialize the layer hashes
@@ -74,11 +76,12 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 		// get the number of columns in the layer
 		nColumnsInLayer := v.nColumnsPerLogSize[layerLog]
 		// j is a pointer to the previous layer query.
-		j := frontend.Variable(0)
+		j := 0
 
 		// go through all query positions of the current layer
 		for queryIndex := 0; queryIndex < queriesShape[layerLog]; queryIndex++ {
 			query := queries[layerLog].Lookup(queryIndex)[0]
+			_ = query // keep lookup constraints even though branching is static
 			// pop the front of the queried values if any
 			var columnValues []m31.M31
 			if nColumnsInLayer > 0 {
@@ -93,72 +96,61 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 				layerHashes[layerLog].Insert(lo)
 				layerHashes[layerLog].Insert(hi)
 			} else {
-				jPlusOne := v.api.Add(j, frontend.Variable(1))
-				jPlusTwo := v.api.Add(j, frontend.Variable(2))
-				twoJ := v.api.Mul(j, frontend.Variable(2))
-				twoJPlusOne := v.api.Add(twoJ, frontend.Variable(1))
-				twoJPlusTwo := v.api.Add(twoJ, frontend.Variable(2))
-				twoJPlusThree := v.api.Add(twoJ, frontend.Variable(3))
-
-				// derive the children queries candidates
-				queryMulTwo := v.api.Mul(query, frontend.Variable(2))
-				leftCandidate := queryMulTwo
-				rightCandidate := v.api.Add(queryMulTwo, frontend.Variable(1))
+				if layerLog >= len(queriesBranching) {
+					panic("queries branching missing layer data")
+				}
+				if queryIndex >= len(queriesBranching[layerLog]) {
+					panic("queries branching length mismatch")
+				}
+				branchCode := queriesBranching[layerLog][queryIndex]
+				leftPresent := branchCode&1 == 1
+				rightPresent := branchCode&2 == 2
 
 				var leftHash [32]uints.U8
 				var rightHash [32]uints.U8
 
 				// rebuild the children hashes candidates from the previous layer
-				h0Lo := layerHashes[layerLog+1].Lookup(twoJ)[0]
-				h0Hi := layerHashes[layerLog+1].Lookup(twoJPlusOne)[0]
-				h1Lo := layerHashes[layerLog+1].Lookup(twoJPlusTwo)[0]
-				h1Hi := layerHashes[layerLog+1].Lookup(twoJPlusThree)[0]
+				twoJ := 2 * j
+				h0Lo := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ))[0]
+				h0Hi := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ + 1))[0]
+				h1Lo := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ + 2))[0]
+				h1Hi := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ + 3))[0]
 				h0 := utils.RebuildHash(v.api, h0Lo, h0Hi)
 				h1 := utils.RebuildHash(v.api, h1Lo, h1Hi)
 
-				isLeftQueried := cmp.IsEqual(v.api, leftCandidate, queries[layerLog+1].Lookup(j)[0])
-				isRightAlsoQueried := cmp.IsEqual(v.api, rightCandidate, queries[layerLog+1].Lookup(jPlusOne)[0])
-				isJustRightQueried := cmp.IsEqual(v.api, rightCandidate, queries[layerLog+1].Lookup(j)[0])
-
-				// aggregate the arguments to comply with the hint signature
-				args := []frontend.Variable{isLeftQueried, isRightAlsoQueried, isJustRightQueried, witnessIndex}
-				for _, hash := range decommitment.HashWitness {
-					hashNative := [32]frontend.Variable{}
-					for i := 0; i < 32; i++ {
-						hashNative[i] = v.bapi.Value(hash[i])
-					}
-					args = append(args, hashNative[:]...)
-				}
-				// the soundness relies on the fact that it is too costly to forge a valid witness for a given query, so it doesn't need to be checked
-				hintedWitness, err := v.api.Compiler().NewHint(WitnessHint, 2*32+1, args...)
-				if err != nil {
-					panic(err)
-				}
-
-				// extract the witness values from the hinted witness
 				var w0 [32]uints.U8
 				var w1 [32]uints.U8
-				for i := 0; i < 32; i++ {
-					w0[i] = v.bapi.ValueOf(hintedWitness[i])
+				if leftPresent {
+					leftHash = h0
+					if rightPresent {
+						rightHash = h1
+					} else {
+						w1 = decommitment.HashWitness[witnessIndex]
+						witnessIndex++
+						rightHash = w1
+					}
+				} else if rightPresent {
+					w0 = decommitment.HashWitness[witnessIndex]
+					witnessIndex++
+					leftHash = w0
+					rightHash = h0
+				} else {
+					w0 = decommitment.HashWitness[witnessIndex]
+					w1 = decommitment.HashWitness[witnessIndex+1]
+					witnessIndex += 2
+					leftHash = w0
+					rightHash = w1
 				}
-				for i := 0; i < 32; i++ {
-					w1[i] = v.bapi.ValueOf(hintedWitness[32+i])
+
+				if leftPresent {
+					if rightPresent {
+						j += 2
+					} else {
+						j++
+					}
+				} else if rightPresent {
+					j++
 				}
-
-				// update the witness index from the hinted witness
-				witnessIndex = hintedWitness[2*32]
-
-				leftHash = utils.SelectHash(v.api, isLeftQueried, h0, w0)
-				intermediate1 := utils.SelectHash(v.api, isRightAlsoQueried, h1, w1)
-				intermediate2 := utils.SelectHash(v.api, isJustRightQueried, h0, w1)
-				rightHash = utils.SelectHash(v.api, isLeftQueried, intermediate1, intermediate2)
-
-				// update the pointer to the previous layer query
-				j = v.api.Select(
-					isLeftQueried,
-					v.api.Select(isRightAlsoQueried, jPlusTwo, jPlusOne),
-					v.api.Select(isJustRightQueried, jPlusOne, j),
-				)
 
 				// update the current layer hashes
 				hash := v.blake2sChip.HashNode(leftHash[:], rightHash[:], columnValues)

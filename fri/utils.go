@@ -50,7 +50,6 @@ func WitnessHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 			for i := 0; i < 32; i++ {
 				results[32+i] = hashWitness[32*witnessIndex+i]
 			}
-			witnessIndex++
 		}
 	} else {
 		if isJustRightQueried == 1 {
@@ -58,7 +57,6 @@ func WitnessHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 			for i := 0; i < 32; i++ {
 				results[i] = hashWitness[32*witnessIndex+i]
 			}
-			witnessIndex++
 		} else {
 			// both witnesses needed
 			for i := 0; i < 32; i++ {
@@ -67,12 +65,8 @@ func WitnessHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 			for i := 0; i < 32; i++ {
 				results[32+i] = hashWitness[32*(witnessIndex+1)+i]
 			}
-			witnessIndex += 2
 		}
 	}
-
-	// set the witness index to the next unused hash witness entry
-	results[64] = big.NewInt(int64(witnessIndex))
 
 	return nil
 }
