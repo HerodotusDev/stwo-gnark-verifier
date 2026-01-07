@@ -13,6 +13,8 @@
 
 # Test data
 test_data/*
+!test_data/all_components_one_query.json
+!test_data/all_components_one_query_shape.json
 
 # Code coverage profiles and other test artifacts
 *.out
