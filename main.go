@@ -40,10 +40,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	cairoProof := variables.BuildProof(*cairoProofRaw)
+	// Build two separate proof instances: frontend.Compile mutates the circuit struct
+	// in-place, so sharing with the witness assignment would corrupt its values.
+	circuitProof := variables.BuildProof(*cairoProofRaw)
+	witnessProof := variables.BuildProof(*cairoProofRaw)
 	circuitData := variables.BuildCircuitData(shapeRaw)
 	circuit := VerifierCircuit{
-		Proof:       cairoProof,
+		Proof:       circuitProof,
+		circuitData: circuitData,
+	}
+	assignment := VerifierCircuit{
+		Proof:       witnessProof,
 		circuitData: circuitData,
 	}
 
@@ -68,7 +75,7 @@ func main() {
 	// ╔══════════════════════════════════╗
 	// ║        Witness Generation        ║
 	// ╚══════════════════════════════════╝
-	witness, err := frontend.NewWitness(&circuit, ecc.BN254.ScalarField())
+	witness, err := frontend.NewWitness(&assignment, ecc.BN254.ScalarField())
 	if err != nil {
 		fmt.Println("Error in witness generation:", err)
 		os.Exit(1)
