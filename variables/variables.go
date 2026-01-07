@@ -170,10 +170,10 @@ type CairoClaim struct {
 	MemoryAddressToId cairo_components.MemoryAddressToIdClaim
 	MemoryIDToValue   MemoryIDToValueClaim
 	RangeChecks       RangeChecksClaim
-	VerifyBitwiseXor4 *SimpleLogSizeClaim
-	VerifyBitwiseXor7 *SimpleLogSizeClaim
-	VerifyBitwiseXor8 *SimpleLogSizeClaim
-	VerifyBitwiseXor9 *SimpleLogSizeClaim
+	VerifyBitwiseXor4 *cairo_components.VerifyBitwiseXor4Claim
+	VerifyBitwiseXor7 *cairo_components.VerifyBitwiseXor7Claim
+	VerifyBitwiseXor8 *cairo_components.VerifyBitwiseXor8Claim
+	VerifyBitwiseXor9 *cairo_components.VerifyBitwiseXor9Claim
 }
 
 type OpcodeClaims struct {
@@ -208,7 +208,7 @@ type BlakeClaim struct {
 	BlakeG             *cairo_components.BlakeGClaim
 	BlakeRoundSigma    *cairo_components.BlakeRoundSigmaClaim
 	TripleXor32        *cairo_components.TripleXor32Claim
-	VerifyBitwiseXor12 *SimpleLogSizeClaim
+	VerifyBitwiseXor12 *cairo_components.VerifyBitwiseXor12Claim
 }
 
 type BuiltinsClaim struct {
@@ -248,20 +248,20 @@ type MemoryIDToValueClaim struct {
 }
 
 type RangeChecksClaim struct {
-	RC6         *SimpleLogSizeClaim
-	RC8         *SimpleLogSizeClaim
-	RC11        *SimpleLogSizeClaim
-	RC12        *SimpleLogSizeClaim
-	RC18        *SimpleLogSizeClaim
-	RC19        *SimpleLogSizeClaim
-	RC4_3       *SimpleLogSizeClaim
-	RC4_4       *SimpleLogSizeClaim
-	RC5_4       *SimpleLogSizeClaim
-	RC9_9       *SimpleLogSizeClaim
-	RC7_2_5     *SimpleLogSizeClaim
-	RC3_6_6_3   *SimpleLogSizeClaim
-	RC4_4_4_4   *SimpleLogSizeClaim
-	RC3_3_3_3_3 *SimpleLogSizeClaim
+	RC6         cairo_components.RangeCheck6Claim
+	RC8         cairo_components.RangeCheck8Claim
+	RC11        cairo_components.RangeCheck11Claim
+	RC12        cairo_components.RangeCheck12Claim
+	RC18        cairo_components.RangeCheck18Claim
+	RC19        cairo_components.RangeCheck19Claim
+	RC4_3       cairo_components.RangeCheck4_3Claim
+	RC4_4       cairo_components.RangeCheck4_4Claim
+	RC5_4       cairo_components.RangeCheck5_4Claim
+	RC9_9       cairo_components.RangeCheck9_9Claim
+	RC7_2_5     cairo_components.RangeCheck7_2_5Claim
+	RC3_6_6_3   cairo_components.RangeCheck3_6_6_3Claim
+	RC4_4_4_4   cairo_components.RangeCheck4_4_4_4Claim
+	RC3_3_3_3_3 cairo_components.RangeCheck3_3_3_3_3Claim
 }
 
 type SimpleLogSizeClaim struct {

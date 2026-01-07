@@ -30,6 +30,10 @@ func (c Coset) LogSize() uint32 {
 	return c.logSize
 }
 
+func (c Coset) Step() circlePointIndex {
+	return c.step
+}
+
 // ╔══════════════════════════════════╗
 // ║           Canonic Coset          ║
 // ╚══════════════════════════════════╝

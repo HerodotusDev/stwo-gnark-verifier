@@ -765,132 +765,104 @@ func NewComponents(
 	}
 
 	// Range check components
-	if claim.RangeChecks.RC6 != nil {
-		comp.rangeCheck6 = cairo_components.NewRangeCheck6(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC6,
-			vanishEvalInverses[uints.NewU8(6)],
-			interactionClaim.RangeChecks.RC6,
-		)
-	}
-	if claim.RangeChecks.RC8 != nil {
-		comp.rangeCheck8 = cairo_components.NewRangeCheck8(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC8,
-			vanishEvalInverses[uints.NewU8(8)],
-			interactionClaim.RangeChecks.RC8,
-		)
-	}
-	if claim.RangeChecks.RC11 != nil {
-		comp.rangeCheck11 = cairo_components.NewRangeCheck11(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC1_1,
-			vanishEvalInverses[uints.NewU8(11)],
-			interactionClaim.RangeChecks.RC11,
-		)
-	}
-	if claim.RangeChecks.RC12 != nil {
-		comp.rangeCheck12 = cairo_components.NewRangeCheck12(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC1_2,
-			vanishEvalInverses[uints.NewU8(12)],
-			interactionClaim.RangeChecks.RC12,
-		)
-	}
-	if claim.RangeChecks.RC18 != nil {
-		comp.rangeCheck18 = cairo_components.NewRangeCheck18(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC1_8,
-			vanishEvalInverses[uints.NewU8(18)],
-			interactionClaim.RangeChecks.RC18,
-		)
-	}
-	if claim.RangeChecks.RC19 != nil {
-		comp.rangeCheck19 = cairo_components.NewRangeCheck19(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC1_9,
-			vanishEvalInverses[uints.NewU8(19)],
-			interactionClaim.RangeChecks.RC19,
-		)
-	}
-	if claim.RangeChecks.RC4_3 != nil {
-		comp.rangeCheck4_3 = cairo_components.NewRangeCheck4_3(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC4_3,
-			vanishEvalInverses[uints.NewU8(7)],
-			interactionClaim.RangeChecks.RC4_3,
-		)
-	}
-	if claim.RangeChecks.RC4_4 != nil {
-		comp.rangeCheck4_4 = cairo_components.NewRangeCheck4_4(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC4_4,
-			vanishEvalInverses[uints.NewU8(8)],
-			interactionClaim.RangeChecks.RC4_4,
-		)
-	}
-	if claim.RangeChecks.RC5_4 != nil {
-		comp.rangeCheck5_4 = cairo_components.NewRangeCheck5_4(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC5_4,
-			vanishEvalInverses[uints.NewU8(9)],
-			interactionClaim.RangeChecks.RC5_4,
-		)
-	}
-	if claim.RangeChecks.RC9_9 != nil {
-		comp.rangeCheck9_9 = cairo_components.NewRangeCheck9_9(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC9_9,
-			vanishEvalInverses[uints.NewU8(18)],
-			interactionClaim.RangeChecks.RC9_9,
-		)
-	}
-	if claim.RangeChecks.RC7_2_5 != nil {
-		comp.rangeCheck7_2_5 = cairo_components.NewRangeCheck7_2_5(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC7_2_5,
-			vanishEvalInverses[uints.NewU8(14)],
-			interactionClaim.RangeChecks.RC7_2_5,
-		)
-	}
-	if claim.RangeChecks.RC3_6_6_3 != nil {
-		comp.rangeCheck3_6_6_3 = cairo_components.NewRangeCheck3_6_6_3(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC3_6_6_3,
-			vanishEvalInverses[uints.NewU8(18)],
-			interactionClaim.RangeChecks.RC3_6_6_3,
-		)
-	}
-	if claim.RangeChecks.RC4_4_4_4 != nil {
-		comp.rangeCheck4_4_4_4 = cairo_components.NewRangeCheck4_4_4_4(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC4_4_4_4,
-			vanishEvalInverses[uints.NewU8(16)],
-			interactionClaim.RangeChecks.RC4_4_4_4,
-		)
-	}
-	if claim.RangeChecks.RC3_3_3_3_3 != nil {
-		comp.rangeCheck3_3_3_3_3 = cairo_components.NewRangeCheck3_3_3_3_3(
-			api,
-			qm31Chip,
-			cairoInteractionElements.RangeChecks.RC3_3_3_3_3,
-			vanishEvalInverses[uints.NewU8(15)],
-			interactionClaim.RangeChecks.RC3_3_3_3_3,
-		)
-	}
+	comp.rangeCheck6 = cairo_components.NewRangeCheck6(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC6,
+		vanishEvalInverses[uints.NewU8(6)],
+		interactionClaim.RangeChecks.RC6,
+	)
+	comp.rangeCheck8 = cairo_components.NewRangeCheck8(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC8,
+		vanishEvalInverses[uints.NewU8(8)],
+		interactionClaim.RangeChecks.RC8,
+	)
+	comp.rangeCheck11 = cairo_components.NewRangeCheck11(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC1_1,
+		vanishEvalInverses[uints.NewU8(11)],
+		interactionClaim.RangeChecks.RC11,
+	)
+	comp.rangeCheck12 = cairo_components.NewRangeCheck12(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC1_2,
+		vanishEvalInverses[uints.NewU8(12)],
+		interactionClaim.RangeChecks.RC12,
+	)
+	comp.rangeCheck18 = cairo_components.NewRangeCheck18(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC1_8,
+		vanishEvalInverses[uints.NewU8(18)],
+		interactionClaim.RangeChecks.RC18,
+	)
+	comp.rangeCheck19 = cairo_components.NewRangeCheck19(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC1_9,
+		vanishEvalInverses[uints.NewU8(19)],
+		interactionClaim.RangeChecks.RC19,
+	)
+	comp.rangeCheck4_3 = cairo_components.NewRangeCheck4_3(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC4_3,
+		vanishEvalInverses[uints.NewU8(7)],
+		interactionClaim.RangeChecks.RC4_3,
+	)
+	comp.rangeCheck4_4 = cairo_components.NewRangeCheck4_4(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC4_4,
+		vanishEvalInverses[uints.NewU8(8)],
+		interactionClaim.RangeChecks.RC4_4,
+	)
+	comp.rangeCheck5_4 = cairo_components.NewRangeCheck5_4(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC5_4,
+		vanishEvalInverses[uints.NewU8(9)],
+		interactionClaim.RangeChecks.RC5_4,
+	)
+	comp.rangeCheck9_9 = cairo_components.NewRangeCheck9_9(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC9_9,
+		vanishEvalInverses[uints.NewU8(18)],
+		interactionClaim.RangeChecks.RC9_9,
+	)
+	comp.rangeCheck7_2_5 = cairo_components.NewRangeCheck7_2_5(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC7_2_5,
+		vanishEvalInverses[uints.NewU8(14)],
+		interactionClaim.RangeChecks.RC7_2_5,
+	)
+	comp.rangeCheck3_6_6_3 = cairo_components.NewRangeCheck3_6_6_3(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC3_6_6_3,
+		vanishEvalInverses[uints.NewU8(18)],
+		interactionClaim.RangeChecks.RC3_6_6_3,
+	)
+	comp.rangeCheck4_4_4_4 = cairo_components.NewRangeCheck4_4_4_4(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC4_4_4_4,
+		vanishEvalInverses[uints.NewU8(16)],
+		interactionClaim.RangeChecks.RC4_4_4_4,
+	)
+	comp.rangeCheck3_3_3_3_3 = cairo_components.NewRangeCheck3_3_3_3_3(
+		api,
+		qm31Chip,
+		cairoInteractionElements.RangeChecks.RC3_3_3_3_3,
+		vanishEvalInverses[uints.NewU8(15)],
+		interactionClaim.RangeChecks.RC3_3_3_3_3,
+	)
 
 	// Verify bitwise xor components
 	comp.verifyBitwiseXor4 = cairo_components.NewVerifyBitwiseXor4(

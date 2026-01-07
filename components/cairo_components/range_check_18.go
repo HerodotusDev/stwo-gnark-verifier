@@ -1,10 +1,12 @@
 package cairo_components
 
 import (
-    "github.com/HerodotusDev/stwo-gnark-verifier/m31"
-    "github.com/consensys/gnark/frontend"
-    "github.com/consensys/gnark/std/math/uints"
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
+
+type RangeCheck18Claim struct{}
 
 type RangeCheck18InteractionClaim struct {
 	ClaimedSum m31.QM31
@@ -26,7 +28,7 @@ func NewRangeCheck18(
 	return &RangeCheck18Component{
 		inner: newLookupConstraintComponent(
 			api,
-            qm31,
+			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
 			uints.NewU8(rangeCheck18LogSize),

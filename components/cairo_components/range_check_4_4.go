@@ -1,10 +1,12 @@
 package cairo_components
 
 import (
-    "github.com/HerodotusDev/stwo-gnark-verifier/m31"
-    "github.com/consensys/gnark/frontend"
-    "github.com/consensys/gnark/std/math/uints"
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/uints"
 )
+
+type RangeCheck4_4Claim struct{}
 
 type RangeCheck4_4InteractionClaim struct {
 	ClaimedSum m31.QM31
@@ -23,14 +25,14 @@ func NewRangeCheck4_4(
 	vanishEvalInv m31.QM31,
 	interactionClaim RangeCheck4_4InteractionClaim,
 ) *RangeCheck4_4Component {
-    values := []uints.U8{
-        uints.NewU8(4),
-        uints.NewU8(4),
-    }
-    preprocessed := []PreprocessedColumn{
-        NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0)),
-        NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1)),
-    }
+	values := []uints.U8{
+		uints.NewU8(4),
+		uints.NewU8(4),
+	}
+	preprocessed := []PreprocessedColumn{
+		NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0)),
+		NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1)),
+	}
 
 	return &RangeCheck4_4Component{
 		inner: newLookupConstraintComponent(

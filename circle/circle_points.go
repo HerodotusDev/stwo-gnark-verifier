@@ -69,6 +69,14 @@ func (c *CircleChip) Add(p, q Point) Point {
 	return Point{X: xx, Y: yy}
 }
 
+// Add a base circle point to a circle point.
+func (c *CircleChip) AddBasePoint(p Point, q BasePoint) Point {
+	return Point{
+		X: c.qm31.Sub(c.qm31.MulM31(p.X, q.X), c.qm31.MulM31(p.Y, q.Y)),
+		Y: c.qm31.Add(c.qm31.MulM31(p.X, q.Y), c.qm31.MulM31(p.Y, q.X)),
+	}
+}
+
 // Neg returns the antipode of a circle point.
 func (c *CircleChip) Neg(p Point) Point {
 	return Point{X: p.X, Y: c.qm31.Neg(p.Y)}
@@ -126,6 +134,11 @@ func (c *CircleChip) BaseAdd(p, q BasePoint) BasePoint {
 	xx := c.m31.Sub(c.m31.Mul(p.X, q.X), c.m31.Mul(p.Y, q.Y))
 	yy := c.m31.Add(c.m31.Mul(p.X, q.Y), c.m31.Mul(p.Y, q.X))
 	return BasePoint{X: xx, Y: yy}
+}
+
+// Neg negates a base circle point.
+func (c *CircleChip) BaseNeg(p BasePoint) BasePoint {
+	return BasePoint{X: p.X, Y: c.m31.Neg(p.Y)}
 }
 
 // BaseMul multiplies a base circle point by a scalar.
