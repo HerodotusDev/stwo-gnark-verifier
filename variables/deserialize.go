@@ -8,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
+	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/std/math/uints"
@@ -62,6 +64,7 @@ func BuildProof(proofRaw *ProofRaw) *Proof {
 	proof.InteractionPow = uints.NewU64(proofRaw.InteractionPow)
 	proof.InteractionClaim = BuildInteractionClaim(&proofRaw.InteractionClaim)
 	proof.StarkProof = BuildStarkProof(&proofRaw.StarkProof)
+	proof.CircuitHints = buildCircuitHints(proofRaw.CircuitHints)
 
 	return &proof
 }
@@ -891,6 +894,8 @@ func BuildStarkProof(starkProofRaw *StarkProofRaw) StarkProof {
 		SampledValues: buildSampledValues(starkProofRaw.SampledValues),
 		QueriedValues: buildQueriedValues(starkProofRaw.QueriedValues),
 		Decommitments: buildDecommitments(starkProofRaw.Decommitments),
+		FriProof:      buildFriProof(starkProofRaw.FriProof),
+		ProofOfWork:   uints.NewU64(starkProofRaw.ProofOfWork),
 	}
 }
 
@@ -976,6 +981,51 @@ func buildCommitments(raw [][]uint8) [][32]uints.U8 {
 	}
 
 	return result
+}
+
+func buildFriProof(raw FriProofRaw) FriProof {
+	return FriProof{
+		FirstLayerProof:  buildFirstLayerProof(raw.FirstLayerProof),
+		InnerLayerProofs: buildInnerLayerProofs(raw.InnerLayerProofs),
+		LastLayerPoly:    buildLastLayerPoly(raw.LastLayerPoly),
+	}
+}
+
+func buildFirstLayerProof(raw FriLayerProofRaw) FriLayerProof {
+	firstLayerProof := buildInnerLayerProof(raw)
+	return firstLayerProof
+}
+
+func buildInnerLayerProofs(raw []FriLayerProofRaw) []FriLayerProof {
+	result := make([]FriLayerProof, len(raw))
+	for i, entry := range raw {
+		result[i] = buildInnerLayerProof(entry)
+	}
+	return result
+}
+
+func buildInnerLayerProof(raw FriLayerProofRaw) FriLayerProof {
+	friWitness := make([]m31.QM31, len(raw.FriWitness))
+	for i, entry := range raw.FriWitness {
+		friWitness[i], _ = qm31FromUint64Grid(entry)
+	}
+
+	decommitment := buildDecommitments([]MerkleDecommitmentRaw{raw.Decommitment})[0]
+
+	commitment := buildCommitments([][]uint8{raw.Commitment})[0]
+	return FriLayerProof{
+		FriWitness:   friWitness,
+		Decommitment: decommitment,
+		Commitment:   commitment,
+	}
+}
+
+func buildLastLayerPoly(raw LinePolyRaw) circle.LinePoly {
+	coeffs, _ := qm31FromUint64Grid(raw.Coeffs[0])
+	return circle.LinePoly{
+		Coeffs:  []m31.QM31{coeffs},
+		LogSize: uints.NewU8(raw.LogSize),
+	}
 }
 
 // ╔══════════════════════════════════╗
@@ -1094,4 +1144,39 @@ const (
 	HdpProofFixture                 = "hdp_proof.json"
 	AllComponentsProofFixture       = "all_components_proof.json"
 	AllComponentsStaticProofFixture = "all_components_proof_static.json"
+	AllComponentsHintsProofFixture  = "all_components_proof_with_hints.json"
 )
+
+// ╔══════════════════════════════════╗
+// ║      Circuit Hints Building      ║
+// ╚══════════════════════════════════╝
+
+func buildCircuitHints(raw CircuitHintsRaw) CircuitHints {
+	hints := CircuitHints{}
+
+	queryMap := make(map[int][]int, len(raw.QueryPositionsByLogSize))
+	maxLogSize := -1
+	for logSizeStr, positions := range raw.QueryPositionsByLogSize {
+		logSize, err := strconv.ParseUint(logSizeStr, 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		intLogSize := int(logSize)
+		if intLogSize > maxLogSize {
+			maxLogSize = intLogSize
+		}
+		queryMap[intLogSize] = append([]int(nil), positions...)
+	}
+
+	queries := make([][]int, maxLogSize+1)
+	for log := 0; log <= maxLogSize; log++ {
+		if positions, ok := queryMap[log]; ok {
+			queries[log] = positions
+			continue
+		}
+		queries[log] = []int{}
+	}
+
+	hints.Queries = queries
+	return hints
+}

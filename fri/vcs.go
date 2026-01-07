@@ -20,7 +20,7 @@ type MerkleVerifier struct {
 	blake2sChip *blake2s.Blake2sChip
 
 	root               [32]uints.U8
-	columnLogSizes     []uint8
+	ColumnLogSizes     []uint8
 	nColumnsPerLogSize map[uint8]int
 }
 
@@ -43,7 +43,7 @@ func NewMerkleVerifier(api frontend.API, root [32]uints.U8, columnLogSizes []uin
 		uapi:               uapi,
 		blake2sChip:        blake2sChip,
 		root:               root,
-		columnLogSizes:     columnLogSizes,
+		ColumnLogSizes:     columnLogSizes,
 		nColumnsPerLogSize: nColumnsPerLogSize,
 	}
 }
@@ -68,7 +68,7 @@ func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decomm
 
 	// find the log size of the largest layer
 	maxLogSize := uint8(0)
-	for _, logSize := range v.columnLogSizes {
+	for _, logSize := range v.ColumnLogSizes {
 		if logSize > maxLogSize {
 			maxLogSize = logSize
 		}

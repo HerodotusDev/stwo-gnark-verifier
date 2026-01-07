@@ -24,7 +24,7 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 }
 
 func TestVerifier(t *testing.T) {
-	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsStaticProofFixture))
+	cairoProofRaw, err := variables.ReadCairoProof(variables.ProofFixturePath(variables.AllComponentsHintsProofFixture))
 	if err != nil {
 		fmt.Println("Error in reading proof:", err)
 		os.Exit(1)
