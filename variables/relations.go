@@ -47,7 +47,7 @@ const (
 // ║        Interaction Elements      ║
 // ╚══════════════════════════════════╝
 
-// CairoInteractionElements containts the interaction elements for the lookups
+// CairoInteractionElements contains the interaction elements for the lookups
 type CairoInteractionElements struct {
 	Opcodes                     m31.InteractionElements
 	VerifyInstruction           m31.InteractionElements
@@ -72,7 +72,7 @@ type CairoInteractionElements struct {
 	VerifyBitwiseXor12          m31.InteractionElements
 }
 
-// RangeChecksInteractionElements containts the interaction elements for the range checks lookups
+// RangeChecksInteractionElements contains the interaction elements for the range checks lookups
 type RangeChecksInteractionElements struct {
 	RC6     m31.InteractionElements
 	RC8     m31.InteractionElements

@@ -309,7 +309,7 @@ func BenchmarkBlake2sHash(b *testing.B) {
 	durations.compile += time.Since(t0).Nanoseconds()
 	gates = r1cs.GetNbConstraints()
 
-	// setup and proove depending on the backend
+	// setup and prove depending on the backend
 	switch backend {
 	case "plonk":
 		plonkProof(r1cs, witness, &durations)

@@ -23,7 +23,7 @@ type CircuitData struct {
 	// ColumnLogSizes contains the ordered log sizes of the columns for each tree.
 	// log sizes of ColumnLogSizes are not blew up.
 	ColumnLogSizes [][]int
-	// ColumnBounds is a deduped slice of blew up log sizes of the columns accross all trees.
+	// ColumnBounds is a deduped slice of blew up log sizes of the columns across all trees.
 	// Ordered in descending order.
 	ColumnBounds []int
 	// DedupedQueriesShape contains the deduplicated number of queries per log size.

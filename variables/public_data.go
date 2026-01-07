@@ -12,7 +12,7 @@ var zero = uints.NewU8(0)
 type Felt252Value [NM31InFelt252]m31.M31
 
 // The PublicData is emitted and used through lookups and it this makes more sense to store
-// it directly as M31s (instead of u32 in stwo-cairo) altough this is less efficient for channel mixing which requires mixing u32s.
+// it directly as M31s (instead of u32 in stwo-cairo) although this is less efficient for channel mixing which requires mixing u32s.
 type PublicData struct {
 	PublicMemory PublicMemory
 	InitialState CasmState
