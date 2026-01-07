@@ -192,16 +192,16 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 	sort.Sort(sort.Reverse(sort.IntSlice(columnBounds)))
 
 	return CircuitData{
-		ComponentConfig:     componentConfig,
-		PreprocessedConfig:  preprocessedConfig,
-		ColumnLogSizes:      columnLogSizes,
-		ColumnBounds:        columnBounds,
-		NColumnsPerLogSize:  nColumnsPerLogSize,
-		BoundsLength:        len(uniqueLogSizes),
-		DedupedQueriesShape: dedupedQueriesShape,
-		QueriesBranching:    queriesBranching,
+		ComponentConfig:        componentConfig,
+		PreprocessedConfig:     preprocessedConfig,
+		ColumnLogSizes:         columnLogSizes,
+		ColumnBounds:           columnBounds,
+		NColumnsPerLogSize:     nColumnsPerLogSize,
+		BoundsLength:           len(uniqueLogSizes),
+		DedupedQueriesShape:    dedupedQueriesShape,
+		QueriesBranching:       queriesBranching,
 		FriFirstLayerBranching: friFirstLayerBranching,
 		FriInnerLayerBranching: friInnerLayerBranching,
-		MaxLogSize:          uint8(maxObservedLogSize + 1),
+		MaxLogSize:             uint8(maxObservedLogSize + 1),
 	}
 }

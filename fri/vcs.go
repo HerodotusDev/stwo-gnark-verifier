@@ -123,11 +123,8 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 				if leftPresent {
 					leftHash = h0
 					if rightPresent {
-						w0 = zeroHash
-						w1 = zeroHash
 						rightHash = h1
 					} else {
-						w0 = zeroHash
 						w1 = decommitment.HashWitness[witnessIndex]
 						witnessIndex++
 						rightHash = w1
@@ -135,7 +132,6 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 				} else if rightPresent {
 					w0 = decommitment.HashWitness[witnessIndex]
 					witnessIndex++
-					w1 = zeroHash
 					leftHash = w0
 					rightHash = h0
 				} else {
