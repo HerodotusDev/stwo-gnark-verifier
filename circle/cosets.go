@@ -22,10 +22,10 @@ type Coset struct {
 
 // newCoset builds a coset whose step size is the subgroup generator of logSize.
 func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize uint32) Coset {
-	if logSize == 0 || logSize > CircleLogOrder {
+	if logSize > CircleLogOrder {
 		panic("unsupported coset log size")
 	}
-	stepSize := subgroupGenerator(circleChip, logSize)
+	stepSize := SubgroupGenerator(circleChip, logSize)
 	return Coset{
 		circleChip: circleChip,
 		initial:    initial,
@@ -35,7 +35,11 @@ func NewCoset(circleChip *CircleChip, initial circlePointIndex, logSize uint32) 
 }
 
 func (c Coset) halfOdds(logSize uint32) Coset {
-	return NewCoset(c.circleChip, subgroupGenerator(c.circleChip, logSize+2), logSize)
+	return NewCoset(c.circleChip, SubgroupGenerator(c.circleChip, logSize+2), logSize)
+}
+
+func (c Coset) Double() Coset {
+	return NewCoset(c.circleChip, c.initial.Mul(uints.NewU32(2)), c.logSize-1)
 }
 
 func (c Coset) IndexAt(i uints.U32) circlePointIndex {
@@ -69,7 +73,7 @@ func NewCanonicCoset(circleChip *CircleChip, logSize uint32) CanonicCoset {
 	if logSize == 0 || logSize >= CircleLogOrder {
 		panic("invalid canonic coset log size")
 	}
-	initial := subgroupGenerator(circleChip, logSize+1)
+	initial := SubgroupGenerator(circleChip, logSize+1)
 	return CanonicCoset{
 		coset: NewCoset(circleChip, initial, logSize),
 	}
@@ -96,7 +100,7 @@ func (c CanonicCoset) LogSize() uint32 {
 }
 
 // ╔══════════════════════════════════╗
-// ║              Domain              ║
+// ║           Circle Domain          ║
 // ╚══════════════════════════════════╝
 type CircleDomain struct {
 	halfCoset Coset
@@ -142,4 +146,29 @@ func (d CircleDomain) IndexAt(i uints.U32) circlePointIndex {
 	}
 	resultValue := uints.U32{indexBytes[len(indexBytes)-1], indexBytes[len(indexBytes)-2], indexBytes[len(indexBytes)-3], indexBytes[len(indexBytes)-4]}
 	return circlePointIndex{circleChip: d.halfCoset.circleChip, value: resultValue}
+}
+
+// ╔══════════════════════════════════╗
+// ║           Line Domain            ║
+// ╚══════════════════════════════════╝
+type LineDomain struct {
+	coset Coset
+}
+
+func NewLineDomain(coset Coset) LineDomain {
+	return LineDomain{
+		coset: coset,
+	}
+}
+
+func (d LineDomain) Coset() Coset {
+	return d.coset
+}
+
+func (d LineDomain) Double() LineDomain {
+	return NewLineDomain(d.coset.Double())
+}
+
+func (d LineDomain) LogSize() uint32 {
+	return d.coset.logSize
 }
