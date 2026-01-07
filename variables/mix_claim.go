@@ -178,24 +178,31 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitDa
 	// Mix builtins
 	if circuitData.ComponentConfig[26] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddModBuiltin.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddModBuiltin.AddModBuiltinSegmentStart), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[27] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BitwiseBuiltin.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BitwiseBuiltin.BitwiseBuiltinSegmentStart), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[28] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MulModBuiltin.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MulModBuiltin.MulModBuiltinSegmentStart), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[29] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PedersenBuiltin.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PedersenBuiltin.PedersenBuiltinSegmentStart), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[30] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PoseidonBuiltin.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PoseidonBuiltin.PoseidonBuiltinSegmentStart), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[31] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheck96.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheck96.RangeCheckSegmentStart), uints.NewU32(0)})
 	}
 	if circuitData.ComponentConfig[32] {
 		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheck128.LogSize), uints.NewU32(0)})
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheck128.RangeCheckSegmentStart), uints.NewU32(0)})
 	}
 
 	// Mix pedersen context

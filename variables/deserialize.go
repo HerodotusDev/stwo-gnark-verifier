@@ -276,44 +276,44 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 	// Build builtins
 	if claimRaw.Builtins["add_mod_builtin"] != nil {
 		claim.AddModBuiltin = cairo_components.AddModBuiltinClaim{
-			LogSize:                   frontend.Variable(claimRaw.Builtins["add_mod_builtin"].LogSize),
-			AddModBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["add_mod_builtin"].AddModBuiltinSegmentStart),
+			LogSize:                   frontend.Variable(*claimRaw.Builtins["add_mod_builtin"].LogSize),
+			AddModBuiltinSegmentStart: frontend.Variable(*claimRaw.Builtins["add_mod_builtin"].AddModBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["bitwise_builtin"] != nil {
 		claim.BitwiseBuiltin = cairo_components.BitwiseBuiltinClaim{
-			LogSize:                    frontend.Variable(claimRaw.Builtins["bitwise_builtin"].LogSize),
-			BitwiseBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["bitwise_builtin"].BitwiseBuiltinSegmentStart),
+			LogSize:                    frontend.Variable(*claimRaw.Builtins["bitwise_builtin"].LogSize),
+			BitwiseBuiltinSegmentStart: frontend.Variable(*claimRaw.Builtins["bitwise_builtin"].BitwiseBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["mul_mod_builtin"] != nil {
 		claim.MulModBuiltin = cairo_components.MulModBuiltinClaim{
-			LogSize:                   frontend.Variable(claimRaw.Builtins["mul_mod_builtin"].LogSize),
-			MulModBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["mul_mod_builtin"].MulModBuiltinSegmentStart),
+			LogSize:                   frontend.Variable(*claimRaw.Builtins["mul_mod_builtin"].LogSize),
+			MulModBuiltinSegmentStart: frontend.Variable(*claimRaw.Builtins["mul_mod_builtin"].MulModBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["pedersen_builtin"] != nil {
 		claim.PedersenBuiltin = cairo_components.PedersenBuiltinClaim{
-			LogSize:                     frontend.Variable(claimRaw.Builtins["pedersen_builtin"].LogSize),
-			PedersenBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["pedersen_builtin"].PedersenBuiltinSegmentStart),
+			LogSize:                     frontend.Variable(*claimRaw.Builtins["pedersen_builtin"].LogSize),
+			PedersenBuiltinSegmentStart: frontend.Variable(*claimRaw.Builtins["pedersen_builtin"].PedersenBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["poseidon_builtin"] != nil {
 		claim.PoseidonBuiltin = cairo_components.PoseidonBuiltinClaim{
-			LogSize:                     frontend.Variable(claimRaw.Builtins["poseidon_builtin"].LogSize),
-			PoseidonBuiltinSegmentStart: frontend.Variable(claimRaw.Builtins["poseidon_builtin"].PoseidonBuiltinSegmentStart),
+			LogSize:                     frontend.Variable(*claimRaw.Builtins["poseidon_builtin"].LogSize),
+			PoseidonBuiltinSegmentStart: frontend.Variable(*claimRaw.Builtins["poseidon_builtin"].PoseidonBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["range_check_96_builtin"] != nil {
 		claim.RangeCheck96 = cairo_components.RangeCheck96BuiltinClaim{
-			LogSize:                frontend.Variable(claimRaw.Builtins["range_check_96_builtin"].LogSize),
-			RangeCheckSegmentStart: frontend.Variable(claimRaw.Builtins["range_check_96_builtin"].RangeCheckBuiltinSegmentStart),
+			LogSize:                frontend.Variable(*claimRaw.Builtins["range_check_96_builtin"].LogSize),
+			RangeCheckSegmentStart: frontend.Variable(*claimRaw.Builtins["range_check_96_builtin"].RangeCheckBuiltinSegmentStart),
 		}
 	}
 	if claimRaw.Builtins["range_check_128_builtin"] != nil {
 		claim.RangeCheck128 = cairo_components.RangeCheck128BuiltinClaim{
-			LogSize:                frontend.Variable(claimRaw.Builtins["range_check_128_builtin"].LogSize),
-			RangeCheckSegmentStart: frontend.Variable(claimRaw.Builtins["range_check_128_builtin"].RangeCheckBuiltinSegmentStart),
+			LogSize:                frontend.Variable(*claimRaw.Builtins["range_check_128_builtin"].LogSize),
+			RangeCheckSegmentStart: frontend.Variable(*claimRaw.Builtins["range_check_128_builtin"].RangeCheckBuiltinSegmentStart),
 		}
 	}
 

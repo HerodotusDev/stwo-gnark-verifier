@@ -20,7 +20,7 @@ const (
 	// HdpProofFixture : hdp proof (no hints so the circuit can't be used)
 	HdpProofFixture = "hdp_proof.json"
 	// AllComponentsHintsProofFixture : uses all the components (current test fixture)
-	AllComponentsHintsProofFixture = "all_components_proof_with_hints.json"
+	AllComponentsHintsProofFixture = "all_components_proof.json"
 )
 
 // Felt252Value contains the value of a Felt252
@@ -353,19 +353,39 @@ type SegmentPointer struct {
 
 // Segments returns the present segments in the public memory.
 func (p *PublicSegmentRanges) Segments() []SegmentRange {
-	return []SegmentRange{
-		p.Output,
-		*p.Pedersen,
-		*p.RangeCheck128,
-		*p.Ecdsa,
-		*p.Bitwise,
-		*p.EcOp,
-		*p.Keccak,
-		*p.Poseidon,
-		*p.RangeCheck96,
-		*p.AddMod,
-		*p.MulMod,
+	segments := make([]SegmentRange, 0)
+	segments = append(segments, p.Output)
+	if p.Pedersen != nil {
+		segments = append(segments, *p.Pedersen)
 	}
+	if p.RangeCheck128 != nil {
+		segments = append(segments, *p.RangeCheck128)
+	}
+	if p.Ecdsa != nil {
+		segments = append(segments, *p.Ecdsa)
+	}
+	if p.Bitwise != nil {
+		segments = append(segments, *p.Bitwise)
+	}
+	if p.EcOp != nil {
+		segments = append(segments, *p.EcOp)
+	}
+	if p.Keccak != nil {
+		segments = append(segments, *p.Keccak)
+	}
+	if p.Poseidon != nil {
+		segments = append(segments, *p.Poseidon)
+	}
+	if p.RangeCheck96 != nil {
+		segments = append(segments, *p.RangeCheck96)
+	}
+	if p.AddMod != nil {
+		segments = append(segments, *p.AddMod)
+	}
+	if p.MulMod != nil {
+		segments = append(segments, *p.MulMod)
+	}
+	return segments
 }
 
 // ╔══════════════════════════════════╗
