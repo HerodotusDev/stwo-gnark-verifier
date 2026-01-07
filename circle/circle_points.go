@@ -6,6 +6,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/conversion"
 	gnarkbits "github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
@@ -162,26 +163,61 @@ func (c *CircleChip) BaseMul(p BasePoint, scalar uints.U32) BasePoint {
 
 // circlePointIndex tracks additive offsets on the circle.
 type circlePointIndex struct {
+	circleChip *CircleChip
+
 	value uints.U32
 }
 
 // newPointIndex creates a new point index reducing with an And since group order is a power of two.
-func (c *CircleChip) newPointIndex(value uints.U32) circlePointIndex {
-	return circlePointIndex{value: c.uapi.And(value, M31CircleOrderBitMask)}
+func newPointIndex(c *CircleChip, value uints.U32) circlePointIndex {
+	return circlePointIndex{circleChip: c, value: c.uapi.And(value, M31CircleOrderBitMask)}
 }
 
 // Point returns the circle point corresponding to the index.
-func (c *CircleChip) Point(i circlePointIndex) BasePoint {
-	return c.BaseMul(baseCircleGenerator, i.value)
+func (i circlePointIndex) Point() BasePoint {
+	return i.circleChip.BaseMul(baseCircleGenerator, i.value)
 }
 
-func (c *CircleChip) subgroupGenerator(logSize uint32) circlePointIndex {
+// Neg returns the negation of the point index.
+func (i circlePointIndex) Neg() circlePointIndex {
+	order := frontend.Variable(uint32(1) << CircleLogOrder)
+	valueNative := i.circleChip.uapi.ToValue(i.value)
+	unreducedNewValue := i.circleChip.api.Sub(order, valueNative)
+	unreducedNewValueBytes, err := conversion.NativeToBytes(i.circleChip.api, unreducedNewValue)
+	if err != nil {
+		panic(err)
+	}
+	negValue := uints.U32{unreducedNewValueBytes[len(unreducedNewValueBytes)-1], unreducedNewValueBytes[len(unreducedNewValueBytes)-2], unreducedNewValueBytes[len(unreducedNewValueBytes)-3], unreducedNewValueBytes[len(unreducedNewValueBytes)-4]}
+	negValue = i.circleChip.uapi.And(negValue, M31CircleOrderBitMask)
+	return circlePointIndex{circleChip: i.circleChip, value: negValue}
+}
+
+func (i circlePointIndex) Mul(scalar uints.U32) circlePointIndex {
+	scalarNative := i.circleChip.uapi.ToValue(scalar)
+	indexNative := i.circleChip.uapi.ToValue(i.value)
+	unreducedNewValue := i.circleChip.api.Mul(indexNative, scalarNative)
+	unreducedNewValueBytes, err := conversion.NativeToBytes(i.circleChip.api, unreducedNewValue)
+	if err != nil {
+		panic(err)
+	}
+	reducedNewValue := uints.U32{unreducedNewValueBytes[len(unreducedNewValueBytes)-1], unreducedNewValueBytes[len(unreducedNewValueBytes)-2], unreducedNewValueBytes[len(unreducedNewValueBytes)-3], unreducedNewValueBytes[len(unreducedNewValueBytes)-4]}
+	reducedNewValue = i.circleChip.uapi.And(reducedNewValue, M31CircleOrderBitMask)
+	return circlePointIndex{circleChip: i.circleChip, value: reducedNewValue}
+}
+
+func (c *CircleChip) AddPointIndex(a, b circlePointIndex) circlePointIndex {
+	unreducedSum := c.uapi.Add(a.value, b.value)
+	reducedSum := c.uapi.And(unreducedSum, M31CircleOrderBitMask)
+	return circlePointIndex{circleChip: c, value: reducedSum}
+}
+
+func subgroupGenerator(circleChip *CircleChip, logSize uint32) circlePointIndex {
 	if logSize == 0 || logSize > CircleLogOrder {
 		panic("invalid subgroup generator log size")
 	}
 
 	u32PointIndex := uint32(1) << (CircleLogOrder - logSize)
-	return c.newPointIndex(uints.NewU32(u32PointIndex))
+	return newPointIndex(circleChip, uints.NewU32(u32PointIndex))
 }
 
 // ╔══════════════════════════════════╗
@@ -210,5 +246,5 @@ func (c *CircleChip) CosetVanishingInverse(coset Coset, p Point) m31.QM31 {
 
 // CanonicVanishingInverse evaluates the canonic coset vanishing polynomial and inverts it.
 func (c *CircleChip) CanonicVanishingInverse(logSize uint32, p Point) m31.QM31 {
-	return c.CosetVanishingInverse(c.NewCanonicCoset(logSize).Coset(), p)
+	return c.CosetVanishingInverse(NewCanonicCoset(c, logSize).Coset(), p)
 }

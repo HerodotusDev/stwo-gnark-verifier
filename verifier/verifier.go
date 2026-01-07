@@ -133,13 +133,13 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 	c.channelChip.MixFelts(flattenedSampledValues)
 
 	// Draw random coeff for FRI
-	_ = c.channelChip.DrawFelt()
+	randomCoeff := c.channelChip.DrawFelt()
 
 	// Compute bounds (column log sizes deduped, in decreasing order and not blew up)
 	bounds := commitmentVerifier.bounds()
 
 	// Verification of commitment stage of FRI
-	friVerifier := fri.NewFriVerifier(c.api, c.channelChip, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
+	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channelChip, c.qm31, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
 
 	// Proof of work
 	c.channelChip.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.pcsConfig.PowBits))
@@ -153,6 +153,8 @@ func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier
 		tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
 	}
 
+	// Verify FRI quotients
+	_ = friVerifier.FriQuotientEvaluations(commitmentVerifier.columnLogSizes(), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
 }
 
 func checkMaskPoints(maskPoints cairo_components.TreeMaskPoints, sampledValues [][][]m31.QM31) {
