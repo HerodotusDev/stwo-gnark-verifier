@@ -37,6 +37,39 @@ go run main.go
 
 ```
 
+### All Components (1 Query) Fixture
+
+This repo ships a ready-to-run fixture:
+- `test_data/all_components_one_query.json`
+- `test_data/all_components_one_query_shape.json`
+
+Run the verifier test directly:
+
+```bash
+go test -v --short ./verifier
+```
+
+### Generating Shape Files
+
+Shape JSON files are produced by `cairo-prove` from `stwo-cairo`, which depends on a sibling `stwo` checkout.
+Make sure the repos live under the same parent directory, for example:
+
+```
+~/Documents/stwo
+~/Documents/stwo-cairo
+~/Documents/stwo-gnark-verifier
+```
+
+From `stwo-cairo/cairo-prove`, run:
+
+```bash
+cargo run -- circuit-data \
+  --path /path/to/stwo-gnark-verifier/test_data/all_components_one_query.json \
+  --queries 1
+```
+
+Use `--queries` to match the proof’s `stark_proof.config.fri_config.n_queries` value.
+
 ### Testing
 
 The project contains extensive unit tests for individual arithmetic components, Cairo opcodes, and the full verification flow.
@@ -51,6 +84,12 @@ go test ./...
 go test -short ./...
 
 ```
+
+## Versions
+
+Tested with:
+- `stwo` @ `c95edc65e3af652db0eda433dfa1b92831ca2b64`
+- `stwo-cairo` @ `5247e786a2c32299d653a5e8d1e5be65c0c219fe`
 
 ---
 
