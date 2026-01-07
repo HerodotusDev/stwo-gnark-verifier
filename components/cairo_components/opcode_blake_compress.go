@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	blakeCompressTraceColumns       = 169
-	blakeCompressInteractionColumns = 148
+	BlakeCompressTraceColumns       = 169
+	BlakeCompressInteractionColumns = 148
 )
 
 type BlakeCompressOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type BlakeCompressOpcodeInteractionClaim struct {
@@ -21,6 +20,7 @@ type BlakeCompressOpcodeInteractionClaim struct {
 }
 
 type BlakeCompressOpcodeComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	verifyInstructionElements m31.InteractionElements
@@ -35,7 +35,7 @@ type BlakeCompressOpcodeComponent struct {
 	claimedSum    m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewBlakeCompressOpcode(
@@ -52,11 +52,12 @@ func NewBlakeCompressOpcode(
 	vanishEvalInv m31.QM31,
 	claim BlakeCompressOpcodeClaim,
 	interactionClaim BlakeCompressOpcodeInteractionClaim,
-) *BlakeCompressOpcodeComponent {
+) BlakeCompressOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &BlakeCompressOpcodeComponent{
+	return BlakeCompressOpcodeComponent{
+		api:                       api,
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -73,8 +74,8 @@ func NewBlakeCompressOpcode(
 	}
 }
 
-func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(blakeCompressTraceColumns, blakeCompressInteractionColumns)
+func (c BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
+	traceSampledValues, interactionSampledValues := traces.Take(BlakeCompressTraceColumns, BlakeCompressInteractionColumns)
 
 	// Main Trace helpers
 	getTrace := func(idx int) m31.QM31 {
@@ -86,7 +87,7 @@ func (c *BlakeCompressOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, ra
 	}
 
 	// Preprocessed Trace
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	pc := getTrace(0)
 	ap := getTrace(1)

@@ -269,7 +269,7 @@ func PoseidonHadesPermutationEvaluate(
 	lcInput5[37] = qm31Const(77099918)
 	lcInput5[38] = qm31Const(22899501)
 	lcInput5[39] = qm31Const(99)
-	lcRes5 := LinearCombinationN4Coefs42_1_1Evaluate(
+	lcRes5 := LinearCombinationN4Coefs42_11Evaluate(
 		qm31,
 		lcInput5,
 		in.CombinationSets[5],
@@ -298,7 +298,7 @@ func PoseidonHadesPermutationEvaluate(
 	lcInput6[37] = qm31Const(58475513)
 	lcInput6[38] = qm31Const(18765944)
 	lcInput6[39] = qm31Const(20)
-	lcRes6 := LinearCombinationN4Coefs42_1_1Evaluate(
+	lcRes6 := LinearCombinationN4Coefs42_11Evaluate(
 		qm31,
 		lcInput6,
 		in.CombinationSets[6],

@@ -4,17 +4,16 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	mulModBuiltinTraceColumns       = 410
-	mulModBuiltinInteractionColumns = 376
+	MulModBuiltinTraceColumns       = 410
+	MulModBuiltinInteractionColumns = 376
 )
 
 type MulModBuiltinClaim struct {
-	LogSize                   uints.U8
-	MulModBuiltinSegmentStart uint32
+	LogSize                   frontend.Variable
+	MulModBuiltinSegmentStart frontend.Variable
 }
 
 type MulModBuiltinInteractionClaim struct {
@@ -22,9 +21,10 @@ type MulModBuiltinInteractionClaim struct {
 }
 
 type MulModBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
-	logSize uints.U8
+	logSize frontend.Variable
 
 	memoryAddressToIdElems m31.InteractionElements
 	memoryIdToBigElems     m31.InteractionElements
@@ -62,15 +62,16 @@ func NewMulModBuiltin(
 	vanishEvalInv m31.QM31,
 	claim MulModBuiltinClaim,
 	interactionClaim MulModBuiltinInteractionClaim,
-) *MulModBuiltinComponent {
+) MulModBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
-		m31.NewM31Unchecked(uint64(claim.MulModBuiltinSegmentStart)),
+		m31.NewM31Unchecked(claim.MulModBuiltinSegmentStart),
 	)
 
-	return &MulModBuiltinComponent{
+	return MulModBuiltinComponent{
+		api:                    api,
 		qm31:                   qm31,
 		logSize:                claim.LogSize,
 		memoryAddressToIdElems: memoryAddressElements,
@@ -85,12 +86,12 @@ func NewMulModBuiltin(
 	}
 }
 
-func (c *MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(mulModBuiltinTraceColumns, mulModBuiltinInteractionColumns)
+func (c MulModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(MulModBuiltinTraceColumns, MulModBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	get := func(idx int) m31.QM31 {
 		return trace[idx][0]

@@ -4,12 +4,11 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	pedersenBuiltinTraceColumns       = 351
-	pedersenBuiltinInteractionColumns = 40
+	PedersenBuiltinTraceColumns       = 351
+	PedersenBuiltinInteractionColumns = 40
 )
 
 var pedersenPartialEcMulSum10Constants = []uint64{
@@ -20,8 +19,8 @@ var pedersenPartialEcMulSum10Constants = []uint64{
 }
 
 type PedersenBuiltinClaim struct {
-	LogSize                     uints.U8
-	PedersenBuiltinSegmentStart uint32
+	LogSize                     frontend.Variable
+	PedersenBuiltinSegmentStart frontend.Variable
 }
 
 type PedersenBuiltinInteractionClaim struct {
@@ -29,6 +28,7 @@ type PedersenBuiltinInteractionClaim struct {
 }
 
 type PedersenBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	rangeCheck54Elements      m31.InteractionElements
@@ -41,7 +41,7 @@ type PedersenBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewPedersenBuiltin(
@@ -55,10 +55,11 @@ func NewPedersenBuiltin(
 	vanishEvalInv m31.QM31,
 	claim PedersenBuiltinClaim,
 	interactionClaim PedersenBuiltinInteractionClaim,
-) *PedersenBuiltinComponent {
+) PedersenBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PedersenBuiltinComponent{
+	return PedersenBuiltinComponent{
+		api:                       api,
 		qm31:                      qm31Chip,
 		rangeCheck54Elements:      rangeCheck54Elements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -66,22 +67,22 @@ func NewPedersenBuiltin(
 		rangeCheck8Elements:       rangeCheck8Elements,
 		partialEcMulElements:      partialEcMulElements,
 		claimedSum:                interactionClaim.ClaimedSum,
-		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PedersenBuiltinSegmentStart))),
+		segmentStart:              m31.NewQM31FromM31(m31.NewM31Unchecked(claim.PedersenBuiltinSegmentStart)),
 		columnSizeInv:             qm31Chip.Inverse(columnSize),
 		vanishEvalInv:             vanishEvalInv,
 		logSize:                   claim.LogSize,
 	}
 }
 
-func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
+func (c PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PedersenBuiltinTraceColumns, PedersenBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := NewPreprocessedColumnSeq(c.logSize)
+	seqColumn := NewPreprocessedColumnSeq(c.api, c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0
@@ -130,7 +131,7 @@ func (c *PedersenBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 
 	pedersenResultID := nextTrace()
 
-	if cursor != pedersenBuiltinTraceColumns {
+	if cursor != PedersenBuiltinTraceColumns {
 		panic("unexpected trace column count")
 	}
 

@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	jumpRelImmOpcodeTraceColumns       = 11
-	jumpRelImmOpcodeInteractionColumns = 12
+	JumpRelImmOpcodeTraceColumns       = 11
+	JumpRelImmOpcodeInteractionColumns = 12
 )
 
 type JumpRelImmOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type JumpRelImmOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewJumpRelImmOpcode(
 	vanishEvalInv m31.QM31,
 	claim JumpRelImmOpcodeClaim,
 	interactionClaim JumpRelImmOpcodeInteractionClaim,
-) *JumpRelImmOpcodeComponent {
+) JumpRelImmOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &JumpRelImmOpcodeComponent{
+	return JumpRelImmOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,8 +58,8 @@ func NewJumpRelImmOpcode(
 	}
 }
 
-func (c *JumpRelImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jumpRelImmOpcodeTraceColumns, jumpRelImmOpcodeInteractionColumns)
+func (c JumpRelImmOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(JumpRelImmOpcodeTraceColumns, JumpRelImmOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

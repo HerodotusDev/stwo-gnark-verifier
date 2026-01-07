@@ -4,9 +4,13 @@
 package channel
 
 import (
+	"math/big"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -33,6 +37,7 @@ type Channel struct {
 	blake2sChip *blake2s.Blake2sChip
 	m31Chip     *m31.M31Chip
 	uapi        *uints.BinaryField[uints.U32]
+	comparator  *cmp.BoundedComparator
 
 	digest      Blake2sHash
 	channelTime ChannelTime
@@ -54,12 +59,14 @@ func NewChannel(api frontend.API) *Channel {
 	if err != nil {
 		panic(err)
 	}
+	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
 
 	return &Channel{
 		api:         api,
 		blake2sChip: blake2sChip,
 		m31Chip:     m31Chip,
 		uapi:        uapi,
+		comparator:  comparator,
 		digest:      zeroHash(),
 		channelTime: ChannelTime{
 			nChallenges: uints.NewU32(0),
@@ -168,6 +175,32 @@ func checkProofOfWork(uapi *uints.BinaryField[uints.U32], digest Blake2sHash, in
 	mask := uints.NewU32((1 << interactionPowBits) - 1)
 	masked := uapi.And(lsw, mask)
 	uapi.AssertEq(masked, uints.NewU32(0))
+}
+
+// ╔══════════════════════════════════╗
+// ║              Queries             ║
+// ╚══════════════════════════════════╝
+
+func (c *Channel) GenerateBaseLayerQueries(maxLogSize frontend.Variable, nQueries uint8) []frontend.Variable {
+	queries := make([]frontend.Variable, 0)
+	queryCount := uint8(0)
+	maxQuery := c.api.Sub(utils.Pow(c.api, c.comparator, frontend.Variable(2), maxLogSize), frontend.Variable(1))
+	maxQueryU32 := c.uapi.ValueOf(maxQuery)
+	// TODO: this should be hinted by the prover + handle dupplicates
+	nDuplicates := uint8(0)
+	for queryCount < nQueries+nDuplicates {
+		randomBytes := c.DrawRandomBytes()
+		for i := 0; i < len(randomBytes); i += 4 {
+			query := c.uapi.PackLSB(randomBytes[i], randomBytes[i+1], randomBytes[i+2], randomBytes[i+3])
+			quotientQuery := c.uapi.And(query, maxQueryU32)
+			queries = append(queries, c.uapi.ToValue(quotientQuery))
+			queryCount++
+			if queryCount == nQueries+nDuplicates {
+				break
+			}
+		}
+	}
+	return queries
 }
 
 // ╔══════════════════════════════════╗

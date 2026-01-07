@@ -12,7 +12,6 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 	"github.com/consensys/gnark/test"
 )
 
@@ -89,16 +88,16 @@ func TestCairoComponentAtomicEvaluations(t *testing.T) {
 		newRangeCheck12Fixture(expectedSums["range_check_12"]),
 		newRangeCheck18Fixture(expectedSums["range_check_18"]),
 		newRangeCheck19Fixture(expectedSums["range_check_19"]),
-		newRangeCheck3_3_3_3_3Fixture(expectedSums["range_check_3_3_3_3_3"]),
-		newRangeCheck3_6_6_3Fixture(expectedSums["range_check_3_6_6_3"]),
-		newRangeCheck4_3Fixture(expectedSums["range_check_4_3"]),
-		newRangeCheck4_4_4_4Fixture(expectedSums["range_check_4_4_4_4"]),
-		newRangeCheck4_4Fixture(expectedSums["range_check_4_4"]),
-		newRangeCheck5_4Fixture(expectedSums["range_check_5_4"]),
+		newRangeCheck33333Fixture(expectedSums["range_check_3_3_3_3_3"]),
+		newRangeCheck3663Fixture(expectedSums["range_check_3_6_6_3"]),
+		newRangeCheck43Fixture(expectedSums["range_check_4_3"]),
+		newRangeCheck4444Fixture(expectedSums["range_check_4_4_4_4"]),
+		newRangeCheck44Fixture(expectedSums["range_check_4_4"]),
+		newRangeCheck54Fixture(expectedSums["range_check_5_4"]),
 		newRangeCheck6Fixture(expectedSums["range_check_6"]),
-		newRangeCheck7_2_5Fixture(expectedSums["range_check_7_2_5"]),
+		newRangeCheck725Fixture(expectedSums["range_check_7_2_5"]),
 		newRangeCheck8Fixture(expectedSums["range_check_8"]),
-		newRangeCheck9_9Fixture(expectedSums["range_check_9_9"]),
+		newRangeCheck99Fixture(expectedSums["range_check_9_9"]),
 		newRangeCheckBuiltin128Fixture(expectedSums["range_check_builtin_bits_128"]),
 		newRangeCheckBuiltin96Fixture(expectedSums["range_check_builtin_bits_96"]),
 		newRangeCheckFelt252Width27Fixture(expectedSums["range_check_felt_252_width_27"]),
@@ -150,7 +149,9 @@ func (c *componentEvaluationCircuit) Define(api frontend.API) error {
 	}
 
 	preprocessedRaw, traceRaw, interactionRaw := c.fixture.SampledValues(ctx)
-	preprocessed := cairo_components.NewPreprocessedSampledValues(api, m31Chip, preprocessedRaw)
+	preprocessed := cairo_components.NewPreprocessedSampledValues(api, qm31Chip, preprocessedRaw)
+	// dummy request to have at least one query (required by gnark)
+	preprocessed.Get(cairo_components.NewPreprocessedColumnSeq(api, frontend.Variable(4)))
 	traces := cairo_components.NewTraces(preprocessed, traceRaw, interactionRaw)
 
 	sum := qm31Chip.Zero()
@@ -209,7 +210,7 @@ func (f *addApOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck8 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.AddApOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AddApOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.AddApOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
 	return cairo_components.NewAddApOpcode(
@@ -228,7 +229,7 @@ func (f *addApOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *addApOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 15)
 	for i := range trace {
@@ -272,7 +273,7 @@ func (f *addSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.AddSmallOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AddSmallOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.AddSmallOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
 	return cairo_components.NewAddSmallOpcode(
@@ -289,7 +290,7 @@ func (f *addSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *addSmallOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 33)
 	for i := range trace {
@@ -334,7 +335,7 @@ func (f *mulSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck11 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.MulSmallOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.MulSmallOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.MulSmallOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
 	return cairo_components.NewMulSmallOpcode(
@@ -352,7 +353,7 @@ func (f *mulSmallOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *mulSmallOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 37)
 	for i := range trace {
@@ -397,7 +398,7 @@ func (f *mulOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.MulOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.MulOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.MulOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
 	return cairo_components.NewMulOpcode(
@@ -415,7 +416,7 @@ func (f *mulOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *mulOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 130)
 	for i := range trace {
@@ -460,7 +461,7 @@ func (f *qm31OpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck4444 := ctx.qm31Chip.DummyInteractionElements(4)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.Qm31OpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.Qm31OpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.Qm31OpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
 	return cairo_components.NewQm31Opcode(
@@ -478,7 +479,7 @@ func (f *qm31OpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *qm31OpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 73)
 	for i := range trace {
@@ -521,7 +522,7 @@ func (f *addModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
 	claim := cairo_components.AddModBuiltinClaim{
-		LogSize:                   uints.NewU8(4),
+		LogSize:                   frontend.Variable(4),
 		AddModBuiltinSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.AddModBuiltinInteractionClaim{
@@ -540,11 +541,7 @@ func (f *addModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *addModBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 251)
 	for i := range trace {
@@ -588,7 +585,7 @@ func (f *bitwiseBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	verifyBitwise := ctx.qm31Chip.DummyInteractionElements(3)
 
 	claim := cairo_components.BitwiseBuiltinClaim{
-		LogSize:                    uints.NewU8(4),
+		LogSize:                    frontend.Variable(4),
 		BitwiseBuiltinSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.BitwiseBuiltinInteractionClaim{
@@ -608,11 +605,7 @@ func (f *bitwiseBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *bitwiseBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 89)
 	for i := range trace {
@@ -658,7 +651,7 @@ func (f *mulModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck18 := ctx.qm31Chip.DummyInteractionElements(1)
 
 	claim := cairo_components.MulModBuiltinClaim{
-		LogSize:                   uints.NewU8(4),
+		LogSize:                   frontend.Variable(4),
 		MulModBuiltinSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.MulModBuiltinInteractionClaim{
@@ -680,11 +673,7 @@ func (f *mulModBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *mulModBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 410)
 	for i := range trace {
@@ -727,7 +716,7 @@ func (f *assertEqOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.AssertEqOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AssertEqOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.AssertEqOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -745,7 +734,7 @@ func (f *assertEqOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *assertEqOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 12)
 	for i := range trace {
@@ -789,7 +778,7 @@ func (f *assertEqDoubleDerefOpcodeFixture) Build(ctx componentContext) component
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AssertEqDoubleDerefOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.AssertEqDoubleDerefOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -808,7 +797,7 @@ func (f *assertEqDoubleDerefOpcodeFixture) Build(ctx componentContext) component
 }
 
 func (f *assertEqDoubleDerefOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -851,7 +840,7 @@ func (f *assertEqImmOpcodeFixture) Build(ctx componentContext) componentUnderTes
 	memoryAddress := ctx.qm31Chip.DummyInteractionElements(2)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.AssertEqImmOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AssertEqImmOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.AssertEqImmOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -869,7 +858,7 @@ func (f *assertEqImmOpcodeFixture) Build(ctx componentContext) componentUnderTes
 }
 
 func (f *assertEqImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 9)
 	for i := range trace {
@@ -913,7 +902,7 @@ func (f *retOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.RetOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.RetOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.RetOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -932,7 +921,7 @@ func (f *retOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *retOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 12)
 	for i := range trace {
@@ -976,7 +965,7 @@ func (f *callOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.CallOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.CallOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.CallOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -995,7 +984,7 @@ func (f *callOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *callOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 19)
 	for i := range trace {
@@ -1039,7 +1028,7 @@ func (f *callRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.CallRelImmOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.CallRelImmOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.CallRelImmOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1058,7 +1047,7 @@ func (f *callRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 }
 
 func (f *callRelImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 18)
 	for i := range trace {
@@ -1102,7 +1091,7 @@ func (f *jumpOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.JumpOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.JumpOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1121,7 +1110,7 @@ func (f *jumpOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jumpOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 13)
 	for i := range trace {
@@ -1165,7 +1154,7 @@ func (f *jumpRelOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.JumpRelOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpRelOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.JumpRelOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1184,7 +1173,7 @@ func (f *jumpRelOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jumpRelOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 15)
 	for i := range trace {
@@ -1228,7 +1217,7 @@ func (f *jumpRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.JumpRelImmOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpRelImmOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.JumpRelImmOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1247,7 +1236,7 @@ func (f *jumpRelImmOpcodeFixture) Build(ctx componentContext) componentUnderTest
 }
 
 func (f *jumpRelImmOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 11)
 	for i := range trace {
@@ -1291,7 +1280,7 @@ func (f *jumpDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnde
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JumpDoubleDerefOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.JumpDoubleDerefOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1310,7 +1299,7 @@ func (f *jumpDoubleDerefOpcodeFixture) Build(ctx componentContext) componentUnde
 }
 
 func (f *jumpDoubleDerefOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -1354,7 +1343,7 @@ func (f *jnzOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.JnzOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JnzOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.JnzOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1373,7 +1362,7 @@ func (f *jnzOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jnzOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 37)
 	for i := range trace {
@@ -1417,7 +1406,7 @@ func (f *jnzTakenOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.JnzTakenOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.JnzTakenOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.JnzTakenOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1436,7 +1425,7 @@ func (f *jnzTakenOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *jnzTakenOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 45)
 	for i := range trace {
@@ -1478,7 +1467,7 @@ func (f *memoryIdToBigSmallFixture) Build(ctx componentContext) componentUnderTe
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	rangeCheck := ctx.qm31Chip.DummyInteractionElements(2)
 
-	claim := cairo_components.MemoryIdToBigSmallClaim{LogSize: uints.NewU8(4)}
+	claim := cairo_components.MemoryIdToBigSmallClaim{LogSize: frontend.Variable(4)}
 	interactionClaim := cairo_components.MemoryIdToBigSmallInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1495,11 +1484,7 @@ func (f *memoryIdToBigSmallFixture) Build(ctx componentContext) componentUnderTe
 }
 
 func (f *memoryIdToBigSmallFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 9)
 	for i := range trace {
@@ -1542,7 +1527,7 @@ func (f *memoryIdToBigBigFixture) Build(ctx componentContext) componentUnderTest
 	rangeCheck := ctx.qm31Chip.DummyInteractionElements(2)
 
 	claim := cairo_components.MemoryIdToBigBigClaim{
-		LogSize: uints.NewU8(4),
+		LogSize: frontend.Variable(4),
 		Offset:  0,
 	}
 	interactionClaim := cairo_components.MemoryIdToBigBigInteractionClaim{
@@ -1561,11 +1546,7 @@ func (f *memoryIdToBigBigFixture) Build(ctx componentContext) componentUnderTest
 }
 
 func (f *memoryIdToBigBigFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 29)
 	for i := range trace {
@@ -1616,17 +1597,7 @@ func (f *pedersenPointsTableFixture) Build(ctx componentContext) componentUnderT
 }
 
 func (f *pedersenPointsTableFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(uint8(23)))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
-
-	for i := 0; i < 56; i++ {
-		column := cairo_components.NewPreprocessedColumnPedersenPoints(uints.NewU8(uint8(i)))
-		idx := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[idx] = []m31.QM31{qm31One.ToQM31()}
-	}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 1)
 	trace[0] = []m31.QM31{qm31One.ToQM31()}
@@ -1660,7 +1631,7 @@ func (f *partialEcMulFixture) Name() string {
 }
 
 func (f *partialEcMulFixture) Build(ctx componentContext) componentUnderTest {
-	claim := cairo_components.PartialEcMulClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.PartialEcMulClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.PartialEcMulInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1679,7 +1650,7 @@ func (f *partialEcMulFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *partialEcMulFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 472)
 	for i := range trace {
@@ -1720,7 +1691,7 @@ func (f *pedersenBuiltinFixture) Name() string {
 
 func (f *pedersenBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	claim := cairo_components.PedersenBuiltinClaim{
-		LogSize:                     uints.NewU8(4),
+		LogSize:                     frontend.Variable(4),
 		PedersenBuiltinSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.PedersenBuiltinInteractionClaim{
@@ -1742,10 +1713,7 @@ func (f *pedersenBuiltinFixture) Build(ctx componentContext) componentUnderTest 
 }
 
 func (f *pedersenBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 351)
 	for i := range trace {
@@ -1788,6 +1756,7 @@ func (f *poseidonRoundKeysFixture) Build(ctx componentContext) componentUnderTes
 	keys := ctx.qm31Chip.DummyInteractionElements(31)
 
 	return cairo_components.NewPoseidonRoundKeys(
+		ctx.api,
 		ctx.qm31Chip,
 		keys,
 		ctx.qm31Chip.One(),
@@ -1796,17 +1765,7 @@ func (f *poseidonRoundKeysFixture) Build(ctx componentContext) componentUnderTes
 }
 
 func (f *poseidonRoundKeysFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(uint8(6)))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
-
-	for i := 0; i < 30; i++ {
-		column := cairo_components.NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(uint8(i)))
-		idx := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[idx] = []m31.QM31{qm31One.ToQM31()}
-	}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 1)
 	trace[0] = []m31.QM31{qm31One.ToQM31()}
@@ -1847,7 +1806,7 @@ func (f *poseidon3PartialRoundsChainFixture) Build(ctx componentContext) compone
 	rangeFelt := ctx.qm31Chip.DummyInteractionElements(10)
 	partialChain := ctx.qm31Chip.DummyInteractionElements(42)
 
-	claim := cairo_components.Poseidon3PartialRoundsChainClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.Poseidon3PartialRoundsChainClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.Poseidon3PartialRoundsChainInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1868,7 +1827,7 @@ func (f *poseidon3PartialRoundsChainFixture) Build(ctx componentContext) compone
 }
 
 func (f *poseidon3PartialRoundsChainFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 169)
 	for i := range trace {
@@ -1911,7 +1870,7 @@ func (f *cube252Fixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	cubeElements := ctx.qm31Chip.DummyInteractionElements(20)
 
-	claim := cairo_components.Cube252Claim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.Cube252Claim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.Cube252InteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1929,7 +1888,7 @@ func (f *cube252Fixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *cube252Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 141)
 	for i := range trace {
@@ -1973,7 +1932,7 @@ func (f *poseidonFullRoundChainFixture) Build(ctx componentContext) componentUnd
 	range33333 := ctx.qm31Chip.DummyInteractionElements(5)
 	fullChain := ctx.qm31Chip.DummyInteractionElements(32)
 
-	claim := cairo_components.PoseidonFullRoundChainClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.PoseidonFullRoundChainClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.PoseidonFullRoundChainInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -1992,7 +1951,7 @@ func (f *poseidonFullRoundChainFixture) Build(ctx componentContext) componentUnd
 }
 
 func (f *poseidonFullRoundChainFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 126)
 	for i := range trace {
@@ -2032,7 +1991,7 @@ func (f *poseidonBuiltinFixture) Name() string {
 
 func (f *poseidonBuiltinFixture) Build(ctx componentContext) componentUnderTest {
 	claim := cairo_components.PoseidonBuiltinClaim{
-		LogSize:                     uints.NewU8(4),
+		LogSize:                     frontend.Variable(4),
 		PoseidonBuiltinSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.PoseidonBuiltinInteractionClaim{
@@ -2058,10 +2017,7 @@ func (f *poseidonBuiltinFixture) Build(ctx componentContext) componentUnderTest 
 }
 
 func (f *poseidonBuiltinFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 341)
 	for i := range trace {
@@ -2104,12 +2060,13 @@ func (f *tripleXor32Fixture) Build(ctx componentContext) componentUnderTest {
 	verifyXor := ctx.qm31Chip.DummyInteractionElements(3)
 	tripleXor := ctx.qm31Chip.DummyInteractionElements(8)
 
-	claim := cairo_components.TripleXor32Claim{LogSize: 3}
+	claim := cairo_components.TripleXor32Claim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.TripleXor32InteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
 	return cairo_components.NewTripleXor32(
+		ctx.api,
 		ctx.qm31Chip,
 		verifyXor,
 		tripleXor,
@@ -2120,7 +2077,7 @@ func (f *tripleXor32Fixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *tripleXor32Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 21)
 	for i := range trace {
@@ -2165,7 +2122,7 @@ func (f *verifyInstructionFixture) Build(ctx componentContext) componentUnderTes
 	memoryId := ctx.qm31Chip.DummyInteractionElements(29)
 	verifyInstruction := ctx.qm31Chip.DummyInteractionElements(7)
 
-	claim := cairo_components.VerifyInstructionClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.VerifyInstructionClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.VerifyInstructionInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -2185,7 +2142,7 @@ func (f *verifyInstructionFixture) Build(ctx componentContext) componentUnderTes
 }
 
 func (f *verifyInstructionFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -2226,12 +2183,13 @@ func (f *blakeRoundSigmaFixture) Name() string {
 func (f *blakeRoundSigmaFixture) Build(ctx componentContext) componentUnderTest {
 	lookup := ctx.qm31Chip.DummyInteractionElements(17)
 
-	claim := cairo_components.BlakeRoundSigmaClaim{}
+	claim := cairo_components.BlakeRoundSigmaClaim{LogSize: frontend.Variable(4)}
 	interactionClaim := cairo_components.BlakeRoundSigmaInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
 	return cairo_components.NewBlakeRoundSigma(
+		ctx.api,
 		ctx.qm31Chip,
 		lookup,
 		ctx.qm31Chip.One(),
@@ -2241,17 +2199,7 @@ func (f *blakeRoundSigmaFixture) Build(ctx componentContext) componentUnderTest 
 }
 
 func (f *blakeRoundSigmaFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	setPreprocessed := func(column cairo_components.PreprocessedColumn) {
-		index := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
-	}
-
-	setPreprocessed(cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4)))
-	for i := uint8(0); i < 16; i++ {
-		setPreprocessed(cairo_components.NewPreprocessedColumnBlakeSigma(uints.NewU8(i)))
-	}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 1)
 	trace[0] = []m31.QM31{qm31One.ToQM31()}
@@ -2292,7 +2240,7 @@ func (f *blakeGFixture) Build(ctx componentContext) componentUnderTest {
 	verifyXor9 := ctx.qm31Chip.DummyInteractionElements(3)
 	blakeG := ctx.qm31Chip.DummyInteractionElements(20)
 
-	claim := cairo_components.BlakeGClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.BlakeGClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.BlakeGInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -2313,7 +2261,7 @@ func (f *blakeGFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *blakeGFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 53)
 	for i := range trace {
@@ -2359,7 +2307,7 @@ func (f *blakeRoundFixture) Build(ctx componentContext) componentUnderTest {
 	blakeG := ctx.qm31Chip.DummyInteractionElements(20)
 	blakeRound := ctx.qm31Chip.DummyInteractionElements(35)
 
-	claim := cairo_components.BlakeRoundClaim{LogSize: uints.NewU8(4)}
+	claim := cairo_components.BlakeRoundClaim{LogSize: frontend.Variable(4)}
 	interactionClaim := cairo_components.BlakeRoundInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -2380,17 +2328,7 @@ func (f *blakeRoundFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *blakeRoundFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	setPreprocessed := func(column cairo_components.PreprocessedColumn) {
-		index := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
-	}
-
-	setPreprocessed(cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4)))
-	for i := uint8(0); i < 16; i++ {
-		setPreprocessed(cairo_components.NewPreprocessedColumnBlakeSigma(uints.NewU8(i)))
-	}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 212)
 	for i := range trace {
@@ -2438,7 +2376,7 @@ func (f *blakeCompressOpcodeFixture) Build(ctx componentContext) componentUnderT
 	tripleXor32 := ctx.qm31Chip.DummyInteractionElements(8)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.BlakeCompressOpcodeClaim{LogSize: uints.NewU8(4)}
+	claim := cairo_components.BlakeCompressOpcodeClaim{LogSize: frontend.Variable(4)}
 	interactionClaim := cairo_components.BlakeCompressOpcodeInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
@@ -2461,14 +2399,7 @@ func (f *blakeCompressOpcodeFixture) Build(ctx componentContext) componentUnderT
 }
 
 func (f *blakeCompressOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-
-	setPreprocessed := func(column cairo_components.PreprocessedColumn) {
-		index := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
-	}
-
-	setPreprocessed(cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4)))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 169)
 	for i := range trace {
@@ -2514,7 +2445,7 @@ func (f *genericOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	rangeCheck19 := ctx.qm31Chip.DummyInteractionElements(1)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.GenericOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.GenericOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.GenericOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 	return cairo_components.NewGenericOpcode(
 		ctx.api,
@@ -2532,7 +2463,7 @@ func (f *genericOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *genericOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 	trace := make([][]m31.QM31, 236)
 	for i := range trace {
 		trace[i] = []m31.QM31{qm31One.ToQM31()}
@@ -2577,11 +2508,9 @@ func (f *verifyBitwiseXor12Fixture) Build(ctx componentContext) componentUnderTe
 }
 
 func (f *verifyBitwiseXor12Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	for i := uint8(0); i < 3; i++ {
-		column := cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(i))
-		index := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
+	for i := 0; i < 3; i++ {
+		preprocessed[i] = []m31.QM31{qm31One.ToQM31()}
 	}
 
 	trace := make([][]m31.QM31, 16)
@@ -2630,7 +2559,7 @@ func (f *addOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 	opcodes := ctx.qm31Chip.DummyInteractionElements(3)
 
-	claim := cairo_components.AddOpcodeClaim{LogSize: uints.NewU8(3)}
+	claim := cairo_components.AddOpcodeClaim{LogSize: frontend.Variable(3)}
 	interactionClaim := cairo_components.AddOpcodeInteractionClaim{ClaimedSum: qm31One.ToQM31()}
 
 	return cairo_components.NewAddOpcode(
@@ -2647,7 +2576,7 @@ func (f *addOpcodeFixture) Build(ctx componentContext) componentUnderTest {
 }
 
 func (f *addOpcodeFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 103)
 	for i := range trace {
@@ -2687,10 +2616,10 @@ func (f *memoryAddressToIdFixture) Name() string {
 
 func (f *memoryAddressToIdFixture) Build(ctx componentContext) componentUnderTest {
 	interactionElements := ctx.qm31Chip.DummyInteractionElements(2)
-	claim := cairo_components.MemoryAddressToIdClaim{
-		LogSize: uints.NewU8(4),
+	claim := cairo_components.MemoryAddressToIDClaim{
+		LogSize: frontend.Variable(4),
 	}
-	interactionClaim := cairo_components.MemoryAddressToIdInteractionClaim{
+	interactionClaim := cairo_components.MemoryAddressToIDInteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
 	}
 
@@ -2705,10 +2634,7 @@ func (f *memoryAddressToIdFixture) Build(ctx componentContext) componentUnderTes
 }
 
 func (f *memoryAddressToIdFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 16)
 	for i := 0; i < len(trace); i++ {
@@ -2736,11 +2662,11 @@ func (f *memoryAddressToIdFixture) ExpectedSum() qm31Literal {
 
 type lookupFixture struct {
 	name           string
-	logSize        uint8
+	logSize        int
 	interactionKey string
 	expectedSum    qm31Literal
 	builder        func(componentContext, m31.InteractionElements) componentUnderTest
-	factories      []func() cairo_components.PreprocessedColumn
+	nColumns       int
 }
 
 func newRangeCheck11Fixture(expected qm31Literal) componentFixture {
@@ -2749,11 +2675,7 @@ func newRangeCheck11Fixture(expected qm31Literal) componentFixture {
 		logSize:        11,
 		interactionKey: "",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(11))
-			},
-		},
+		nColumns:       1,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewRangeCheck11(
 				ctx.api,
@@ -2772,11 +2694,7 @@ func newRangeCheck12Fixture(expected qm31Literal) componentFixture {
 		logSize:        12,
 		interactionKey: "",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(12))
-			},
-		},
+		nColumns:       1,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewRangeCheck12(
 				ctx.api,
@@ -2795,11 +2713,7 @@ func newRangeCheck18Fixture(expected qm31Literal) componentFixture {
 		logSize:        18,
 		interactionKey: "rc_18",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(18))
-			},
-		},
+		nColumns:       1,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewRangeCheck18(
 				ctx.api,
@@ -2818,11 +2732,7 @@ func newRangeCheck19Fixture(expected qm31Literal) componentFixture {
 		logSize:        19,
 		interactionKey: "rc_19",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(19))
-			},
-		},
+		nColumns:       1,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewRangeCheck19(
 				ctx.api,
@@ -2835,209 +2745,115 @@ func newRangeCheck19Fixture(expected qm31Literal) componentFixture {
 	}
 }
 
-func newRangeCheck3_6_6_3Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(3),
-		uints.NewU8(6),
-		uints.NewU8(6),
-		uints.NewU8(3),
-	}
+func newRangeCheck3663Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_3_6_6_3",
+		name:           "range_check_3663",
 		logSize:        18,
-		interactionKey: "rc_3_6_6_3",
+		interactionKey: "rc_3663",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(2))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(3))
-			},
-		},
+		nColumns:       4,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck3_6_6_3(
+			return cairo_components.NewRangeCheck3663(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck3_6_6_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck3663InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
 }
 
-func newRangeCheck3_3_3_3_3Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-	}
+func newRangeCheck33333Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_3_3_3_3_3",
+		name:           "range_check_33333",
 		logSize:        15,
-		interactionKey: "rc_3_3_3_3_3",
+		interactionKey: "rc_33333",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck5(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck5(values, uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck5(values, uints.NewU8(2))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck5(values, uints.NewU8(3))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck5(values, uints.NewU8(4))
-			},
-		},
+		nColumns:       5,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck3_3_3_3_3(
+			return cairo_components.NewRangeCheck33333(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck3_3_3_3_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck33333InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
 }
 
-func newRangeCheck4_3Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(4),
-		uints.NewU8(3),
-	}
+func newRangeCheck43Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_4_3",
+		name:           "range_check_43",
 		logSize:        7,
-		interactionKey: "rc_4_3",
+		interactionKey: "rc_43",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1))
-			},
-		},
+		nColumns:       2,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck4_3(
+			return cairo_components.NewRangeCheck43(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck4_3InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck43InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
 }
 
-func newRangeCheck4_4Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(4),
-		uints.NewU8(4),
-	}
+func newRangeCheck44Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_4_4",
+		name:           "range_check_44",
 		logSize:        8,
-		interactionKey: "rc_4_4",
+		interactionKey: "rc_44",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1))
-			},
-		},
+		nColumns:       2,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck4_4(
+			return cairo_components.NewRangeCheck44(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck4_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck44InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
 }
 
-func newRangeCheck4_4_4_4Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(4),
-		uints.NewU8(4),
-		uints.NewU8(4),
-		uints.NewU8(4),
-	}
+func newRangeCheck4444Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_4_4_4_4",
+		name:           "range_check_4444",
 		logSize:        16,
-		interactionKey: "rc_4_4_4_4",
+		interactionKey: "rc_4444",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(2))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck4(values, uints.NewU8(3))
-			},
-		},
+		nColumns:       4,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck4_4_4_4(
+			return cairo_components.NewRangeCheck4444(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck4_4_4_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck4444InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
 }
 
-func newRangeCheck5_4Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(5),
-		uints.NewU8(4),
-	}
+func newRangeCheck54Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_5_4",
+		name:           "range_check_54",
 		logSize:        9,
-		interactionKey: "rc_5_4",
+		interactionKey: "rc_54",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1))
-			},
-		},
+		nColumns:       2,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck5_4(
+			return cairo_components.NewRangeCheck54(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck5_4InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck54InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
@@ -3049,11 +2865,7 @@ func newRangeCheck6Fixture(expected qm31Literal) componentFixture {
 		logSize:        6,
 		interactionKey: "rc_6",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(6))
-			},
-		},
+		nColumns:       1,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewRangeCheck6(
 				ctx.api,
@@ -3066,35 +2878,20 @@ func newRangeCheck6Fixture(expected qm31Literal) componentFixture {
 	}
 }
 
-func newRangeCheck7_2_5Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(7),
-		uints.NewU8(2),
-		uints.NewU8(5),
-	}
+func newRangeCheck725Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_7_2_5",
+		name:           "range_check_725",
 		logSize:        14,
-		interactionKey: "rc_7_2_5",
+		interactionKey: "rc_725",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck3(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck3(values, uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck3(values, uints.NewU8(2))
-			},
-		},
+		nColumns:       3,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck7_2_5(
+			return cairo_components.NewRangeCheck725(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck7_2_5InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck725InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
@@ -3106,11 +2903,7 @@ func newRangeCheck8Fixture(expected qm31Literal) componentFixture {
 		logSize:        8,
 		interactionKey: "rc_8",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(8))
-			},
-		},
+		nColumns:       1,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewRangeCheck8(
 				ctx.api,
@@ -3123,31 +2916,20 @@ func newRangeCheck8Fixture(expected qm31Literal) componentFixture {
 	}
 }
 
-func newRangeCheck9_9Fixture(expected qm31Literal) componentFixture {
-	values := []uints.U8{
-		uints.NewU8(9),
-		uints.NewU8(9),
-	}
+func newRangeCheck99Fixture(expected qm31Literal) componentFixture {
 	return &lookupFixture{
-		name:           "range_check_9_9",
+		name:           "range_check_99",
 		logSize:        18,
-		interactionKey: "rc_9_9",
+		interactionKey: "rc_99",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1))
-			},
-		},
+		nColumns:       2,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
-			return cairo_components.NewRangeCheck9_9(
+			return cairo_components.NewRangeCheck99(
 				ctx.api,
 				ctx.qm31Chip,
 				elements,
 				ctx.qm31Chip.One(),
-				cairo_components.RangeCheck9_9InteractionClaim{ClaimedSum: qm31One.ToQM31()},
+				cairo_components.RangeCheck99InteractionClaim{ClaimedSum: qm31One.ToQM31()},
 			)
 		},
 	}
@@ -3171,7 +2953,7 @@ func (f *rangeCheckBuiltin96Fixture) Build(ctx componentContext) componentUnderT
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
 	claim := cairo_components.RangeCheck96BuiltinClaim{
-		LogSize:                uints.NewU8(4),
+		LogSize:                frontend.Variable(4),
 		RangeCheckSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.RangeCheck96BuiltinInteractionClaim{
@@ -3191,10 +2973,7 @@ func (f *rangeCheckBuiltin96Fixture) Build(ctx componentContext) componentUnderT
 }
 
 func (f *rangeCheckBuiltin96Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 12)
 	for i := range trace {
@@ -3233,7 +3012,7 @@ func (f *rangeCheckBuiltin128Fixture) Build(ctx componentContext) componentUnder
 	memoryIdToBig := ctx.qm31Chip.DummyInteractionElements(29)
 
 	claim := cairo_components.RangeCheck128BuiltinClaim{
-		LogSize:                uints.NewU8(4),
+		LogSize:                frontend.Variable(4),
 		RangeCheckSegmentStart: 3,
 	}
 	interactionClaim := cairo_components.RangeCheck128BuiltinInteractionClaim{
@@ -3252,10 +3031,7 @@ func (f *rangeCheckBuiltin128Fixture) Build(ctx componentContext) componentUnder
 }
 
 func (f *rangeCheckBuiltin128Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	seqColumn := cairo_components.NewPreprocessedColumnSeq(uints.NewU8(4))
-	index := locatePreprocessedColumnIndex(ctx.api, seqColumn)
-	preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 17)
 	for i := range trace {
@@ -3287,12 +3063,12 @@ func (f *rangeCheckFelt252Width27Fixture) Name() string {
 }
 
 func (f *rangeCheckFelt252Width27Fixture) Build(ctx componentContext) componentUnderTest {
-	rangeCheck9_9 := ctx.qm31Chip.DummyInteractionElements(2)
+	rangeCheck99 := ctx.qm31Chip.DummyInteractionElements(2)
 	rangeCheck18 := ctx.qm31Chip.DummyInteractionElements(1)
 	rangeCheckFelt := ctx.qm31Chip.DummyInteractionElements(10)
 
 	claim := cairo_components.RangeCheckFelt252Width27Claim{
-		LogSize: uints.NewU8(3),
+		LogSize: frontend.Variable(3),
 	}
 	interactionClaim := cairo_components.RangeCheckFelt252Width27InteractionClaim{
 		ClaimedSum: qm31One.ToQM31(),
@@ -3301,7 +3077,7 @@ func (f *rangeCheckFelt252Width27Fixture) Build(ctx componentContext) componentU
 	return cairo_components.NewRangeCheckFelt252Width27(
 		ctx.api,
 		ctx.qm31Chip,
-		rangeCheck9_9,
+		rangeCheck99,
 		rangeCheck18,
 		rangeCheckFelt,
 		ctx.qm31Chip.One(),
@@ -3311,7 +3087,7 @@ func (f *rangeCheckFelt252Width27Fixture) Build(ctx componentContext) componentU
 }
 
 func (f *rangeCheckFelt252Width27Fixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 20)
 	for i := range trace {
@@ -3339,17 +3115,7 @@ func newVerifyBitwiseXor4Fixture(expected qm31Literal) componentFixture {
 		logSize:        8,
 		interactionKey: "verify_bitwise_xor_4",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(2))
-			},
-		},
+		nColumns:       3,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewVerifyBitwiseXor4(
 				ctx.api,
@@ -3368,17 +3134,7 @@ func newVerifyBitwiseXor7Fixture(expected qm31Literal) componentFixture {
 		logSize:        14,
 		interactionKey: "verify_bitwise_xor_7",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(2))
-			},
-		},
+		nColumns:       3,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewVerifyBitwiseXor7(
 				ctx.api,
@@ -3397,17 +3153,7 @@ func newVerifyBitwiseXor8Fixture(expected qm31Literal) componentFixture {
 		logSize:        16,
 		interactionKey: "verify_bitwise_xor_8",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(2))
-			},
-		},
+		nColumns:       3,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewVerifyBitwiseXor8(
 				ctx.api,
@@ -3426,17 +3172,7 @@ func newVerifyBitwiseXor9Fixture(expected qm31Literal) componentFixture {
 		logSize:        18,
 		interactionKey: "verify_bitwise_xor_9",
 		expectedSum:    expected,
-		factories: []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(0))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(1))
-			},
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(2))
-			},
-		},
+		nColumns:       3,
 		builder: func(ctx componentContext, elements m31.InteractionElements) componentUnderTest {
 			return cairo_components.NewVerifyBitwiseXor9(
 				ctx.api,
@@ -3458,24 +3194,12 @@ func (f *lookupFixture) Name() string {
 }
 
 func (f *lookupFixture) Build(ctx componentContext) componentUnderTest {
-	elements := ctx.qm31Chip.DummyInteractionElements(len(f.factories))
+	elements := ctx.qm31Chip.DummyInteractionElements(f.nColumns)
 	return f.builder(ctx, elements)
 }
 
 func (f *lookupFixture) SampledValues(ctx componentContext) ([][]m31.QM31, [][]m31.QM31, [][]m31.QM31) {
-	preprocessed := make([][]m31.QM31, len(cairo_components.PreprocessedColumns))
-	if len(f.factories) == 0 {
-		f.factories = []func() cairo_components.PreprocessedColumn{
-			func() cairo_components.PreprocessedColumn {
-				return cairo_components.NewPreprocessedColumnSeq(uints.NewU8(f.logSize))
-			},
-		}
-	}
-	for _, factory := range f.factories {
-		column := factory()
-		index := locatePreprocessedColumnIndex(ctx.api, column)
-		preprocessed[index] = []m31.QM31{qm31One.ToQM31()}
-	}
+	preprocessed := generateDummmyPreprocessed()
 
 	trace := make([][]m31.QM31, 1)
 	trace[0] = []m31.QM31{qm31One.ToQM31()}
@@ -3509,12 +3233,10 @@ func (q qm31Literal) ToQM31() m31.QM31 {
 
 var qm31One = qm31Literal{AReal: 1}
 
-func locatePreprocessedColumnIndex(api frontend.API, target cairo_components.PreprocessedColumn) int {
-	targetKey := target.Key(api)
-	for idx, candidate := range cairo_components.PreprocessedColumns {
-		if candidate.Key(api) == targetKey {
-			return idx
-		}
+func generateDummmyPreprocessed() [][]m31.QM31 {
+	preprocessed := make([][]m31.QM31, cairo_components.NPreprocessedColumns)
+	for i := range preprocessed {
+		preprocessed[i] = []m31.QM31{qm31One.ToQM31()}
 	}
-	panic("requested preprocessed column not found")
+	return preprocessed
 }

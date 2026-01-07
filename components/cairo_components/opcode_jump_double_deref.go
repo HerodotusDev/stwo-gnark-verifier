@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	jumpDoubleDerefOpcodeTraceColumns       = 17
-	jumpDoubleDerefOpcodeInteractionColumns = 16
+	JumpDoubleDerefOpcodeTraceColumns       = 17
+	JumpDoubleDerefOpcodeInteractionColumns = 16
 )
 
 type JumpDoubleDerefOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type JumpDoubleDerefOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewJumpDoubleDerefOpcode(
 	vanishEvalInv m31.QM31,
 	claim JumpDoubleDerefOpcodeClaim,
 	interactionClaim JumpDoubleDerefOpcodeInteractionClaim,
-) *JumpDoubleDerefOpcodeComponent {
+) JumpDoubleDerefOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &JumpDoubleDerefOpcodeComponent{
+	return JumpDoubleDerefOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,8 +58,8 @@ func NewJumpDoubleDerefOpcode(
 	}
 }
 
-func (c *JumpDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jumpDoubleDerefOpcodeTraceColumns, jumpDoubleDerefOpcodeInteractionColumns)
+func (c JumpDoubleDerefOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(JumpDoubleDerefOpcodeTraceColumns, JumpDoubleDerefOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

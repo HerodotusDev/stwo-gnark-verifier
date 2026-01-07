@@ -3,31 +3,30 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	memoryAddressToIdTraceColumns       = 16
-	memoryAddressToIdInteractionColumns = 16
+	MemoryAddressToIdTraceColumns       = 16
+	MemoryAddressToIdInteractionColumns = 16
 )
 
 // MemoryAddressToIdClaim carries the circuit-facing claim for the component.
-type MemoryAddressToIdClaim struct {
-	LogSize uints.U8
+type MemoryAddressToIDClaim struct {
+	LogSize frontend.Variable
 }
 
 // MemoryAddressToIdInteractionClaim carries the interaction claim data.
-type MemoryAddressToIdInteractionClaim struct {
+type MemoryAddressToIDInteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 // MemoryAddressToIdComponent embeds the constraints for the memory_address_to_id table.
-type MemoryAddressToIdComponent struct {
+type MemoryAddressToIDComponent struct {
 	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	interactionElements m31.InteractionElements
-	logSize             uints.U8
+	logSize             frontend.Variable
 	columnSize          m31.QM31
 	claimedSum          m31.QM31
 	vanishEvalInv       m31.QM31
@@ -38,13 +37,13 @@ func NewMemoryAddressToId(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
-	claim MemoryAddressToIdClaim,
-	interactionClaim MemoryAddressToIdInteractionClaim,
+	claim MemoryAddressToIDClaim,
+	interactionClaim MemoryAddressToIDInteractionClaim,
 	vanishEvalInv m31.QM31,
-) *MemoryAddressToIdComponent {
+) MemoryAddressToIDComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &MemoryAddressToIdComponent{
+	return MemoryAddressToIDComponent{
 		api:                 api,
 		qm31:                qm31,
 		interactionElements: interactionElements,
@@ -56,14 +55,14 @@ func NewMemoryAddressToId(
 }
 
 // Evaluate enforces the component constraints at the sampled point.
-func (c *MemoryAddressToIdComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(memoryAddressToIdTraceColumns, memoryAddressToIdInteractionColumns)
+func (c MemoryAddressToIDComponent) Evaluate(sum m31.QM31, traces *Traces, random_coeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(MemoryAddressToIdTraceColumns, MemoryAddressToIdInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
 	// Addresses start at 1 in the trace, so shift by one after reading the sequence column.
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

@@ -4,17 +4,16 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	addModBuiltinTraceColumns       = 251
-	addModBuiltinInteractionColumns = 108
+	AddModBuiltinTraceColumns       = 251
+	AddModBuiltinInteractionColumns = 108
 )
 
 type AddModBuiltinClaim struct {
-	LogSize                   uints.U8
-	AddModBuiltinSegmentStart uint32
+	LogSize                   frontend.Variable
+	AddModBuiltinSegmentStart frontend.Variable
 }
 
 type AddModBuiltinInteractionClaim struct {
@@ -22,9 +21,10 @@ type AddModBuiltinInteractionClaim struct {
 }
 
 type AddModBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
-	logSize uints.U8
+	logSize frontend.Variable
 
 	memoryAddressToIdElems m31.InteractionElements
 	memoryIdToBigElems     m31.InteractionElements
@@ -43,15 +43,16 @@ func NewAddModBuiltin(
 	vanishEvalInv m31.QM31,
 	claim AddModBuiltinClaim,
 	interactionClaim AddModBuiltinInteractionClaim,
-) *AddModBuiltinComponent {
+) AddModBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
-		m31.NewM31Unchecked(uint64(claim.AddModBuiltinSegmentStart)),
+		m31.NewM31Unchecked(claim.AddModBuiltinSegmentStart),
 	)
 
-	return &AddModBuiltinComponent{
+	return AddModBuiltinComponent{
+		api:                    api,
 		qm31:                   qm31,
 		logSize:                claim.LogSize,
 		memoryAddressToIdElems: memoryAddressElements,
@@ -63,13 +64,13 @@ func NewAddModBuiltin(
 	}
 }
 
-func (c *AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addModBuiltinTraceColumns, addModBuiltinInteractionColumns)
+func (c AddModBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(AddModBuiltinTraceColumns, AddModBuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 
 	// ╔══════════════════════════════════╗
 	// ║            Main Trace            ║

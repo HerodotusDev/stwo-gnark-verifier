@@ -13,12 +13,13 @@ import (
 )
 
 type VerifierCircuit struct {
-	proof variables.Proof `gnark:"-"`
+	Proof       variables.Proof       `gnark:",public"`
+	circuitData variables.CircuitData `gnark:"-"`
 }
 
 func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip := NewVerifierChip(api)
-	verifierChip.Verify(c.proof, fri.DefaultPcsConfig())
+	verifierChip.Verify(c.Proof, fri.DefaultPcsConfig(), c.circuitData)
 
 	return nil
 }
@@ -30,12 +31,19 @@ func TestVerifier(t *testing.T) {
 		os.Exit(1)
 	}
 
-	cairoProof := variables.BuildProof(cairoProofRaw)
+	cairoProof := variables.BuildProof(*cairoProofRaw)
+	circuitData := variables.BuildCircuitData(cairoProofRaw)
+	// TODO: have a verifier run generate a file with circuitData
+	circuitData.DedupedQueriesShape = []int{1, 2, 3, 5, 7, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}
+	circuitData.MaxLogSize = 25
+
 	witness := VerifierCircuit{
-		proof: *cairoProof,
+		Proof:       cairoProof,
+		circuitData: circuitData,
 	}
 	circuit := VerifierCircuit{
-		proof: *cairoProof,
+		Proof:       cairoProof,
+		circuitData: circuitData,
 	}
 	assert := test.NewAssert(t)
 

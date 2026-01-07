@@ -3,23 +3,24 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 // ╔══════════════════════════════════╗
 // ║      Verify Bitwise XOR (4)      ║
 // ╚══════════════════════════════════╝
 
-const verifyBitwiseXor4LogSize = 8
+var VerifyBitwiseXor4LogSize = 8
 
-type VerifyBitwiseXor4Claim struct{}
+type VerifyBitwiseXor4Claim struct {
+	LogSize frontend.Variable
+}
 
 type VerifyBitwiseXor4InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 type VerifyBitwiseXor4Component struct {
-	inner *lookupConstraintComponent
+	inner lookupConstraintComponent
 }
 
 func NewVerifyBitwiseXor4(
@@ -28,21 +29,21 @@ func NewVerifyBitwiseXor4(
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor4InteractionClaim,
-) *VerifyBitwiseXor4Component {
-	return &VerifyBitwiseXor4Component{
+) VerifyBitwiseXor4Component {
+	return VerifyBitwiseXor4Component{
 		inner: newVerifyBitwiseXorLookupComponent(
 			api,
 			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
-			verifyBitwiseXor4LogSize,
+			VerifyBitwiseXor4LogSize,
 			4,
 			vanishEvalInv,
 		),
 	}
 }
 
-func (c *VerifyBitwiseXor4Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c VerifyBitwiseXor4Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
@@ -50,16 +51,18 @@ func (c *VerifyBitwiseXor4Component) Evaluate(sum m31.QM31, traces *Traces, rand
 // ║      Verify Bitwise XOR (7)      ║
 // ╚══════════════════════════════════╝
 
-const verifyBitwiseXor7LogSize = 14
+var VerifyBitwiseXor7LogSize = 14
 
-type VerifyBitwiseXor7Claim struct{}
+type VerifyBitwiseXor7Claim struct {
+	LogSize frontend.Variable
+}
 
 type VerifyBitwiseXor7InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 type VerifyBitwiseXor7Component struct {
-	inner *lookupConstraintComponent
+	inner lookupConstraintComponent
 }
 
 func NewVerifyBitwiseXor7(
@@ -68,21 +71,21 @@ func NewVerifyBitwiseXor7(
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor7InteractionClaim,
-) *VerifyBitwiseXor7Component {
-	return &VerifyBitwiseXor7Component{
+) VerifyBitwiseXor7Component {
+	return VerifyBitwiseXor7Component{
 		inner: newVerifyBitwiseXorLookupComponent(
 			api,
 			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
-			verifyBitwiseXor7LogSize,
+			VerifyBitwiseXor7LogSize,
 			7,
 			vanishEvalInv,
 		),
 	}
 }
 
-func (c *VerifyBitwiseXor7Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c VerifyBitwiseXor7Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
@@ -90,16 +93,18 @@ func (c *VerifyBitwiseXor7Component) Evaluate(sum m31.QM31, traces *Traces, rand
 // ║      Verify Bitwise XOR (8)      ║
 // ╚══════════════════════════════════╝
 
-const verifyBitwiseXor8LogSize = 16
+var VerifyBitwiseXor8LogSize = 16
 
-type VerifyBitwiseXor8Claim struct{}
+type VerifyBitwiseXor8Claim struct {
+	LogSize frontend.Variable
+}
 
 type VerifyBitwiseXor8InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 type VerifyBitwiseXor8Component struct {
-	inner *lookupConstraintComponent
+	inner lookupConstraintComponent
 }
 
 func NewVerifyBitwiseXor8(
@@ -108,21 +113,21 @@ func NewVerifyBitwiseXor8(
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor8InteractionClaim,
-) *VerifyBitwiseXor8Component {
-	return &VerifyBitwiseXor8Component{
+) VerifyBitwiseXor8Component {
+	return VerifyBitwiseXor8Component{
 		inner: newVerifyBitwiseXorLookupComponent(
 			api,
 			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
-			verifyBitwiseXor8LogSize,
+			VerifyBitwiseXor8LogSize,
 			8,
 			vanishEvalInv,
 		),
 	}
 }
 
-func (c *VerifyBitwiseXor8Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c VerifyBitwiseXor8Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
@@ -130,16 +135,18 @@ func (c *VerifyBitwiseXor8Component) Evaluate(sum m31.QM31, traces *Traces, rand
 // ║      Verify Bitwise XOR (9)      ║
 // ╚══════════════════════════════════╝
 
-const verifyBitwiseXor9LogSize = 18
+var VerifyBitwiseXor9LogSize = 18
 
-type VerifyBitwiseXor9Claim struct{}
+type VerifyBitwiseXor9Claim struct {
+	LogSize frontend.Variable
+}
 
 type VerifyBitwiseXor9InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 type VerifyBitwiseXor9Component struct {
-	inner *lookupConstraintComponent
+	inner lookupConstraintComponent
 }
 
 func NewVerifyBitwiseXor9(
@@ -148,21 +155,21 @@ func NewVerifyBitwiseXor9(
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor9InteractionClaim,
-) *VerifyBitwiseXor9Component {
-	return &VerifyBitwiseXor9Component{
+) VerifyBitwiseXor9Component {
+	return VerifyBitwiseXor9Component{
 		inner: newVerifyBitwiseXorLookupComponent(
 			api,
 			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
-			verifyBitwiseXor9LogSize,
+			VerifyBitwiseXor9LogSize,
 			9,
 			vanishEvalInv,
 		),
 	}
 }
 
-func (c *VerifyBitwiseXor9Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c VerifyBitwiseXor9Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	return c.inner.Evaluate(sum, traces, randomCoeff)
 }
 
@@ -170,15 +177,18 @@ func (c *VerifyBitwiseXor9Component) Evaluate(sum m31.QM31, traces *Traces, rand
 // ║     Verify Bitwise XOR (12)      ║
 // ╚══════════════════════════════════╝
 
-const verifyBitwiseXor12LogSize = 20
+var VerifyBitwiseXor12LogSize = 20
 
-type VerifyBitwiseXor12Claim struct{}
+type VerifyBitwiseXor12Claim struct {
+	LogSize frontend.Variable
+}
 
 type VerifyBitwiseXor12InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 type VerifyBitwiseXor12Component struct {
+	api                 frontend.API
 	qm31                *m31.QM31Chip
 	interactionElements m31.InteractionElements
 	claimedSum          m31.QM31
@@ -197,26 +207,27 @@ func NewVerifyBitwiseXor12(
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim VerifyBitwiseXor12InteractionClaim,
-) *VerifyBitwiseXor12Component {
-	return &VerifyBitwiseXor12Component{
+) VerifyBitwiseXor12Component {
+	return VerifyBitwiseXor12Component{
+		api:                 api,
 		qm31:                qm31,
 		interactionElements: interactionElements,
 		claimedSum:          interactionClaim.ClaimedSum,
-		columnSizeInv:       qm31.Inverse(computeColumnSize(api, uints.NewU8(verifyBitwiseXor12LogSize))),
+		columnSizeInv:       qm31.Inverse(computeColumnSize(api, VerifyBitwiseXor12LogSize)),
 		vanishEvalInv:       vanishEvalInv,
 	}
 }
 
-func (c *VerifyBitwiseXor12Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c VerifyBitwiseXor12Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(VerifyBitwiseXor12TraceColumns, VerifyBitwiseXor12InteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
 	bitwiseXor := []m31.QM31{
-		traces.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(0))),
-		traces.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(1))),
-		traces.Get(NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(2))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(c.api, frontend.Variable(10), frontend.Variable(0))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(c.api, frontend.Variable(10), frontend.Variable(1))),
+		traces.Get(NewPreprocessedColumnBitwiseXor(c.api, frontend.Variable(10), frontend.Variable(2))),
 	}
 
 	// ╔══════════════════════════════════╗

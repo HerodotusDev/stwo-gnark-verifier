@@ -4,17 +4,16 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	rangeCheck96BuiltinTraceColumns       = 12
-	rangeCheck96BuiltinInteractionColumns = 8
+	RangeCheck96BuiltinTraceColumns       = 12
+	RangeCheck96BuiltinInteractionColumns = 8
 )
 
 type RangeCheck96BuiltinClaim struct {
-	LogSize                uints.U8
-	RangeCheckSegmentStart uint32
+	LogSize                frontend.Variable
+	RangeCheckSegmentStart frontend.Variable
 }
 
 type RangeCheck96BuiltinInteractionClaim struct {
@@ -22,9 +21,10 @@ type RangeCheck96BuiltinInteractionClaim struct {
 }
 
 type RangeCheck96BuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
-	logSize uints.U8
+	logSize frontend.Variable
 
 	memoryAddressToIdElements m31.InteractionElements
 	rangeCheck6Elements       m31.InteractionElements
@@ -45,15 +45,16 @@ func NewRangeCheck96Builtin(
 	vanishEvalInv m31.QM31,
 	claim RangeCheck96BuiltinClaim,
 	interactionClaim RangeCheck96BuiltinInteractionClaim,
-) *RangeCheck96BuiltinComponent {
+) RangeCheck96BuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
 	segmentStart := m31.NewQM31FromM31(
-		m31.NewM31Unchecked(uint64(claim.RangeCheckSegmentStart)),
+		m31.NewM31Unchecked(claim.RangeCheckSegmentStart),
 	)
 
-	return &RangeCheck96BuiltinComponent{
+	return RangeCheck96BuiltinComponent{
+		api:                       api,
 		qm31:                      qm31,
 		logSize:                   claim.LogSize,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -66,13 +67,13 @@ func NewRangeCheck96Builtin(
 	}
 }
 
-func (c *RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(rangeCheck96BuiltinTraceColumns, rangeCheck96BuiltinInteractionColumns)
+func (c RangeCheck96BuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(RangeCheck96BuiltinTraceColumns, RangeCheck96BuiltinInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := traces.Get(NewPreprocessedColumnSeq(c.logSize))
+	seqColumn := traces.Get(NewPreprocessedColumnSeq(c.api, c.logSize))
 	input := c.qm31.Add(c.segmentStart, seqColumn)
 
 	// ╔══════════════════════════════════╗

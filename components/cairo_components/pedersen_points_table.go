@@ -3,23 +3,26 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	pedersenPointsTableLogSize            = 23
 	pedersenPointsTableColumns            = 56
 	PedersenPointsTableTraceColumns       = 1
 	PedersenPointsTableInteractionColumns = 4
 )
 
-type PedersenPointsTableClaim struct{}
+var PedersenPointsTableLogSize = 23
+
+type PedersenPointsTableClaim struct {
+	LogSize frontend.Variable
+}
 
 type PedersenPointsTableInteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
 type PedersenPointsTableComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	lookupElements m31.InteractionElements
@@ -38,32 +41,33 @@ func NewPedersenPointsTable(
 	lookupElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
 	interactionClaim PedersenPointsTableInteractionClaim,
-) *PedersenPointsTableComponent {
-	columnSize := computeColumnSize(api, uints.NewU8(pedersenPointsTableLogSize))
+) PedersenPointsTableComponent {
+	columnSize := computeColumnSize(api, PedersenPointsTableLogSize)
 
 	pointColumns := make([]PreprocessedColumn, pedersenPointsTableColumns)
 	for i := 0; i < pedersenPointsTableColumns; i++ {
-		pointColumns[i] = NewPreprocessedColumnPedersenPoints(uints.NewU8(uint8(i)))
+		pointColumns[i] = NewPreprocessedColumnPedersenPoints(api, frontend.Variable(i))
 	}
 
-	return &PedersenPointsTableComponent{
+	return PedersenPointsTableComponent{
+		api:            api,
 		qm31:           qm31,
 		lookupElements: lookupElements,
 		claimedSum:     interactionClaim.ClaimedSum,
 		columnSizeInv:  qm31.Inverse(columnSize),
 		vanishEvalInv:  vanishEvalInv,
-		seqColumn:      NewPreprocessedColumnSeq(uints.NewU8(uint8(pedersenPointsTableLogSize))),
+		seqColumn:      NewPreprocessedColumnSeq(api, PedersenPointsTableLogSize),
 		pointColumns:   pointColumns,
 	}
 }
 
-func (c *PedersenPointsTableComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c PedersenPointsTableComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	traceSampledValues, interactionSampledValues := traces.Take(PedersenPointsTableTraceColumns, PedersenPointsTableInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seq := traces.Get(c.seqColumn)
+	seq := traces.Get(NewPreprocessedColumnSeq(c.api, c.seqColumn.id))
 
 	values := make([]m31.QM31, 1+len(c.pointColumns))
 	values[0] = seq

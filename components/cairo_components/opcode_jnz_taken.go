@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	jnzTakenOpcodeTraceColumns       = 45
-	jnzTakenOpcodeInteractionColumns = 16
+	JnzTakenOpcodeTraceColumns       = 45
+	JnzTakenOpcodeInteractionColumns = 16
 )
 
 type JnzTakenOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type JnzTakenOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewJnzTakenOpcode(
 	vanishEvalInv m31.QM31,
 	claim JnzTakenOpcodeClaim,
 	interactionClaim JnzTakenOpcodeInteractionClaim,
-) *JnzTakenOpcodeComponent {
+) JnzTakenOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &JnzTakenOpcodeComponent{
+	return JnzTakenOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,8 +58,8 @@ func NewJnzTakenOpcode(
 	}
 }
 
-func (c *JnzTakenOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(jnzTakenOpcodeTraceColumns, jnzTakenOpcodeInteractionColumns)
+func (c JnzTakenOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(JnzTakenOpcodeTraceColumns, JnzTakenOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

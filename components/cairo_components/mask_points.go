@@ -3,7 +3,6 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 // TODO: this file structure mirrors the TreeMaskPoints structure, should be merged into a single structure.
@@ -54,7 +53,7 @@ func appendRepeatMaskPoints(base [][]circle.Point, value []circle.Point, count i
 	return base
 }
 
-func oodsPointNegOne(oodsPoint circle.Point, circleChip *circle.CircleChip, logSize uint32) circle.Point {
+func oodsPointNegOne(oodsPoint circle.Point, circleChip *circle.CircleChip, logSize frontend.Variable) circle.Point {
 	traceGenPoint := circle.NewCanonicCoset(circleChip, logSize).Coset().Step().Point()
 	traceGenPointNegOne := circleChip.BaseNeg(traceGenPoint)
 	return circleChip.AddBasePoint(oodsPoint, traceGenPointNegOne)
@@ -64,209 +63,171 @@ func oodsPointNegOne(oodsPoint circle.Point, circleChip *circle.CircleChip, logS
 // ║            Opcodes               ║
 // ╚══════════════════════════════════╝
 
-func (claim AddOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, addOpcodeTraceColumns, addOpcodeInteractionColumns)
+func (claim AddOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AddOpcodeTraceColumns, AddOpcodeInteractionColumns)
 }
 
-func (claim AddApOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, addApOpcodeTraceColumns, addApOpcodeInteractionColumns)
+func (claim AddApOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AddApOpcodeTraceColumns, AddApOpcodeInteractionColumns)
 }
 
-func (claim AddSmallOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, addSmallOpcodeTraceColumns, addSmallOpcodeInteractionColumns)
+func (claim AddSmallOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AddSmallOpcodeTraceColumns, AddSmallOpcodeInteractionColumns)
 }
 
-func (claim AssertEqOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, assertEqOpcodeTraceColumns, assertEqOpcodeInteractionColumns)
+func (claim AssertEqOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AssertEqOpcodeTraceColumns, AssertEqOpcodeInteractionColumns)
 }
 
-func (claim AssertEqDoubleDerefOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, assertEqDoubleDerefOpcodeTraceColumns, assertEqDoubleDerefOpcodeInteractionColumns)
+func (claim AssertEqDoubleDerefOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AssertEqDoubleDerefOpcodeTraceColumns, AssertEqDoubleDerefOpcodeInteractionColumns)
 }
 
-func (claim AssertEqImmOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, assertEqImmOpcodeTraceColumns, assertEqImmOpcodeInteractionColumns)
+func (claim AssertEqImmOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AssertEqImmOpcodeTraceColumns, AssertEqImmOpcodeInteractionColumns)
 }
 
-func (claim BlakeCompressOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, blakeCompressTraceColumns, blakeCompressInteractionColumns)
+func (claim BlakeCompressOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, BlakeCompressTraceColumns, BlakeCompressInteractionColumns)
 }
 
-func (claim CallOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, callOpcodeTraceColumns, callOpcodeInteractionColumns)
+func (claim CallOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, CallOpcodeTraceColumns, CallOpcodeInteractionColumns)
 }
 
-func (claim CallRelImmOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, callRelImmOpcodeTraceColumns, callRelImmOpcodeInteractionColumns)
+func (claim CallRelImmOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, CallRelImmOpcodeTraceColumns, CallRelImmOpcodeInteractionColumns)
 }
 
-func (claim GenericOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, genericOpcodeTraceColumns, genericOpcodeInteractionColumns)
+func (claim GenericOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, GenericOpcodeTraceColumns, GenericOpcodeInteractionColumns)
 }
 
-func (claim JnzOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, jnzOpcodeTraceColumns, jnzOpcodeInteractionColumns)
+func (claim JnzOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JnzOpcodeTraceColumns, JnzOpcodeInteractionColumns)
 }
 
-func (claim JnzTakenOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, jnzTakenOpcodeTraceColumns, jnzTakenOpcodeInteractionColumns)
+func (claim JnzTakenOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JnzTakenOpcodeTraceColumns, JnzTakenOpcodeInteractionColumns)
 }
 
-func (claim JumpOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, jumpOpcodeTraceColumns, jumpOpcodeInteractionColumns)
+func (claim JumpOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JumpOpcodeTraceColumns, JumpOpcodeInteractionColumns)
 }
 
-func (claim JumpDoubleDerefOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, jumpDoubleDerefOpcodeTraceColumns, jumpDoubleDerefOpcodeInteractionColumns)
+func (claim JumpDoubleDerefOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JumpDoubleDerefOpcodeTraceColumns, JumpDoubleDerefOpcodeInteractionColumns)
 }
 
-func (claim JumpRelOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, jumpRelOpcodeTraceColumns, jumpRelOpcodeInteractionColumns)
+func (claim JumpRelOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JumpRelOpcodeTraceColumns, JumpRelOpcodeInteractionColumns)
 }
 
-func (claim JumpRelImmOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, jumpRelImmOpcodeTraceColumns, jumpRelImmOpcodeInteractionColumns)
+func (claim JumpRelImmOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, JumpRelImmOpcodeTraceColumns, JumpRelImmOpcodeInteractionColumns)
 }
 
-func (claim MulOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, mulOpcodeTraceColumns, mulOpcodeInteractionColumns)
+func (claim MulOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, MulOpcodeTraceColumns, MulOpcodeInteractionColumns)
 }
 
-func (claim MulSmallOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, mulSmallOpcodeTraceColumns, mulSmallOpcodeInteractionColumns)
+func (claim MulSmallOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, MulSmallOpcodeTraceColumns, MulSmallOpcodeInteractionColumns)
 }
 
-func (claim Qm31OpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, qm31OpcodeTraceColumns, qm31OpcodeInteractionColumns)
+func (claim Qm31OpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, Qm31OpcodeTraceColumns, Qm31OpcodeInteractionColumns)
 }
 
-func (claim RetOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, retOpcodeTraceColumns, retOpcodeInteractionColumns)
+func (claim RetOpcodeClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, RetOpcodeTraceColumns, RetOpcodeInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
 // ║            Builtins              ║
 // ╚══════════════════════════════════╝
 
-func (claim AddModBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, addModBuiltinTraceColumns, addModBuiltinInteractionColumns)
+func (claim AddModBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, AddModBuiltinTraceColumns, AddModBuiltinInteractionColumns)
 }
 
-func (claim BitwiseBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, bitwiseBuiltinTraceColumns, bitwiseBuiltinInteractionColumns)
+func (claim BitwiseBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, BitwiseBuiltinTraceColumns, BitwiseBuiltinInteractionColumns)
 }
 
-func (claim MulModBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, mulModBuiltinTraceColumns, mulModBuiltinInteractionColumns)
+func (claim MulModBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, MulModBuiltinTraceColumns, MulModBuiltinInteractionColumns)
 }
 
-func (claim PedersenBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, pedersenBuiltinTraceColumns, pedersenBuiltinInteractionColumns)
+func (claim PedersenBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PedersenBuiltinTraceColumns, PedersenBuiltinInteractionColumns)
 }
 
-func (claim PoseidonBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
+func (claim PoseidonBuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PoseidonBuiltinTraceColumns, PoseidonBuiltinInteractionColumns)
 }
 
-func (claim RangeCheck96BuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, rangeCheck96BuiltinTraceColumns, rangeCheck96BuiltinInteractionColumns)
+func (claim RangeCheck96BuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, RangeCheck96BuiltinTraceColumns, RangeCheck96BuiltinInteractionColumns)
 }
 
-func (claim RangeCheck128BuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, rangeCheck128BuiltinTraceColumns, rangeCheck128BuiltinInteractionColumns)
+func (claim RangeCheck128BuiltinClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, RangeCheck128BuiltinTraceColumns, RangeCheck128BuiltinInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
 // ║               Blake              ║
 // ╚══════════════════════════════════╝
 
-func (claim BlakeRoundClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, blakeRoundTraceColumns, blakeRoundInteractionColumns)
+func (claim BlakeRoundClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, BlakeRoundTraceColumns, BlakeRoundInteractionColumns)
 }
 
-func (claim BlakeGClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, blakeGTraceColumns, blakeGInteractionColumns)
+func (claim BlakeGClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, BlakeGTraceColumns, BlakeGInteractionColumns)
 }
 
-func (claim BlakeRoundSigmaClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(blakeRoundSigmaLogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	for i := 0; i < 16; i++ {
-		k := NewPreprocessedColumnBlakeSigma(uints.NewU8(uint8(i))).Key(api)
-		(*usedPreprocessed)[k] = frontend.Variable(1)
-	}
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, blakeRoundSigmaLogSize)
+func (claim BlakeRoundSigmaClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, BlakeRoundSigmaTraceColumns, BlakeRoundSigmaInteractionColumns)
 }
 
-func (claim TripleXor32Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
+func (claim TripleXor32Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
 	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, tripleXor32TraceColumns, tripleXor32InteractionColumns)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, TripleXor32TraceColumns, TripleXor32InteractionColumns)
 }
 
-func (claim VerifyBitwiseXor12Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(10), uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, verifyBitwiseXor12LogSize)
+func (claim VerifyBitwiseXor12Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, VerifyBitwiseXor12TraceColumns, VerifyBitwiseXor12InteractionColumns)
 }
 
@@ -274,20 +235,13 @@ func (claim VerifyBitwiseXor12Claim) MaskPoints(api frontend.API, oodsPoint circ
 // ║            Pedersen              ║
 // ╚══════════════════════════════════╝
 
-func (claim PartialEcMulClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, partialEcMulTraceColumns, partialEcMulInteractionColumns)
+func (claim PartialEcMulClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PartialEcMulTraceColumns, PartialEcMulInteractionColumns)
 }
 
-func (PedersenPointsTableClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(pedersenPointsTableLogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	for i := 0; i < pedersenPointsTableColumns; i++ {
-		k := NewPreprocessedColumnPedersenPoints(uints.NewU8(uint8(i))).Key(api)
-		(*usedPreprocessed)[k] = frontend.Variable(1)
-	}
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, pedersenPointsTableLogSize)
+func (claim PedersenPointsTableClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PedersenPointsTableTraceColumns, PedersenPointsTableInteractionColumns)
 }
 
@@ -295,125 +249,80 @@ func (PedersenPointsTableClaim) MaskPoints(api frontend.API, oodsPoint circle.Po
 // ║            Poseidon              ║
 // ╚══════════════════════════════════╝
 
-func (claim Poseidon3PartialRoundsChainClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, poseidon3PartialRoundsTraceColumns, poseidon3PartialRoundsInteractionColumns)
+func (claim Poseidon3PartialRoundsChainClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, Poseidon3PartialRoundsTraceColumns, Poseidon3PartialRoundsInteractionColumns)
 }
 
-func (claim PoseidonFullRoundChainClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, poseidonFullRoundTraceColumns, poseidonFullRoundInteractionColumns)
+func (claim PoseidonFullRoundChainClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PoseidonFullRoundTraceColumns, PoseidonFullRoundInteractionColumns)
 }
 
-func (claim Cube252Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, cube252TraceColumns, cube252InteractionColumns)
+func (claim Cube252Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, Cube252TraceColumns, Cube252InteractionColumns)
 }
 
-func (PoseidonRoundKeysClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(uint8(poseidonRoundKeysLogSize)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	for i := 0; i < poseidonRoundKeysColumns; i++ {
-		k := NewPreprocessedColumnPoseidonRoundKeys(uints.NewU8(uint8(i))).Key(api)
-		(*usedPreprocessed)[k] = frontend.Variable(1)
-	}
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, poseidonRoundKeysLogSize)
+func (claim PoseidonRoundKeysClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, PoseidonRoundKeysTraceColumns, PoseidonRoundKeysInteractionColumns)
 }
 
-func (claim RangeCheckFelt252Width27Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, rangeCheckFelt252Width27TraceColumns, rangeCheckFelt252Width27InteractionColumns)
+func (claim RangeCheckFelt252Width27Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, RangeCheckFelt252Width27TraceColumns, RangeCheckFelt252Width27InteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
 // ║           Memory/Lookup          ║
 // ╚══════════════════════════════════╝
 
-func (claim MemoryAddressToIdClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, memoryAddressToIdTraceColumns, memoryAddressToIdInteractionColumns)
+func (claim MemoryAddressToIDClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, MemoryAddressToIdTraceColumns, MemoryAddressToIdInteractionColumns)
 }
 
-func (claim MemoryIdToBigBigClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, memoryIdToBigBigTraceCols, memoryIdToBigBigInteractionColumns)
+func (claim MemoryIdToBigBigClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, MemoryIdToBigBigTraceCols, MemoryIdToBigBigInteractionColumns)
 }
 
-func (claim MemoryIdToBigSmallClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(claim.LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, memoryIdToBigSmallTraceCols, memoryIdToBigSmallInteractionColumns)
+func (claim MemoryIdToBigSmallClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, MemoryIdToBigSmallTraceCols, MemoryIdToBigSmallInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
 // ║         VerifyInstruction        ║
 // ╚══════════════════════════════════╝
 
-func (claim VerifyInstructionClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, u8Value(claim.LogSize))
-	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, verifyInstructionTraceColumns, verifyInstructionInteractionColumns)
+func (claim VerifyInstructionClaim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
+	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, VerifyInstructionTraceColumns, VerifyInstructionInteractionColumns)
 }
 
 // ╔══════════════════════════════════╗
 // ║         VerifyBitwiseXor         ║
 // ╚══════════════════════════════════╝
 
-func (claim VerifyBitwiseXor4Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(4), uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, verifyBitwiseXor4LogSize)
+func (claim VerifyBitwiseXor4Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim VerifyBitwiseXor7Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(7), uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, verifyBitwiseXor7LogSize)
+func (claim VerifyBitwiseXor7Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim VerifyBitwiseXor8Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(8), uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, verifyBitwiseXor8LogSize)
+func (claim VerifyBitwiseXor8Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim VerifyBitwiseXor9Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnBitwiseXor(uints.NewU8(9), uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, verifyBitwiseXor9LogSize)
+func (claim VerifyBitwiseXor9Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
@@ -421,186 +330,72 @@ func (claim VerifyBitwiseXor9Claim) MaskPoints(api frontend.API, oodsPoint circl
 // ║            Range Check           ║
 // ╚══════════════════════════════════╝
 
-func (claim RangeCheck3_3_3_3_3Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-	}
-	k := NewPreprocessedColumnRangeCheck5(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck5(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck5(values, uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck5(values, uints.NewU8(3)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck5(values, uints.NewU8(4)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck3_3_3_3_3LogSize)
+func (claim RangeCheck33333Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck3_6_6_3Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(3),
-		uints.NewU8(6),
-		uints.NewU8(6),
-		uints.NewU8(3),
-	}
-	k := NewPreprocessedColumnRangeCheck4(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck4(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck4(values, uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck4(values, uints.NewU8(3)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck3_6_6_3LogSize)
+func (claim RangeCheck3663Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck4_3Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(4),
-		uints.NewU8(3),
-	}
-	k := NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck4_3LogSize)
+func (claim RangeCheck43Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck4_4Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(4),
-		uints.NewU8(4),
-	}
-	k := NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck4_4LogSize)
+func (claim RangeCheck44Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck4_4_4_4Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(4),
-		uints.NewU8(4),
-		uints.NewU8(4),
-		uints.NewU8(4),
-	}
-	k := NewPreprocessedColumnRangeCheck4(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck4(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck4(values, uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck4(values, uints.NewU8(3)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck4_4_4_4LogSize)
+func (claim RangeCheck4444Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck5_4Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(5),
-		uints.NewU8(4),
-	}
-	k := NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck5_4LogSize)
+func (claim RangeCheck54Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck6Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(rangeCheck6LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck6LogSize)
+func (claim RangeCheck6Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck7_2_5Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(7),
-		uints.NewU8(2),
-		uints.NewU8(5),
-	}
-	k := NewPreprocessedColumnRangeCheck3(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck3(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck3(values, uints.NewU8(2)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck7_2_5LogSize)
+func (claim RangeCheck725Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck8Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := NewPreprocessedColumnSeq(uints.NewU8(8)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck8LogSize)
+func (claim RangeCheck8Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck9_9Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	values := []uints.U8{
-		uints.NewU8(9),
-		uints.NewU8(9),
-	}
-	k := NewPreprocessedColumnRangeCheck2(values, uints.NewU8(0)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-	k = NewPreprocessedColumnRangeCheck2(values, uints.NewU8(1)).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck9_9LogSize)
+func (claim RangeCheck99Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck11Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(rangeCheck11LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck11LogSize)
+func (claim RangeCheck11Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck12Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(rangeCheck12LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck12LogSize)
+func (claim RangeCheck12Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck18Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(rangeCheck18LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck18LogSize)
+func (claim RangeCheck18Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }
 
-func (claim RangeCheck19Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip, usedPreprocessed *map[uints.U64]frontend.Variable) TreeMaskPoints {
-	k := sequencePreprocessedColumn(rangeCheck19LogSize).Key(api)
-	(*usedPreprocessed)[k] = frontend.Variable(1)
-
-	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, rangeCheck19LogSize)
+func (claim RangeCheck19Claim) MaskPoints(api frontend.API, oodsPoint circle.Point, circleChip *circle.CircleChip) TreeMaskPoints {
+	oodsPointNegOne := oodsPointNegOne(oodsPoint, circleChip, claim.LogSize)
 	return NewTreeMaskPoints(oodsPoint, oodsPointNegOne, LookupTraceColumns, LookupInteractionColumns)
 }

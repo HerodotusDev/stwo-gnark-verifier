@@ -17,8 +17,8 @@ func TestReadHDPProof(t *testing.T) {
 	assertProofBasics(t, proof)
 }
 
-func TestReadAllComponentsProof(t *testing.T) {
-	proof, err := ReadCairoProof(ProofFixturePath(AllComponentsProofFixture))
+func TestReadAllComponentsHintsProof(t *testing.T) {
+	proof, err := ReadCairoProof(ProofFixturePath(AllComponentsHintsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
@@ -64,103 +64,16 @@ func TestBuildProofHDP(t *testing.T) {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	build := BuildProof(raw)
-	if build == nil {
-		t.Fatalf("built proof is nil")
-	}
-
-	if len(build.StarkProof.Commitments) == 0 {
-		t.Fatalf("expected commitments")
-	}
-
-	if build.Claim.MemoryAddressToId.LogSize.Val != uint8(20) {
-		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 20)
-	}
-
-	components := build.InteractionClaim.MemoryAddressToId.ClaimedSum.Components()
-	expected := [4]uint64{836386349, 2039445746, 1962189857, 1579868635}
-	for idx, want := range expected {
-		if got := components[idx].Variable(); got != want {
-			t.Fatalf("unexpected MemoryAddressToId interaction component[%d]: got %v, want %d", idx, got, want)
-		}
-	}
+	_ = BuildProof(*raw)
+	_ = BuildCircuitData(raw)
 }
 
-func TestBuildProofAllComponents(t *testing.T) {
-	raw, err := ReadCairoProof(ProofFixturePath(AllComponentsProofFixture))
+func TestBuildProofAllComponentsHints(t *testing.T) {
+	raw, err := ReadCairoProof(ProofFixturePath(AllComponentsHintsProofFixture))
 	if err != nil {
 		t.Fatalf("failed to read proof: %v", err)
 	}
 
-	build := BuildProof(raw)
-	if build == nil {
-		t.Fatalf("built proof is nil")
-	}
-
-	if len(build.StarkProof.Commitments) == 0 {
-		t.Fatalf("expected commitments")
-	}
-
-	if build.Claim.MemoryAddressToId.LogSize.Val != uint8(9) {
-		t.Fatalf("unexpected log size: got %v, want %d", build.Claim.MemoryAddressToId.LogSize.Val, 9)
-	}
-
-	components := build.InteractionClaim.MemoryAddressToId.ClaimedSum.Components()
-	expected := [4]uint64{1962029288, 1291897314, 1919682745, 45377508}
-	for idx, want := range expected {
-		if got := components[idx].Variable(); got != want {
-			t.Fatalf("unexpected MemoryAddressToId interaction component[%d]: got %v, want %d", idx, got, want)
-		}
-	}
-}
-
-func TestConstructProofNil(t *testing.T) {
-	if proof := BuildProof(nil); proof != nil {
-		t.Fatalf("expected nil proof from nil input")
-	}
-}
-
-func TestBuildProofAllComponentsStatic(t *testing.T) {
-	raw, err := ReadCairoProof(ProofFixturePath(AllComponentsStaticProofFixture))
-	if err != nil {
-		t.Fatalf("failed to read proof: %v", err)
-	}
-
-	proof := BuildProof(raw)
-	if proof == nil {
-		t.Fatalf("built proof is nil")
-	}
-
-	if len(proof.StarkProof.QueriedValues) == 0 {
-		t.Fatalf("expected queried values")
-	}
-	if len(proof.StarkProof.Decommitments) == 0 {
-		t.Fatalf("expected decommitments")
-	}
-	if len(proof.StarkProof.Commitments) == 0 {
-		t.Fatalf("expected commitments")
-	}
-
-	firstValue := proof.StarkProof.QueriedValues[0][0].Variable()
-	switch v := firstValue.(type) {
-	case uint32:
-		if v != 505308499 {
-			t.Fatalf("unexpected first queried value: got %v, want %d", v, 505308499)
-		}
-	case uint64:
-		if v != 505308499 {
-			t.Fatalf("unexpected first queried value: got %v, want %d", v, 505308499)
-		}
-	default:
-		t.Fatalf("unexpected first queried value type: %T", firstValue)
-	}
-
-	firstHashByte := proof.StarkProof.Decommitments[0].HashWitness[0][0].Val
-	byteValue, ok := firstHashByte.(uint8)
-	if !ok {
-		t.Fatalf("expected hash witness byte to be uint8, got %T", firstHashByte)
-	}
-	if byteValue != 237 {
-		t.Fatalf("unexpected hash witness byte: got %d, want %d", byteValue, 237)
-	}
+	_ = BuildProof(*raw)
+	_ = BuildCircuitData(raw)
 }

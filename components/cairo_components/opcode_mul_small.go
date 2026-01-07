@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	mulSmallOpcodeTraceColumns       = 37
-	mulSmallOpcodeInteractionColumns = 24
+	MulSmallOpcodeTraceColumns       = 37
+	MulSmallOpcodeInteractionColumns = 24
 )
 
 type MulSmallOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type MulSmallOpcodeInteractionClaim struct {
@@ -45,11 +44,11 @@ func NewMulSmallOpcode(
 	vanishEvalInv m31.QM31,
 	claim MulSmallOpcodeClaim,
 	interactionClaim MulSmallOpcodeInteractionClaim,
-) *MulSmallOpcodeComponent {
+) MulSmallOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInvQM := qm31.Inverse(columnSize)
 
-	return &MulSmallOpcodeComponent{
+	return MulSmallOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -62,8 +61,8 @@ func NewMulSmallOpcode(
 	}
 }
 
-func (c *MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(mulSmallOpcodeTraceColumns, mulSmallOpcodeInteractionColumns)
+func (c MulSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(MulSmallOpcodeTraceColumns, MulSmallOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

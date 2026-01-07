@@ -3,139 +3,173 @@ package fri
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/lookup/logderivlookup"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
-const NQUERIES = 10
-
 type MerkleVerifier struct {
 	api         frontend.API
-	m31Chip     *m31.M31Chip
 	uapi        *uints.BinaryField[uints.U32]
+	bapi        *uints.Bytes
+	m31Chip     *m31.M31Chip
 	blake2sChip *blake2s.Blake2sChip
 
 	root               [32]uints.U8
-	ColumnLogSizes     []uint8
-	nColumnsPerLogSize map[uint8]int
+	ColumnLogSizes     []frontend.Variable
+	nColumnsPerLogSize []int
+	maxLogSize         int
 }
 
-func NewMerkleVerifier(api frontend.API, root [32]uints.U8, columnLogSizes []uint8) *MerkleVerifier {
+func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], root [32]uints.U8, columnLogSizes []frontend.Variable, nColumnsPerLogSize []int) *MerkleVerifier {
 	m31Chip := m31.NewM31Chip(api)
-	uapi, err := uints.New[uints.U32](api)
 	blake2sChip := blake2s.NewBlake2sChip(api)
+	bapi, err := uints.NewBytes(api)
 	if err != nil {
 		panic(err)
 	}
 
-	nColumnsPerLogSize := make(map[uint8]int)
-	for _, logSize := range columnLogSizes {
-		nColumnsPerLogSize[logSize]++
+	maxLogSize := 0
+	for i, nColumns := range nColumnsPerLogSize {
+		if nColumns > 0 {
+			maxLogSize = i
+		}
 	}
 
 	return &MerkleVerifier{
 		api:                api,
-		m31Chip:            m31Chip,
 		uapi:               uapi,
+		bapi:               bapi,
+		m31Chip:            m31Chip,
 		blake2sChip:        blake2sChip,
 		root:               root,
 		ColumnLogSizes:     columnLogSizes,
 		nColumnsPerLogSize: nColumnsPerLogSize,
+		maxLogSize:         maxLogSize,
 	}
 }
 
 // Verify verifies the Merkle decommitment for the given queries and queried values
 //   - queries[l] contains the queries for the layer of log size l, len(queries) should be the number of layers (from root to leaves).
-//     For all l, queries[l] is sorted ascending.
-func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decommitment variables.MerkleDecommitment) {
+//     For all l, queries[l] is sorted ascending with a dummy query at the end. IMPORTANT: queries[l] is never empty and should be generated from GenerateQueries.
+//   - queriesShape[l] = len(queries[l]) - 1 (-1 for the dummy query)
+func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []m31.M31, decommitment variables.MerkleDecommitment, queriesShape []int) {
 	remainingValues := queriedValues
-	hashWitness := decommitment.HashWitness
-	hashWitnessIndex := 0
-
-	// helper function replicating the rust api for iterator next() method
-	nextHashWitness := func() [32]uints.U8 {
-		if hashWitnessIndex >= len(hashWitness) {
-			panic("merkle hash witness exhausted")
-		}
-		hash := hashWitness[hashWitnessIndex]
-		hashWitnessIndex++
-		return hash
-	}
-
-	// find the log size of the largest layer
-	maxLogSize := uint8(0)
-	for _, logSize := range v.ColumnLogSizes {
-		if logSize > maxLogSize {
-			maxLogSize = logSize
-		}
-	}
-
-	// extend the queries so that for layers with no columns node hashes are still computed
-	extendedQueries := extendQueries(queries, maxLogSize)
+	// there is no constraints on witnessIndex, it's just used as an external pointer for the hint function (frontend.Variable is
+	// not needed but convenient for hint signature)
+	witnessIndex := frontend.Variable(0)
 
 	// storage for the hashes per layer, keyed by log size
-	layerHashes := make(map[uint8][][32]uints.U8)
+	layerHashes := make([]logderivlookup.Table, v.maxLogSize+1)
 
 	// decommit layer by layer, doing all queries at once
-	for layerLog := maxLogSize; ; layerLog-- {
+	for layerLog := v.maxLogSize; ; layerLog-- {
+		// initialize the layer hashes
+		layerHashes[layerLog] = logderivlookup.New(v.api)
+		// get the number of columns in the layer
 		nColumnsInLayer := v.nColumnsPerLogSize[layerLog]
-		j := 0 // pointer to the previous layer query
+		// j is a pointer to the previous layer query.
+		j := frontend.Variable(0)
 
 		// go through all query positions of the current layer
-		for _, query := range extendedQueries[layerLog] {
+		for queryIndex := 0; queryIndex < queriesShape[layerLog]; queryIndex++ {
+			query := queries[layerLog].Lookup(queryIndex)[0]
+			// pop the front of the queried values if any
 			var columnValues []m31.M31
-			// note that the following if-else branches can be evaluated at compile time
-			// since the number of columns and the queries in each layer are constants to the circuit
 			if nColumnsInLayer > 0 {
-				// pop the front of the queried values if any
 				columnValues = remainingValues[:nColumnsInLayer]
 				remainingValues = remainingValues[nColumnsInLayer:]
 			}
 
-			if layerLog == maxLogSize {
-				// for the largest layer, there are no children to hash, just hash the column values
-				layerHashes[layerLog] = append(layerHashes[layerLog], v.blake2sChip.HashNode(nil, nil, columnValues))
+			// for the largest layer, there are no children to hash, just hash the column values
+			if layerLog == v.maxLogSize {
+				hash := v.blake2sChip.HashNode(nil, nil, columnValues)
+				lo, hi := utils.SplitHash(v.api, hash)
+				layerHashes[layerLog].Insert(lo)
+				layerHashes[layerLog].Insert(hi)
 			} else {
+				jPlusOne := v.api.Add(j, frontend.Variable(1))
+				jPlusTwo := v.api.Add(j, frontend.Variable(2))
+				twoJ := v.api.Mul(j, frontend.Variable(2))
+				twoJPlusOne := v.api.Add(twoJ, frontend.Variable(1))
+				twoJPlusTwo := v.api.Add(twoJ, frontend.Variable(2))
+				twoJPlusThree := v.api.Add(twoJ, frontend.Variable(3))
+
 				// derive the children queries candidates
-				queryMulTwo := 2 * query
+				queryMulTwo := v.api.Mul(query, frontend.Variable(2))
 				leftCandidate := queryMulTwo
-				rightCandidate := queryMulTwo + 1
+				rightCandidate := v.api.Add(queryMulTwo, frontend.Variable(1))
 
 				var leftHash [32]uints.U8
 				var rightHash [32]uints.U8
 
-				if j < len(extendedQueries[layerLog+1]) && leftCandidate == extendedQueries[layerLog+1][j] {
-					// if the left candidate was queried get the left hash from the previous layer
-					leftHash = layerHashes[layerLog+1][j]
-					if j+1 < len(extendedQueries[layerLog+1]) && extendedQueries[layerLog+1][j+1] == rightCandidate {
-						// if the right candidate was also queried get the right hash from the previous layer
-						rightHash = layerHashes[layerLog+1][j+1]
-						j += 2
-					} else {
-						// if the right candidate was not queried, get the right hash from the witness
-						rightHash = nextHashWitness()
-						j++
+				// rebuild the children hashes candidates from the previous layer
+				h0Lo := layerHashes[layerLog+1].Lookup(twoJ)[0]
+				h0Hi := layerHashes[layerLog+1].Lookup(twoJPlusOne)[0]
+				h1Lo := layerHashes[layerLog+1].Lookup(twoJPlusTwo)[0]
+				h1Hi := layerHashes[layerLog+1].Lookup(twoJPlusThree)[0]
+				h0 := utils.RebuildHash(v.api, h0Lo, h0Hi)
+				h1 := utils.RebuildHash(v.api, h1Lo, h1Hi)
+
+				isLeftQueried := cmp.IsEqual(v.api, leftCandidate, queries[layerLog+1].Lookup(j)[0])
+				isRightAlsoQueried := cmp.IsEqual(v.api, rightCandidate, queries[layerLog+1].Lookup(jPlusOne)[0])
+				isJustRightQueried := cmp.IsEqual(v.api, rightCandidate, queries[layerLog+1].Lookup(j)[0])
+
+				// aggregate the arguments to comply with the hint signature
+				args := []frontend.Variable{isLeftQueried, isRightAlsoQueried, isJustRightQueried, witnessIndex}
+				for _, hash := range decommitment.HashWitness {
+					hashNative := [32]frontend.Variable{}
+					for i := 0; i < 32; i++ {
+						hashNative[i] = v.bapi.Value(hash[i])
 					}
-				} else if j < len(extendedQueries[layerLog+1]) && rightCandidate == extendedQueries[layerLog+1][j] {
-					// if the right candidate was queried get the right hash from the previous layer and the left hash from the witness
-					leftHash = nextHashWitness()
-					rightHash = layerHashes[layerLog+1][j]
-					j++
-				} else {
-					leftHash = nextHashWitness()
-					rightHash = nextHashWitness()
+					args = append(args, hashNative[:]...)
+				}
+				// the soundness relies on the fact that it is too costly to forge a valid witness for a given query, so it doesn't need to be checked
+				hintedWitness, err := v.api.Compiler().NewHint(WitnessHint, 2*32+1, args...)
+				if err != nil {
+					panic(err)
 				}
 
+				// extract the witness values from the hinted witness
+				var w0 [32]uints.U8
+				var w1 [32]uints.U8
+				for i := 0; i < 32; i++ {
+					w0[i] = v.bapi.ValueOf(hintedWitness[i])
+				}
+				for i := 0; i < 32; i++ {
+					w1[i] = v.bapi.ValueOf(hintedWitness[32+i])
+				}
+
+				// update the witness index from the hinted witness
+				witnessIndex = hintedWitness[2*32]
+
+				leftHash = utils.SelectHash(v.api, isLeftQueried, h0, w0)
+				intermediate1 := utils.SelectHash(v.api, isRightAlsoQueried, h1, w1)
+				intermediate2 := utils.SelectHash(v.api, isJustRightQueried, h0, w1)
+				rightHash = utils.SelectHash(v.api, isLeftQueried, intermediate1, intermediate2)
+
+				// update the pointer to the previous layer query
+				j = v.api.Select(
+					isLeftQueried,
+					v.api.Select(isRightAlsoQueried, jPlusTwo, jPlusOne),
+					v.api.Select(isJustRightQueried, jPlusOne, j),
+				)
+
 				// update the current layer hashes
-				layerHashes[layerLog] = append(layerHashes[layerLog], v.blake2sChip.HashNode(leftHash[:], rightHash[:], columnValues))
+				hash := v.blake2sChip.HashNode(leftHash[:], rightHash[:], columnValues)
+				lo, hi := utils.SplitHash(v.api, hash)
+				layerHashes[layerLog].Insert(lo)
+				layerHashes[layerLog].Insert(hi)
 			}
 		}
-
-		// assert no unused queries
-		if layerLog != maxLogSize {
-			v.api.AssertIsEqual(j, len(extendedQueries[layerLog+1]))
-		}
+		// append a dummy hash to the end of the layer, will never be used for hashing
+		layerHashes[layerLog].Insert(frontend.Variable(0))
+		layerHashes[layerLog].Insert(frontend.Variable(0))
+		layerHashes[layerLog].Insert(frontend.Variable(0))
+		layerHashes[layerLog].Insert(frontend.Variable(0))
 
 		if layerLog == 0 {
 			break
@@ -143,45 +177,11 @@ func (v *MerkleVerifier) Verify(queries [][]int, queriedValues []m31.M31, decomm
 	}
 
 	// assert root match for all queries
-	for queryIndex := range layerHashes[0] {
-		for i := 0; i < 32; i++ {
-			v.uapi.AssertIsEqual(layerHashes[0][queryIndex][i], v.root[i])
-		}
+	rootLo := layerHashes[0].Lookup(0)[0]
+	rootHi := layerHashes[0].Lookup(1)[0]
+	computedRoot := utils.RebuildHash(v.api, rootLo, rootHi)
+	for i := 0; i < 32; i++ {
+		v.uapi.AssertIsEqual(computedRoot[i], v.root[i])
 	}
 
-	// assert no unused hash witness entries
-	if hashWitnessIndex != len(hashWitness) {
-		panic("unused hash witness entries in Merkle decommitment")
-	}
-	// assert no unused queried values
-	if len(remainingValues) != 0 {
-		panic("unused queried values in Merkle decommitment")
-	}
-
-}
-
-// TODO: this is unchecked hinting, the extension should be made before the query checking (and add a flag for extended queries)
-func extendQueries(queries [][]int, maxLogSize uint8) [][]int {
-	extendedQueries := make([][]int, maxLogSize+1)
-	for layerLog := maxLogSize; ; layerLog-- {
-		if len(queries[layerLog]) > 0 {
-			extendedQueries[layerLog] = queries[layerLog]
-			continue
-		} else {
-			childQueries := extendedQueries[layerLog+1] // layerLog+1 <= maxLogSize since len(queries[maxLogSize]) > 0
-			derivedQueries := make([]int, 0, len(childQueries))
-			for _, childQuery := range childQueries {
-				parentQuery := childQuery / 2
-				if len(derivedQueries) == 0 || derivedQueries[len(derivedQueries)-1] != parentQuery {
-					derivedQueries = append(derivedQueries, parentQuery)
-				}
-			}
-			extendedQueries[layerLog] = derivedQueries
-		}
-
-		if layerLog == 0 {
-			break
-		}
-	}
-	return extendedQueries
 }

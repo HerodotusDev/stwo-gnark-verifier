@@ -4,17 +4,16 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	poseidonBuiltinTraceColumns       = 341
-	poseidonBuiltinInteractionColumns = 68
+	PoseidonBuiltinTraceColumns       = 341
+	PoseidonBuiltinInteractionColumns = 68
 )
 
 type PoseidonBuiltinClaim struct {
-	LogSize                     uints.U8
-	PoseidonBuiltinSegmentStart uint32
+	LogSize                     frontend.Variable
+	PoseidonBuiltinSegmentStart frontend.Variable
 }
 
 type PoseidonBuiltinInteractionClaim struct {
@@ -22,6 +21,7 @@ type PoseidonBuiltinInteractionClaim struct {
 }
 
 type PoseidonBuiltinComponent struct {
+	api  frontend.API
 	qm31 *m31.QM31Chip
 
 	memoryAddressToIdElements         m31.InteractionElements
@@ -38,7 +38,7 @@ type PoseidonBuiltinComponent struct {
 	segmentStart  m31.QM31
 	columnSizeInv m31.QM31
 	vanishEvalInv m31.QM31
-	logSize       uints.U8
+	logSize       frontend.Variable
 }
 
 func NewPoseidonBuiltin(
@@ -56,10 +56,11 @@ func NewPoseidonBuiltin(
 	vanishEvalInv m31.QM31,
 	claim PoseidonBuiltinClaim,
 	interactionClaim PoseidonBuiltinInteractionClaim,
-) *PoseidonBuiltinComponent {
+) PoseidonBuiltinComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &PoseidonBuiltinComponent{
+	return PoseidonBuiltinComponent{
+		api:                               api,
 		qm31:                              qm31Chip,
 		memoryAddressToIdElements:         memoryAddressToIdElements,
 		memoryIdToBigElements:             memoryIdToBigElements,
@@ -71,30 +72,30 @@ func NewPoseidonBuiltin(
 		range44Elements:                   range44Elements,
 		poseidon3PartialRoundsChainLookup: poseidon3PartialRoundsChainElements,
 		claimedSum:                        interactionClaim.ClaimedSum,
-		segmentStart:                      m31.NewQM31FromM31(m31.NewM31Unchecked(uint64(claim.PoseidonBuiltinSegmentStart))),
+		segmentStart:                      m31.NewQM31FromM31(m31.NewM31Unchecked(claim.PoseidonBuiltinSegmentStart)),
 		columnSizeInv:                     qm31Chip.Inverse(columnSize),
 		vanishEvalInv:                     vanishEvalInv,
 		logSize:                           claim.LogSize,
 	}
 }
 
-func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 { // FORMAT
-	traceSampledValues, interactionSampledValues := traces.Take(poseidonBuiltinTraceColumns, poseidonBuiltinInteractionColumns)
+func (c PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(PoseidonBuiltinTraceColumns, PoseidonBuiltinInteractionColumns)
 
 	trace := traceSampledValues
 	interaction := interactionSampledValues
 
-	if len(trace) != poseidonBuiltinTraceColumns {
+	if len(trace) != PoseidonBuiltinTraceColumns {
 		panic("poseidon_builtin expects 341 trace columns")
 	}
-	if len(interaction) != poseidonBuiltinInteractionColumns {
+	if len(interaction) != PoseidonBuiltinInteractionColumns {
 		panic("poseidon_builtin expects 68 interaction columns")
 	}
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║
 	// ╚══════════════════════════════════╝
-	seqColumn := NewPreprocessedColumnSeq(c.logSize)
+	seqColumn := NewPreprocessedColumnSeq(c.api, c.logSize)
 	seq := traces.Get(seqColumn)
 
 	cursor := 0
@@ -182,7 +183,7 @@ func (c *PoseidonBuiltinComponent) Evaluate(sum m31.QM31, traces *Traces, random
 	}
 	outputStateID2 := nextTrace()
 
-	if cursor != poseidonBuiltinTraceColumns {
+	if cursor != PoseidonBuiltinTraceColumns {
 		panic("unexpected trace column count")
 	}
 

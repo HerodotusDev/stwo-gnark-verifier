@@ -1,8 +1,6 @@
 package verifier
 
 import (
-	"fmt"
-
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -10,23 +8,29 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
 	"github.com/HerodotusDev/stwo-gnark-verifier/fri"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 type VerifierChip struct {
-	api         frontend.API `gnark:"-"`
-	uapi        *uints.BinaryField[uints.U32]
-	blake2sChip *blake2s.Blake2sChip
-	channelChip *channel.Channel
-	m31         *m31.M31Chip
-	qm31        *m31.QM31Chip
-	circle      *circle.CircleChip
+	api     frontend.API `gnark:"-"`
+	uapi    *uints.BinaryField[uints.U32]
+	bapi    *uints.Bytes
+	blake2s *blake2s.Blake2sChip
+	channel *channel.Channel
+	m31     *m31.M31Chip
+	qm31    *m31.QM31Chip
+	circle  *circle.CircleChip
 }
 
 func NewVerifierChip(api frontend.API) *VerifierChip {
 	uapi, err := uints.New[uints.U32](api)
+	if err != nil {
+		panic(err)
+	}
+	bapi, err := uints.NewBytes(api)
 	if err != nil {
 		panic(err)
 	}
@@ -36,77 +40,76 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	circleChip := circle.NewCircleChip(api, m31Chip, qm31Chip)
 	channelChip := channel.NewChannel(api)
 	return &VerifierChip{
-		api:         api,
-		uapi:        uapi,
-		blake2sChip: blake2sChip,
-		channelChip: channelChip,
-		m31:         m31Chip,
-		qm31:        qm31Chip,
-		circle:      circleChip,
+		api:     api,
+		uapi:    uapi,
+		bapi:    bapi,
+		blake2s: blake2sChip,
+		channel: channelChip,
+		m31:     m31Chip,
+		qm31:    qm31Chip,
+		circle:  circleChip,
 	}
 }
 
-func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig) {
+func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig fri.PcsConfig, circuitData variables.CircuitData) {
 	// Mix PCS configuration into the channel
-	pcsConfig.MixInto(c.channelChip)
+	pcsConfig.MixInto(c.channel, c.uapi)
 
 	// Initialize commitment verifier
-	commitmentVerifier := NewCommitmentSchemeVerifier(c.api, pcsConfig)
-	logSizes := proof.Claim.LogSizes()
+	commitmentVerifier := fri.NewCommitmentSchemeVerifier(c.api, c.uapi, pcsConfig, circuitData)
+	logSizes := proof.Claim.LogSizes(circuitData)
 
 	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
 	// This should not include the preprocessed trace (hence calling MAX before adding preprocessed trace log sizes)
-	compositionLogDegreeBound := cairo_components.MaxLogSize(logSizes) + 1
+	compositionLogDegreeBound := cairo_components.MaxLogSize(c.api, logSizes)
 
 	// Verify preprocessed trace commitment
 	logSizes[cairo_components.PREPROCESSED_IDX] = cairo_components.PreprocessedLogSizes()
 	preprocessedLogSizes := logSizes[cairo_components.PREPROCESSED_IDX]
-	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogSizes, c.channelChip)
+	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogSizes, c.channel)
 
 	// Mix claim into channel
-	proof.Claim.MixInto(c.channelChip, c.api)
+	proof.Claim.MixInto(c.channel, c.api, circuitData)
 
 	// Verify main trace commitment
-	commitmentVerifier.Commit(cairo_components.MAIN_IDX, proof.StarkProof.Commitments[1], logSizes[cairo_components.MAIN_IDX], c.channelChip)
+	commitmentVerifier.Commit(cairo_components.MAIN_IDX, proof.StarkProof.Commitments[1], logSizes[cairo_components.MAIN_IDX], c.channel)
 
 	// Check Proof-of-Work nonce
-	c.channelChip.MixAndCheckPowNonce(proof.InteractionPow, 24)
+	c.channel.MixAndCheckPowNonce(proof.InteractionPow, 24)
 
 	// Draw interaction elements
 	var cairoInteractionElements variables.CairoInteractionElements
-	cairoInteractionElements.Draw(c.channelChip, c.qm31)
+	cairoInteractionElements.Draw(c.channel, c.qm31)
 
 	// Verify Logup sum
-	sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim)
+	sum := components.LogupSum(c.qm31, proof.Claim, cairoInteractionElements, proof.InteractionClaim, circuitData)
 	c.qm31.AssertEqual(sum, c.qm31.Zero())
 
 	// Mix interaction claim into channel
-	proof.InteractionClaim.MixInto(c.channelChip)
+	proof.InteractionClaim.MixInto(c.channel, circuitData)
 
 	// Verify interaction trace commitment
-	commitmentVerifier.Commit(cairo_components.INTERACTION_IDX, proof.StarkProof.Commitments[cairo_components.INTERACTION_IDX], logSizes[cairo_components.INTERACTION_IDX], c.channelChip)
+	commitmentVerifier.Commit(cairo_components.INTERACTION_IDX, proof.StarkProof.Commitments[cairo_components.INTERACTION_IDX], logSizes[cairo_components.INTERACTION_IDX], c.channel)
 
 	// Draw random coeff from channel for OODS
-	randomCoeff := c.channelChip.DrawFelt()
+	randomCoeff := c.channel.DrawFelt()
 
 	// Verify composition polynomial commitment
-	compositionLogSizes := []uint32{compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound}
-	commitmentVerifier.Commit(cairo_components.CP_IDX, proof.StarkProof.Commitments[cairo_components.CP_IDX], compositionLogSizes, c.channelChip)
+	compositionLogSizes := []frontend.Variable{compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound, compositionLogDegreeBound}
+	commitmentVerifier.Commit(cairo_components.CP_IDX, proof.StarkProof.Commitments[cairo_components.CP_IDX], compositionLogSizes, c.channel)
 
 	// Verify OODS
-	oodsPoint := c.circle.GetRandomPoint(c.channelChip)
-	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint)
-	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff)
+	oodsPoint := c.circle.GetRandomPoint(c.channel)
+	components := components.NewComponents(c.api, c.m31, c.qm31, c.circle, cairoInteractionElements, proof.Claim, proof.InteractionClaim, oodsPoint, circuitData)
+	c.VerifyOODS(proof.StarkProof.SampledValues, components, randomCoeff, circuitData)
 
 	// Compute mask points
-	maskPoints := proof.Claim.MaskPoints(c.api, oodsPoint, c.circle)
-	// DEBUG: Verify that there is a point for each sampled value (no constraints enforced)
-	checkMaskPoints(maskPoints, proof.StarkProof.SampledValues)
+	maskPoints := proof.Claim.MaskPoints(c.api, oodsPoint, c.circle, circuitData)
 
-	c.VerifyValues(commitmentVerifier, proof.StarkProof, proof.CircuitHints.Queries, maskPoints)
+	c.VerifyValues(commitmentVerifier, proof.StarkProof, maskPoints, circuitData)
 }
 
-func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31) {
+func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *components.Components, randomCoeff m31.QM31, circuitData variables.CircuitData) {
 	// Extract CP evaluation from sampled values
 	composition_oods_eval := c.qm31.FromPartialEvals(
 		sampledValues[cairo_components.CP_IDX][0][0],
@@ -116,60 +119,43 @@ func (c *VerifierChip) VerifyOODS(sampledValues [][][]m31.QM31, components *comp
 	)
 
 	// evaluate constraints using sampled values
-	constraints_oods_eval := components.Evaluate(sampledValues, randomCoeff)
+	constraints_oods_eval := components.Evaluate(sampledValues, randomCoeff, circuitData)
 
 	// verify OODS
 	c.qm31.AssertEqual(composition_oods_eval, constraints_oods_eval)
 }
 
-func (c *VerifierChip) VerifyValues(commitmentVerifier *CommitmentSchemeVerifier, proof variables.StarkProof, queries [][]int, maskPoints cairo_components.TreeMaskPoints) {
+func (c *VerifierChip) VerifyValues(commitmentVerifier *fri.CommitmentSchemeVerifier, proof variables.StarkProof, maskPoints cairo_components.TreeMaskPoints, circuitData variables.CircuitData) {
 	// Mix flatten sampled values into channel
-	flattenedSampledValues := make([]m31.QM31, 0)
-	for _, sampledValues := range proof.SampledValues {
-		for _, sampledValue := range sampledValues {
-			flattenedSampledValues = append(flattenedSampledValues, sampledValue...)
-		}
-	}
-	c.channelChip.MixFelts(flattenedSampledValues)
+	flattenedSampledValues := utils.FlattenTree(utils.FlattenTree(proof.SampledValues))
+	c.channel.MixFelts(flattenedSampledValues)
 
 	// Draw random coeff for FRI
-	randomCoeff := c.channelChip.DrawFelt()
+	randomCoeff := c.channel.DrawFelt()
 
 	// Compute bounds (column log sizes deduped, in decreasing order and not blew up)
-	bounds := commitmentVerifier.bounds()
+	bounds := commitmentVerifier.Bounds()
 
 	// Verification of commitment stage of FRI
-	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channelChip, c.qm31, c.circle, commitmentVerifier.pcsConfig.FriConfig, proof.FriProof, bounds)
+	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.FriProof, bounds, circuitData)
 
 	// Proof of work
-	c.channelChip.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.pcsConfig.PowBits))
+	c.channel.MixAndCheckPowNonce(proof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
 
 	// Generate base layer queries and verify they match the hinted queries
-	baseLayerQueries := friVerifier.GenerateBaseLayerQueries(c.channelChip, c.uapi, commitmentVerifier.pcsConfig.FriConfig.NQueries)
-	friVerifier.VerifyQueries(queries[len(queries)-1], baseLayerQueries)
+	maxLogSize := bounds[0]
+	baseLayerQueries := c.channel.GenerateBaseLayerQueries(maxLogSize, commitmentVerifier.PcsConfig.FriConfig.NQueries)
+	queries := utils.GenerateQueries(c.api, baseLayerQueries, commitmentVerifier.PcsConfig.FriConfig.NQueries, circuitData.DedupedQueriesShape, circuitData.MaxLogSize)
+	queriesLookup := utils.ToLookupTable(c.api, queries)
 
 	// Verify merkle decommitments
-	for treeIndex, tree := range commitmentVerifier.trees {
-		tree.Verify(queries, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex])
+	for treeIndex, tree := range commitmentVerifier.Trees {
+		tree.Verify(queriesLookup, proof.QueriedValues[treeIndex], proof.Decommitments[treeIndex], circuitData.DedupedQueriesShape)
 	}
 
 	// Verify FRI quotients
-	friAnswers := friVerifier.FriQuotientEvaluations(commitmentVerifier.columnLogSizes(), proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
-	friVerifier.Verify(queries, friAnswers)
-}
-
-func checkMaskPoints(maskPoints cairo_components.TreeMaskPoints, sampledValues [][][]m31.QM31) {
-	if len(maskPoints) != len(sampledValues) {
-		panic("tree length mismatch")
-	}
-	for treeIndex, tree := range maskPoints {
-		if len(tree) != len(sampledValues[treeIndex]) {
-			panic(fmt.Sprintf("column length mismatch: %d != %d", len(tree), len(sampledValues[treeIndex])))
-		}
-		for columnIndex, column := range tree {
-			if len(column) != len(sampledValues[treeIndex][columnIndex]) {
-				panic(fmt.Sprintf("sample length mismatch (tree index: %d, column index: %d): %d != %d", treeIndex, columnIndex, len(column), len(sampledValues[treeIndex][columnIndex])))
-			}
-		}
-	}
+	friAnswers := friVerifier.FriQuotientEvaluations(proof.SampledValues, maskPoints, queries, proof.QueriedValues, randomCoeff)
+	friAnswersEncoded := fri.EncodeFriAnswers(c.qm31, friAnswers)
+	friAnswersLookup := utils.ToLookupTable(c.api, friAnswersEncoded)
+	friVerifier.Verify(queriesLookup, friAnswersLookup)
 }

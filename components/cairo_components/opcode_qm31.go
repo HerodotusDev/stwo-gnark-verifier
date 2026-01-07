@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	qm31OpcodeTraceColumns       = 73
-	qm31OpcodeInteractionColumns = 24
+	Qm31OpcodeTraceColumns       = 73
+	Qm31OpcodeInteractionColumns = 24
 )
 
 type Qm31OpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type Qm31OpcodeInteractionClaim struct {
@@ -45,11 +44,11 @@ func NewQm31Opcode(
 	vanishEvalInv m31.QM31,
 	claim Qm31OpcodeClaim,
 	interactionClaim Qm31OpcodeInteractionClaim,
-) *Qm31OpcodeComponent {
+) Qm31OpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &Qm31OpcodeComponent{
+	return Qm31OpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -62,8 +61,8 @@ func NewQm31Opcode(
 	}
 }
 
-func (c *Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(qm31OpcodeTraceColumns, qm31OpcodeInteractionColumns)
+func (c Qm31OpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(Qm31OpcodeTraceColumns, Qm31OpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

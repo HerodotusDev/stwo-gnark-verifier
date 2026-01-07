@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	addSmallOpcodeTraceColumns       = 33
-	addSmallOpcodeInteractionColumns = 20
+	AddSmallOpcodeTraceColumns       = 33
+	AddSmallOpcodeInteractionColumns = 20
 )
 
 type AddSmallOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type AddSmallOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewAddSmallOpcode(
 	vanishEvalInv m31.QM31,
 	claim AddSmallOpcodeClaim,
 	interactionClaim AddSmallOpcodeInteractionClaim,
-) *AddSmallOpcodeComponent {
+) AddSmallOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &AddSmallOpcodeComponent{
+	return AddSmallOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,8 +58,8 @@ func NewAddSmallOpcode(
 	}
 }
 
-func (c *AddSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(addSmallOpcodeTraceColumns, addSmallOpcodeInteractionColumns)
+func (c AddSmallOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(AddSmallOpcodeTraceColumns, AddSmallOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

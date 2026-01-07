@@ -5,8 +5,8 @@ import "github.com/HerodotusDev/stwo-gnark-verifier/m31"
 type EncodeOffsetsResult struct {
 	Offset1Combined m31.QM31
 	Offset2Combined m31.QM31
-	Range7_2_5Sum   m31.QM31
-	Range4_3Sum     m31.QM31
+	Range725Sum     m31.QM31
+	Range43Sum      m31.QM31
 	Sum             m31.QM31
 }
 
@@ -23,8 +23,8 @@ func EncodeOffsetsEvaluate(
 	offset2Low m31.QM31,
 	offset2Mid m31.QM31,
 	offset2High m31.QM31,
-	range7_2_5Elements m31.InteractionElements,
-	range4_3Elements m31.InteractionElements,
+	range725Elements m31.InteractionElements,
+	range43Elements m31.InteractionElements,
 	sum m31.QM31,
 	domainVanishInv m31.QM31,
 	randomCoeff m31.QM31,
@@ -51,7 +51,7 @@ func EncodeOffsetsEvaluate(
 	sum = accumulateConstraint(qm31, sum, randomCoeff, constraint)
 
 	range7Sum, err := qm31.Combine(
-		range7_2_5Elements,
+		range725Elements,
 		[]m31.QM31{offset0Mid, offset1Low, offset1High},
 	)
 	if err != nil {
@@ -59,7 +59,7 @@ func EncodeOffsetsEvaluate(
 	}
 
 	range4Sum, err := qm31.Combine(
-		range4_3Elements,
+		range43Elements,
 		[]m31.QM31{offset2Low, offset2High},
 	)
 	if err != nil {
@@ -69,8 +69,8 @@ func EncodeOffsetsEvaluate(
 	return EncodeOffsetsResult{
 		Offset1Combined: qm31.Add(offset0Mid, qm31.Mul(offset1Low, qm31Const(128))),
 		Offset2Combined: qm31.Add(offset1High, qm31.Mul(offset2Low, qm31Const(32))),
-		Range7_2_5Sum:   range7Sum,
-		Range4_3Sum:     range4Sum,
+		Range725Sum:     range7Sum,
+		Range43Sum:      range4Sum,
 		Sum:             sum,
 	}
 }

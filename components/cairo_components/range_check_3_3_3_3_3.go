@@ -3,56 +3,59 @@ package cairo_components
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
-type RangeCheck3_3_3_3_3Claim struct{}
+type RangeCheck33333Claim struct {
+	LogSize frontend.Variable
+}
 
-type RangeCheck3_3_3_3_3InteractionClaim struct {
+type RangeCheck33333InteractionClaim struct {
 	ClaimedSum m31.QM31
 }
 
-const rangeCheck3_3_3_3_3LogSize = 15
+var RangeCheck33333LogSize = 15
 
-type RangeCheck3_3_3_3_3Component struct {
-	inner *lookupConstraintComponent
+type RangeCheck33333Component struct {
+	api   frontend.API
+	inner lookupConstraintComponent
 }
 
-func NewRangeCheck3_3_3_3_3(
+func NewRangeCheck33333(
 	api frontend.API,
 	qm31 *m31.QM31Chip,
 	interactionElements m31.InteractionElements,
 	vanishEvalInv m31.QM31,
-	interactionClaim RangeCheck3_3_3_3_3InteractionClaim,
-) *RangeCheck3_3_3_3_3Component {
-	values := []uints.U8{
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
-		uints.NewU8(3),
+	interactionClaim RangeCheck33333InteractionClaim,
+) RangeCheck33333Component {
+	values := []frontend.Variable{
+		frontend.Variable(3),
+		frontend.Variable(3),
+		frontend.Variable(3),
+		frontend.Variable(3),
+		frontend.Variable(3),
 	}
 	preprocessed := []PreprocessedColumn{
-		NewPreprocessedColumnRangeCheck5(values, uints.NewU8(0)),
-		NewPreprocessedColumnRangeCheck5(values, uints.NewU8(1)),
-		NewPreprocessedColumnRangeCheck5(values, uints.NewU8(2)),
-		NewPreprocessedColumnRangeCheck5(values, uints.NewU8(3)),
-		NewPreprocessedColumnRangeCheck5(values, uints.NewU8(4)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(0)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(1)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(2)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(3)),
+		NewPreprocessedColumnRangeCheck5(api, values, frontend.Variable(4)),
 	}
 
-	return &RangeCheck3_3_3_3_3Component{
+	return RangeCheck33333Component{
+		api: api,
 		inner: newLookupConstraintComponent(
 			api,
 			qm31,
 			interactionElements,
 			interactionClaim.ClaimedSum,
-			uints.NewU8(rangeCheck3_3_3_3_3LogSize),
+			RangeCheck33333LogSize,
 			preprocessed,
 			vanishEvalInv,
 		),
 	}
 }
 
-func (c *RangeCheck3_3_3_3_3Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+func (c RangeCheck33333Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
 	return c.inner.Evaluate(sum, traces, randomCoeff)
 }

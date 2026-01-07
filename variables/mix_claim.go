@@ -8,7 +8,7 @@ import (
 
 var zero = uints.NewU8(0)
 
-var feltChunkMasks = [BitsPerFelt252 + 1]uints.U32{
+var feltChunkMasks = [BitsPerM31 + 1]uints.U32{
 	uints.NewU32(0),
 	uints.NewU32(1),
 	uints.NewU32(3),
@@ -22,7 +22,7 @@ var feltChunkMasks = [BitsPerFelt252 + 1]uints.U32{
 }
 
 // MixInto absorbs the Cairo claim into the transcript channel.
-func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API) {
+func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitData CircuitData) {
 	// Used for uint conversions (M31, frontend.Variable, u32, u64, etc.)
 	// TODO: for each new api, a lookup table is created so it would be better to have a unique uapi over the entire verifier circuit
 	uapi32, err := uints.New[uints.U32](api)
@@ -34,33 +34,217 @@ func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API) {
 		panic(err)
 	}
 
-	claim.PublicData.mixInto(ch, uapi32, uapi64)
-	claim.Opcodes.mixInto(ch)
-	if claim.VerifyInstruction != nil {
-		ch.MixU64(uints.U64{claim.VerifyInstruction.LogSize, zero, zero, zero, zero, zero, zero, zero})
+	// Mix public data
+	claim.PublicData.mixInto(ch, uapi32, uapi64, circuitData)
+
+	// Mix opcodes
+	if circuitData.ComponentConfig[0] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Add.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
-	claim.BlakeContext.mixInto(ch)
-	claim.Builtins.mixInto(ch)
-	if claim.PedersenContext.Claim != nil && claim.PedersenContext.Claim.PartialEcMul != nil {
-		ch.MixU64(uints.U64{claim.PedersenContext.Claim.PartialEcMul.LogSize, zero, zero, zero, zero, zero, zero, zero})
+	if circuitData.ComponentConfig[1] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddSmall.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
 	}
-	claim.PoseidonContext.mixInto(ch)
-	ch.MixU64(uints.U64{claim.MemoryAddressToId.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	claim.MemoryIDToValue.mixInto(ch)
+	if circuitData.ComponentConfig[2] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddAp.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[3] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AssertEq.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[4] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AssertEqImm.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[5] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AssertEqDoubleDeref.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[6] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Blake.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[7] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Call.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[8] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.CallRelImm.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[9] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Generic.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[10] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Jnz.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[11] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JnzTaken.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[12] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Jump.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[13] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JumpDoubleDeref.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[14] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JumpRel.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[15] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.JumpRelImm.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[16] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Mul.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[17] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MulSmall.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[18] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Qm31.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+	if circuitData.ComponentConfig[19] {
+		ch.MixU64(uints.NewU64(1))
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Ret.LogSize), uints.NewU32(0)})
+	} else {
+		ch.MixU64(uints.NewU64(0))
+	}
+
+	// Mix verify instruction
+	if circuitData.ComponentConfig[20] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.VerifyInstruction.LogSize), uints.NewU32(0)})
+	}
+
+	// Mix Blake context
+	if circuitData.ComponentConfig[21] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BlakeRound.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[22] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BlakeG.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[24] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.TripleXor32.LogSize), uints.NewU32(0)})
+	}
+
+	// Mix builtins
+	if circuitData.ComponentConfig[26] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.AddModBuiltin.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[27] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.BitwiseBuiltin.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[28] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MulModBuiltin.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[29] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PedersenBuiltin.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[30] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PoseidonBuiltin.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[31] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheck96.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[32] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheck128.LogSize), uints.NewU32(0)})
+	}
+
+	// Mix pedersen context
+	if circuitData.ComponentConfig[33] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PartialEcMul.LogSize), uints.NewU32(0)})
+	}
+
+	// Mix poseidon context
+	if circuitData.ComponentConfig[35] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Poseidon3PartialRoundsChain.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[36] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.PoseidonFullRoundChain.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[37] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.Cube252.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[39] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.RangeCheckFelt252Width27.LogSize), uints.NewU32(0)})
+	}
+
+	// Mix memory components
+	if circuitData.ComponentConfig[40] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MemoryAddressToID.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[41] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MemoryIDToBigBig.LogSize), uints.NewU32(0)})
+	}
+	if circuitData.ComponentConfig[42] {
+		ch.MixU32s([]uints.U32{uapi32.ValueOf(claim.MemoryIDToBigSmall.LogSize), uints.NewU32(0)})
+	}
+
+	// Mix range checks (never mixed)
+
+	// Mix verify bitwise XOR components (same as RC)
 }
 
 // ╔══════════════════════════════════╗
 // ║            Public Data           ║
 // ╚══════════════════════════════════╝
 
-func (data PublicData) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64]) {
-	data.PublicMemory.mixInto(ch, uapi32, uapi64)
+func (data PublicData) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64], circuitData CircuitData) {
+	data.PublicMemory.mixInto(ch, uapi32, uapi64, circuitData)
 	data.InitialState.mixInto(ch, uapi64)
 	data.FinalState.mixInto(ch, uapi64)
 }
 
-func (memory PublicMemory) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64]) {
-	memory.PublicSegments.mixInto(ch, uapi32, uapi64)
+func (memory PublicMemory) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64], circuitData CircuitData) {
+	memory.PublicSegments.mixInto(ch, uapi32, uapi64, circuitData)
 
 	var outputWords []uints.U32
 	for _, entry := range memory.Output {
@@ -81,9 +265,37 @@ func (memory PublicMemory) mixInto(ch *channel.Channel, uapi32 *uints.BinaryFiel
 	}
 }
 
-func (ranges PublicSegmentRanges) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64]) {
-	for _, segment := range ranges.PresentSegments() {
-		segment.mixInto(ch, uapi32, uapi64)
+func (ranges PublicSegmentRanges) mixInto(ch *channel.Channel, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64], circuitData CircuitData) {
+	ranges.Output.mixInto(ch, uapi32, uapi64)
+	if ranges.Pedersen != nil {
+		ranges.Pedersen.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.RangeCheck128 != nil {
+		ranges.RangeCheck128.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Ecdsa != nil {
+		ranges.Ecdsa.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Bitwise != nil {
+		ranges.Bitwise.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.EcOp != nil {
+		ranges.EcOp.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Keccak != nil {
+		ranges.Keccak.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.Poseidon != nil {
+		ranges.Poseidon.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.RangeCheck96 != nil {
+		ranges.RangeCheck96.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.AddMod != nil {
+		ranges.AddMod.mixInto(ch, uapi32, uapi64)
+	}
+	if ranges.MulMod != nil {
+		ranges.MulMod.mixInto(ch, uapi32, uapi64)
 	}
 }
 
@@ -106,167 +318,6 @@ func (state CasmState) mixInto(ch *channel.Channel, uapi64 *uints.BinaryField[ui
 }
 
 // ╔══════════════════════════════════╗
-// ║             Opcodes              ║
-// ╚══════════════════════════════════╝
-
-func (claims OpcodeClaims) mixInto(ch *channel.Channel) {
-	// TODO: this mixing depends on the proof (and wether we have certain opcodes or not). Make it static.
-	ch.MixU64(uints.NewU64(uint64(len(claims.Add))))
-	for _, entry := range claims.Add {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.AddSmall))))
-	for _, entry := range claims.AddSmall {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.AddAp))))
-	for _, entry := range claims.AddAp {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.AssertEq))))
-	for _, entry := range claims.AssertEq {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.AssertEqImm))))
-	for _, entry := range claims.AssertEqImm {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.AssertEqDoubleDeref))))
-	for _, entry := range claims.AssertEqDoubleDeref {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Blake))))
-	for _, entry := range claims.Blake {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Call))))
-	for _, entry := range claims.Call {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.CallRelImm))))
-	for _, entry := range claims.CallRelImm {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Generic))))
-	for _, entry := range claims.Generic {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Jnz))))
-	for _, entry := range claims.Jnz {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.JnzTaken))))
-	for _, entry := range claims.JnzTaken {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Jump))))
-	for _, entry := range claims.Jump {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.JumpDoubleDeref))))
-	for _, entry := range claims.JumpDoubleDeref {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.JumpRel))))
-	for _, entry := range claims.JumpRel {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.JumpRelImm))))
-	for _, entry := range claims.JumpRelImm {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Mul))))
-	for _, entry := range claims.Mul {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.MulSmall))))
-	for _, entry := range claims.MulSmall {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.NewU64(uint64(len(claims.Qm31))))
-	for _, entry := range claims.Qm31 {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	for _, entry := range claims.Ret {
-		ch.MixU64(uints.NewU64(uint64(len(claims.Ret))))
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-}
-
-// ╔══════════════════════════════════╗
-// ║            Contexts              ║
-// ╚══════════════════════════════════╝
-
-func (claim BlakeContextClaim) mixInto(ch *channel.Channel) {
-	if claim.Claim == nil {
-		return
-	}
-	sub := claim.Claim
-	ch.MixU64(uints.U64{sub.BlakeRound.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	ch.MixU64(uints.U64{sub.BlakeG.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	ch.MixU64(uints.NewU64(uint64(sub.TripleXor32.LogSize)))
-}
-
-func (claim BuiltinsClaim) mixInto(ch *channel.Channel) {
-	if claim.AddModBuiltin != nil {
-		mixBuiltinWithSegment(ch, claim.AddModBuiltin.LogSize, claim.AddModBuiltin.AddModBuiltinSegmentStart)
-	}
-	if claim.BitwiseBuiltin != nil {
-		mixBuiltinWithSegment(ch, claim.BitwiseBuiltin.LogSize, claim.BitwiseBuiltin.BitwiseBuiltinSegmentStart)
-	}
-	if claim.MulModBuiltin != nil {
-		mixBuiltinWithSegment(ch, claim.MulModBuiltin.LogSize, claim.MulModBuiltin.MulModBuiltinSegmentStart)
-	}
-	if claim.PedersenBuiltin != nil {
-		mixBuiltinWithSegment(ch, claim.PedersenBuiltin.LogSize, claim.PedersenBuiltin.PedersenBuiltinSegmentStart)
-	}
-	if claim.PoseidonBuiltin != nil {
-		mixBuiltinWithSegment(ch, claim.PoseidonBuiltin.LogSize, claim.PoseidonBuiltin.PoseidonBuiltinSegmentStart)
-	}
-	if claim.RangeCheck96 != nil {
-		mixBuiltinWithSegment(ch, claim.RangeCheck96.LogSize, claim.RangeCheck96.RangeCheckSegmentStart)
-	}
-	if claim.RangeCheck128 != nil {
-		mixBuiltinWithSegment(ch, claim.RangeCheck128.LogSize, claim.RangeCheck128.RangeCheckSegmentStart)
-	}
-}
-
-func mixBuiltinWithSegment(ch *channel.Channel, logSize uints.U8, segmentStart uint32) {
-	ch.MixU64(uints.U64{logSize, zero, zero, zero, zero, zero, zero, zero})
-	ch.MixU64(uints.NewU64(uint64(segmentStart)))
-}
-
-func (claim PoseidonContextClaim) mixInto(ch *channel.Channel) {
-	if claim.Claim == nil {
-		return
-	}
-	sub := claim.Claim
-	if sub.Poseidon3PartialRoundsChain != nil {
-		ch.MixU64(uints.U64{sub.Poseidon3PartialRoundsChain.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	if sub.PoseidonFullRoundChain != nil {
-		ch.MixU64(uints.U64{sub.PoseidonFullRoundChain.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	if sub.Cube252 != nil {
-		ch.MixU64(uints.U64{sub.Cube252.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	if sub.RangeCheckFelt252Width27 != nil {
-		ch.MixU64(uints.U64{sub.RangeCheckFelt252Width27.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-}
-
-// ╔══════════════════════════════════╗
-// ║        Memory & Range Checks     ║
-// ╚══════════════════════════════════╝
-
-func (claim MemoryIDToValueClaim) mixInto(ch *channel.Channel) {
-	for _, entry := range claim.Big {
-		ch.MixU64(uints.U64{entry.LogSize, zero, zero, zero, zero, zero, zero, zero})
-	}
-	ch.MixU64(uints.U64{claim.Small.LogSize, zero, zero, zero, zero, zero, zero, zero})
-}
-
-// ╔══════════════════════════════════╗
 // ║             Helpers              ║
 // ╚══════════════════════════════════╝
 
@@ -277,11 +328,11 @@ func feltValueToU32Words(value Felt252Value, uapi32 *uints.BinaryField[uints.U32
 	current := uints.NewU32(0)
 	bitsFilled := 0
 	wordIdx := 0
-	limbMask := feltChunkMasks[BitsPerFelt252]
+	limbMask := feltChunkMasks[BitsPerM31]
 
 	for i := 0; i < NM31InFelt252 && wordIdx < len(words); i++ {
 		limb := uapi32.And(uapi32.ValueOf(value[i].Limb), limbMask)
-		bitsLeft := BitsPerFelt252
+		bitsLeft := BitsPerM31
 		offset := 0
 
 		for bitsLeft > 0 && wordIdx < len(words) {

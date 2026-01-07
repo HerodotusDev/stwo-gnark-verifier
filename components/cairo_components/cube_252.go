@@ -4,12 +4,11 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	cube252TraceColumns       = 141
-	cube252InteractionColumns = 200
+	Cube252TraceColumns       = 141
+	Cube252InteractionColumns = 200
 )
 
 var (
@@ -18,7 +17,7 @@ var (
 )
 
 type Cube252Claim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type Cube252InteractionClaim struct {
@@ -46,10 +45,10 @@ func NewCube252(
 	vanishEvalInv m31.QM31,
 	claim Cube252Claim,
 	interactionClaim Cube252InteractionClaim,
-) *Cube252Component {
+) Cube252Component {
 	columnSize := computeColumnSize(api, claim.LogSize)
 
-	return &Cube252Component{
+	return Cube252Component{
 		qm31:                 qm31,
 		rangeCheck9Elements:  rangeCheck9Elements,
 		rangeCheck19Elements: rangeCheck19Elements,
@@ -60,8 +59,8 @@ func NewCube252(
 	}
 }
 
-func (c *Cube252Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(cube252TraceColumns, cube252InteractionColumns)
+func (c Cube252Component) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(Cube252TraceColumns, Cube252InteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -54,7 +54,7 @@ func PoseidonPartialRoundEvaluate(
 	copy(linearInput[40:50], cubeOutputs[:])
 	copy(linearInput[50:60], halfKey[:])
 
-	lcRes := LinearCombinationN6Coefs42_3_1M1_1Evaluate(
+	lcRes := LinearCombinationN6Coefs42_3_1M11Evaluate(
 		qm31,
 		linearInput,
 		combinationFirst,

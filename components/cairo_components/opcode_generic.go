@@ -6,16 +6,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	genericOpcodeTraceColumns       = 236
-	genericOpcodeInteractionColumns = 132
+	GenericOpcodeTraceColumns       = 236
+	GenericOpcodeInteractionColumns = 132
 )
 
 type GenericOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type GenericOpcodeInteractionClaim struct {
@@ -49,11 +48,11 @@ func NewGenericOpcode(
 	vanishEvalInv m31.QM31,
 	claim GenericOpcodeClaim,
 	interactionClaim GenericOpcodeInteractionClaim,
-) *GenericOpcodeComponent {
+) GenericOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &GenericOpcodeComponent{
+	return GenericOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -67,8 +66,8 @@ func NewGenericOpcode(
 	}
 }
 
-func (c *GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(genericOpcodeTraceColumns, genericOpcodeInteractionColumns)
+func (c GenericOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(GenericOpcodeTraceColumns, GenericOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║       Constraint Evaluations     ║

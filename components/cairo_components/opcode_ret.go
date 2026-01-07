@@ -4,16 +4,15 @@ import (
 	sub "github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components/subroutines"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 const (
-	retOpcodeTraceColumns       = 12
-	retOpcodeInteractionColumns = 16
+	RetOpcodeTraceColumns       = 12
+	RetOpcodeInteractionColumns = 16
 )
 
 type RetOpcodeClaim struct {
-	LogSize uints.U8
+	LogSize frontend.Variable
 }
 
 type RetOpcodeInteractionClaim struct {
@@ -43,11 +42,11 @@ func NewRetOpcode(
 	vanishEvalInv m31.QM31,
 	claim RetOpcodeClaim,
 	interactionClaim RetOpcodeInteractionClaim,
-) *RetOpcodeComponent {
+) RetOpcodeComponent {
 	columnSize := computeColumnSize(api, claim.LogSize)
 	columnSizeInv := qm31.Inverse(columnSize)
 
-	return &RetOpcodeComponent{
+	return RetOpcodeComponent{
 		qm31:                      qm31,
 		verifyInstructionElements: verifyInstructionElements,
 		memoryAddressToIdElements: memoryAddressToIdElements,
@@ -59,8 +58,8 @@ func NewRetOpcode(
 	}
 }
 
-func (c *RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
-	traceSampledValues, interactionSampledValues := traces.Take(retOpcodeTraceColumns, retOpcodeInteractionColumns)
+func (c RetOpcodeComponent) Evaluate(sum m31.QM31, traces *Traces, randomCoeff m31.QM31) m31.QM31 {
+	traceSampledValues, interactionSampledValues := traces.Take(RetOpcodeTraceColumns, RetOpcodeInteractionColumns)
 
 	// ╔══════════════════════════════════╗
 	// ║        Preprocessed Trace        ║

@@ -83,6 +83,22 @@ func (c *qm31InverseCircuit) Define(api frontend.API) error {
 	return nil
 }
 
+// Circuit for QM31 encoding/decoding tests
+type qm31EncodeDecodeCircuit struct {
+	Value QM31
+}
+
+func (c *qm31EncodeDecodeCircuit) Define(api frontend.API) error {
+	m31Chip := NewM31Chip(api)
+	qmChip := NewQM31Chip(m31Chip)
+
+	value := c.Value
+	encodedValue := qmChip.EncodeNative(value)
+	decodedValue := qmChip.DecodeNative(encodedValue)
+	qmChip.AssertEqual(decodedValue, value)
+	return nil
+}
+
 // ╔══════════════════════════════════╗
 // ║          Test Functions          ║
 // ╚══════════════════════════════════╝
@@ -113,6 +129,18 @@ func TestQM31Inverse(t *testing.T) {
 	badWitness := &qm31InverseCircuit{Value: [4]M31{NewM31Unchecked(0), NewM31Unchecked(0), NewM31Unchecked(0), NewM31Unchecked(0)}}
 	assert.CheckCircuit(circuit,
 		test.WithInvalidAssignment(badWitness),
+		test.WithCurves(ecc.BN254),
+	)
+}
+
+// Test QM31 encoding/decoding
+func TestQM31EncodeDecode(t *testing.T) {
+	assert := test.NewAssert(t)
+	circuit := &qm31EncodeDecodeCircuit{}
+	witness := &qm31EncodeDecodeCircuit{Value: NewQM31Unchecked(1, 2, 3, 4)}
+
+	assert.CheckCircuit(circuit,
+		test.WithValidAssignment(witness),
 		test.WithCurves(ecc.BN254),
 	)
 }

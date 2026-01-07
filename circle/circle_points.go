@@ -5,6 +5,7 @@ import (
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
+	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/conversion"
 	gnarkbits "github.com/consensys/gnark/std/math/bits"
@@ -211,13 +212,11 @@ func (c *CircleChip) AddPointIndex(a, b circlePointIndex) circlePointIndex {
 	return circlePointIndex{circleChip: c, value: reducedSum}
 }
 
-func SubgroupGenerator(circleChip *CircleChip, logSize uint32) circlePointIndex {
-	if logSize == 0 || logSize > CircleLogOrder {
-		panic("invalid subgroup generator log size")
-	}
-
-	u32PointIndex := uint32(1) << (CircleLogOrder - logSize)
-	return newPointIndex(circleChip, uints.NewU32(u32PointIndex))
+func SubgroupGenerator(circleChip *CircleChip, logSize frontend.Variable) circlePointIndex {
+	expNative := circleChip.api.Sub(frontend.Variable(CircleLogOrder), logSize)
+	twoPowExp := utils.Pow(circleChip.api, circleChip.comparator, frontend.Variable(2), expNative)
+	pointIndexU32 := circleChip.uapi.ValueOf(twoPowExp)
+	return newPointIndex(circleChip, pointIndexU32)
 }
 
 // ╔══════════════════════════════════╗
@@ -226,15 +225,14 @@ func SubgroupGenerator(circleChip *CircleChip, logSize uint32) circlePointIndex 
 
 // CosetVanishing evaluates the vanishing polynomial of a coset at point p.
 func (c *CircleChip) CosetVanishing(coset Coset, p Point) m31.QM31 {
-	if coset.LogSize() == 0 {
-		panic("coset log size must be positive")
-	}
 	x := p.X
 	one := c.qm31.One()
-	for i := uint32(1); i < coset.LogSize(); i++ {
+	for i := 1; i < CircleLogOrder; i++ {
+		isLess := c.comparator.IsLess(frontend.Variable(i), coset.LogSize())
 		square := c.qm31.Mul(x, x)
 		doubleSquare := c.qm31.Add(square, square)
-		x = c.qm31.Sub(doubleSquare, one)
+		doubleSquareMinusOne := c.qm31.Sub(doubleSquare, one)
+		x = c.qm31.Select(isLess, doubleSquareMinusOne, x)
 	}
 	return x
 }
@@ -245,6 +243,6 @@ func (c *CircleChip) CosetVanishingInverse(coset Coset, p Point) m31.QM31 {
 }
 
 // CanonicVanishingInverse evaluates the canonic coset vanishing polynomial and inverts it.
-func (c *CircleChip) CanonicVanishingInverse(logSize uint32, p Point) m31.QM31 {
+func (c *CircleChip) CanonicVanishingInverse(logSize frontend.Variable, p Point) m31.QM31 {
 	return c.CosetVanishingInverse(NewCanonicCoset(c, logSize).Coset(), p)
 }
