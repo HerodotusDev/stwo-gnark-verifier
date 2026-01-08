@@ -1,0 +1,15 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+optimizer = true
+optimizer_runs = 2000    # Lower runs (e.g. 1 or 200) focuses on deployment cost
+via_ir = true           # Often required for complex ZK verifiers to avoid "Stack Too Deep"
+
+memory_limit = 9223372036854775807 # Max int64 (Uncap memory)
+gas_limit = 9223372036854775807    # Max int64 (Uncap gas)
+
+fs_permissions = [{ access = "read", path = "./" }]
