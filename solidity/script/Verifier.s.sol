@@ -12,9 +12,6 @@ contract VerifierScript is Script {
         // Look for the private key in the .env file or command line
         vm.startBroadcast();
 
-        // ---------------------------------------------------------
-        // DEPLOYMENT LOGIC
-        // ---------------------------------------------------------
         verifier = new Verifier();
 
         vm.stopBroadcast();

@@ -5,29 +5,45 @@ import {Script, console} from "forge-std/Script.sol";
 
 interface IVerifier {
     function verifyProof(
-        uint256[8] memory proof,
-        uint256[2] memory commitments,
-        uint256[2] memory commitmentPok,
-        uint256[] memory input
-    ) external view;
+        uint256[8] calldata proof,
+        uint256[2] calldata commitments,
+        uint256[2] calldata commitmentPok,
+        uint256[8] calldata input
+    ) external;
 }
 
 contract CallVerifyScript is Script {
     function run() public {
-        // 1. Read and Parse JSON
-        string memory json = vm.readFile(string.concat(vm.projectRoot(), "/proof.json"));
-        
-        uint256[8] memory proof = abi.decode(vm.parseJson(json, ".proof"), (uint256[8]));
-        uint256[2] memory commitments = abi.decode(vm.parseJson(json, ".commitments"), (uint256[2]));
-        uint256[2] memory commitmentPok = abi.decode(vm.parseJson(json, ".commitmentPok"), (uint256[2]));
-        uint256[] memory input = abi.decode(vm.parseJson(json, ".input"), (uint256[]));
-
+        string memory json = vm.readFile(string.concat(vm.projectRoot(), "/calldata.json"));
         address verifier = vm.envAddress("VERIFIER_ADDRESS");
 
-        // 3. Call Verify (View function)
         console.log("Verifying proof on:", verifier);
-        IVerifier(verifier).verifyProof(proof, commitments, commitmentPok, input);
-        
-        console.log("Proof is valid!");
+
+        // Look for the private key in the .env file or command line
+        vm.startBroadcast();
+
+        IVerifier(verifier).verifyProof(
+            abi.decode(_parse(json, ".proof"), (uint256[8])),
+            abi.decode(_parse(json, ".commitments"), (uint256[2])),
+            abi.decode(_parse(json, ".commitmentPok"), (uint256[2])),
+            abi.decode(_parse(json, ".input"), (uint256[8]))
+        );
+
+        vm.stopBroadcast();
+
+        console.log("Proof verified successfully!");
+    }
+
+    /// @dev Parses JSON string-array -> uint[] -> packed bytes.
+    function _parse(string memory json, string memory key) internal pure returns (bytes memory) {
+        string[] memory raw = abi.decode(vm.parseJson(json, key), (string[]));
+        uint256[] memory converted = new uint256[](raw.length);
+
+        for (uint256 i; i < raw.length;) {
+            converted[i] = vm.parseUint(raw[i]);
+            unchecked { ++i; }
+        }
+
+        return abi.encodePacked(converted);
     }
 }
