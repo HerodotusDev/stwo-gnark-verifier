@@ -19,6 +19,7 @@ func (c *hashSplitRebuildCircuit) Define(api frontend.API) error {
 
 	hash := [32]uints.U8{}
 	for i := 0; i < 32; i++ {
+		//nolint:gosec // test data is bounded by loop index.
 		hash[i] = uints.NewU8(uint8(i))
 	}
 

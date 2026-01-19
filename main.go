@@ -67,7 +67,11 @@ func main() {
 
 	// 2. Compile & Setup
 	fmt.Println(">> Compiling & Setup...")
-	ccs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
+	compileOpts, err := utils.CompileOptionsFromEnv()
+	if err != nil {
+		panic(err)
+	}
+	ccs, err := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit, compileOpts...)
 	if err != nil {
 		panic(err)
 	}
@@ -122,16 +126,20 @@ func main() {
 		return res
 	}
 
-	var buf bytes.Buffer
-	proof.WriteRawTo(&buf)
-	proofBytes := buf.Bytes()
+	var proofBuf bytes.Buffer
+	if _, err := proof.WriteRawTo(&proofBuf); err != nil {
+		panic(err)
+	}
+	proofBytes := proofBuf.Bytes()
 	if err := os.WriteFile("proof.bin", proofBytes, 0600); err != nil {
 		panic(err)
 	}
 
-	buf.Reset()
-	pubWitness.WriteTo(&buf)
-	pubBytes := buf.Bytes()
+	var witnessBuf bytes.Buffer
+	if _, err := pubWitness.WriteTo(&witnessBuf); err != nil {
+		panic(err)
+	}
+	pubBytes := witnessBuf.Bytes()
 	if err := os.WriteFile("witness.bin", pubBytes, 0600); err != nil {
 		panic(err)
 	}
