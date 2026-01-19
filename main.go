@@ -69,10 +69,10 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 }
 
 type SolidityCallData struct {
-	Proof         [8]string `json:"proof"`
-	Commitments   [2]string `json:"commitments"`
-	CommitmentPok [2]string `json:"commitmentPok"`
-	Input         []string  `json:"input"`
+	Proof         []string `json:"proof"`
+	Commitments   []string `json:"commitments"`
+	CommitmentPok []string `json:"commitmentPok"`
+	Input         []string `json:"input"`
 }
 
 func main() {
@@ -169,16 +169,23 @@ func main() {
 		panic(err)
 	}
 
-	// Offsets: 8 points (A,B,C) + 4 byte header -> Commitments -> PoK
-	commStart := 8*fp + 4
-	pokStart := commStart + 2*fp
+	// Witness Header: [nbPublic(4) | nbSecret(4) | nbVector(4)]
+	nbPublic := int(binary.BigEndian.Uint32(pubBytes[:4]))
+
+	// Proof Header: A(2) + B(4) + C(2) = 8 fields
+	const baseProofLen = 8
+	offset := baseProofLen * fp
+
+	// Dynamic Commitments: Read count from bytes
+	nbComm := int(binary.BigEndian.Uint32(proofBytes[offset : offset+4]))
+	offset += 4
 
 	data := SolidityCallData{
-		Input: parse(pubBytes[12:], int(binary.BigEndian.Uint32(pubBytes[:4]))),
+		Proof:         parse(proofBytes, baseProofLen),
+		Commitments:   parse(proofBytes[offset:], nbComm*2),      // Each comm is a point (2 coords)
+		CommitmentPok: parse(proofBytes[offset+nbComm*2*fp:], 2), // PoK is always 1 point (2 coords)
+		Input:         parse(pubBytes[12:], nbPublic),
 	}
-	copy(data.Proof[:], parse(proofBytes, 8))
-	copy(data.Commitments[:], parse(proofBytes[commStart:], 2))
-	copy(data.CommitmentPok[:], parse(proofBytes[pokStart:], 2))
 
 	jsonData, _ := json.MarshalIndent(data, "", "  ")
 	if err := os.WriteFile("calldata.json", jsonData, 0600); err != nil {
