@@ -18,22 +18,30 @@ func init() {
 	solver.RegisterHint(MaxLogSizeHint)
 }
 
-// MaxLogSize returns the hinted max log size across all trees.
-func MaxLogSize(api frontend.API, logSizes TreeLogSizes) frontend.Variable {
+// MaxLogSize returns the hinted max log size across all trees, reusing a caller-provided comparator.
+// This lets higher-level circuits construct shared chips once and pass them down.
+func MaxLogSize(api frontend.API, comparator *cmp.BoundedComparator, logSizes TreeLogSizes) frontend.Variable {
 	flattened := utils.FlattenTree(logSizes)
 	result, err := api.Compiler().NewHint(MaxLogSizeHint, 1, flattened...)
 	if err != nil {
 		panic(err)
 	}
-	assertIsMax(api, flattened, result[0])
+	assertIsMax(api, comparator, flattened, result[0])
 	return result[0]
 }
 
-func assertIsMax(api frontend.API, logSizes []frontend.Variable, max frontend.Variable) {
-	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<8), false)
+func assertIsMax(api frontend.API, comparator *cmp.BoundedComparator, logSizes []frontend.Variable, max frontend.Variable) {
+	if comparator == nil {
+		panic("comparator must not be nil")
+	}
+	exists := frontend.Variable(0)
 	for _, size := range logSizes {
 		comparator.AssertIsLessEq(size, max)
+		// Track whether max equals at least one input; otherwise a prover could set max to an arbitrary larger value.
+		exists = api.Add(exists, api.IsZero(api.Sub(size, max)))
 	}
+	// Enforce exists != 0 (i.e. max is attained by some input).
+	api.AssertIsEqual(api.IsZero(exists), frontend.Variable(0))
 }
 
 // MaxLogSizeHint computes the max of inputs and is registered as a hint.

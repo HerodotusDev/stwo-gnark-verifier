@@ -1,6 +1,7 @@
 package blake2s
 
 import (
+	"math"
 	"math/big"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
@@ -11,7 +12,6 @@ import (
 )
 
 var BLAKE2S_BLOCKBYTES = uints.NewU32(64)
-var absDiffUpp = big.NewInt(1<<32 - 1)
 
 var blake2sIV = [8]uints.U32{
 	uints.NewU32(0x6A09E667),
@@ -60,8 +60,9 @@ var blake2sInitialState = Blake2sState{
 }
 
 type Blake2sChip struct {
-	api  frontend.API                  `gnark:"-"`
-	uapi *uints.BinaryField[uints.U32] `gnark:"-"`
+	api        frontend.API                  `gnark:"-"`
+	uapi       *uints.BinaryField[uints.U32] `gnark:"-"`
+	comparator *cmp.BoundedComparator        `gnark:"-"`
 }
 
 type Blake2sState struct {
@@ -84,7 +85,30 @@ func NewBlake2sChip(api frontend.API) *Blake2sChip {
 		panic(err)
 	}
 
-	return &Blake2sChip{api: api, uapi: uapi}
+	// Used for U32 counter carry comparisons.
+	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+
+	return NewBlake2sChipWithUAPI(api, uapi, comparator)
+}
+
+func NewBlake2sChipWithUAPI(api frontend.API, uapi *uints.BinaryField[uints.U32], comparator *cmp.BoundedComparator) *Blake2sChip {
+	if api == nil {
+		panic("api must not be nil")
+	}
+	if uapi == nil {
+		panic("uapi must not be nil")
+	}
+	if comparator == nil {
+		panic("comparator must not be nil")
+	}
+	if api.Compiler().Field().Cmp(bn254.ID.ScalarField()) != 0 {
+		panic("Gnark compiler not set to BN254 scalar field")
+	}
+	return &Blake2sChip{
+		api:        api,
+		uapi:       uapi,
+		comparator: comparator,
+	}
 }
 
 func (c *Blake2sChip) Blake2s(msg []uints.U8) (Blake2sState, [32]uints.U8) {
@@ -126,15 +150,13 @@ func (c *Blake2sChip) Update(state Blake2sState, msg []uints.U8) Blake2sState {
 		return state
 	}
 
-	// TODO: initialize in the constructor
 	// Comparator for carry on 32-bit counter increment
 	// |state.T[0] - BLAKE2S_BLOCKBYTES| <= 2^32-1
-	less := cmp.NewBoundedComparator(c.api, absDiffUpp, false)
 
 	// Increment t by 64 bytes with carry into t[1]
 	incCounter := func() {
 		newT0 := c.uapi.Add(state.T[0], BLAKE2S_BLOCKBYTES)
-		carry := less.IsLess(c.uapi.ToValue(newT0), c.uapi.ToValue(state.T[0]))
+		carry := c.comparator.IsLess(c.uapi.ToValue(newT0), c.uapi.ToValue(state.T[0]))
 		state.T[0] = newT0
 		state.T[1] = c.uapi.Add(state.T[1], c.uapi.ValueOf(carry))
 	}
@@ -308,12 +330,12 @@ func (c *Blake2sChip) Compress(state Blake2sState, in [16]uints.U32) Blake2sStat
 func (c *Blake2sChip) Finalize(state Blake2sState) (Blake2sState, [32]uints.U8) {
 	// Increment counter by remaining bytes (BufLen)
 	if state.BufLen > 0 {
-		// Comparator for carry on 32-bit counter increment
-		less := cmp.NewBoundedComparator(c.api, absDiffUpp, false)
-
+		if state.BufLen > math.MaxUint32 {
+			panic("buf len exceeds uint32")
+		}
 		inc := uints.NewU32(uint32(state.BufLen))
 		newT0 := c.uapi.Add(state.T[0], inc)
-		carry := less.IsLess(c.uapi.ToValue(newT0), c.uapi.ToValue(state.T[0]))
+		carry := c.comparator.IsLess(c.uapi.ToValue(newT0), c.uapi.ToValue(state.T[0]))
 		state.T[0] = newT0
 		state.T[1] = c.uapi.Add(state.T[1], c.uapi.ValueOf(carry))
 	}

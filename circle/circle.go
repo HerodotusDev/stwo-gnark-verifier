@@ -34,7 +34,22 @@ func NewCircleChip(api frontend.API, m31Chip *m31.M31Chip, qm31Chip *m31.QM31Chi
 		panic(err)
 	}
 	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+	return NewCircleChipWithUAPI(api, uapi, comparator, m31Chip, qm31Chip)
+}
 
+func NewCircleChipWithUAPI(api frontend.API, uapi *uints.BinaryField[uints.U32], comparator *cmp.BoundedComparator, m31Chip *m31.M31Chip, qm31Chip *m31.QM31Chip) *CircleChip {
+	if api == nil {
+		panic("api must not be nil")
+	}
+	if uapi == nil {
+		panic("uapi must not be nil")
+	}
+	if comparator == nil {
+		panic("comparator must not be nil")
+	}
+	if m31Chip == nil || qm31Chip == nil {
+		panic("field chips must not be nil")
+	}
 	return &CircleChip{
 		api:        api,
 		uapi:       uapi,

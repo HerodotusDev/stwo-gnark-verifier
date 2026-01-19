@@ -189,7 +189,9 @@ func (c *hashNodeWithChildrenCircuit) Define(api frontend.API) error {
 	left := [32]uints.U8{}
 	right := [32]uints.U8{}
 	for i := 0; i < 32; i++ {
+		//nolint:gosec // test data is bounded by loop index.
 		left[i] = uints.NewU8(uint8(i))
+		//nolint:gosec // test data is bounded by loop index.
 		right[i] = uints.NewU8(uint8(255 - i))
 	}
 	values := []m31.M31{
@@ -290,6 +292,7 @@ func BenchmarkBlake2sHash(b *testing.B) {
 	// create a proper witness with initialized U8 values
 	var in [64]uints.U8
 	for i := range in {
+		//nolint:gosec // test data is bounded by loop index.
 		in[i] = uints.NewU8(uint8(i % 256)) // fill with test data
 	}
 	witness := blake2sHashBenchCircuit{

@@ -66,6 +66,17 @@ func NewChannel(api frontend.API) *Channel {
 	}
 	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
 
+	return NewChannelWithChips(api, blake2sChip, m31Chip, uapi, comparator)
+}
+
+// NewChannelWithChips builds a channel using shared chip instances (recommended inside larger circuits).
+func NewChannelWithChips(api frontend.API, blake2sChip *blake2s.Blake2sChip, m31Chip *m31.M31Chip, uapi *uints.BinaryField[uints.U32], comparator *cmp.BoundedComparator) *Channel {
+	if api == nil {
+		panic("api must not be nil")
+	}
+	if blake2sChip == nil || m31Chip == nil || uapi == nil || comparator == nil {
+		panic("channel dependencies must not be nil")
+	}
 	return &Channel{
 		api:         api,
 		blake2sChip: blake2sChip,
@@ -190,7 +201,7 @@ func checkProofOfWork(uapi *uints.BinaryField[uints.U32], digest Blake2sHash, in
 func (c *Channel) GenerateBaseLayerQueries(maxLogSize frontend.Variable, nQueries uint8) []frontend.Variable {
 	queries := make([]frontend.Variable, 0)
 	queryCount := uint8(0)
-	maxQuery := c.api.Sub(utils.Pow(c.api, c.comparator, frontend.Variable(2), maxLogSize), frontend.Variable(1))
+	maxQuery := c.api.Sub(utils.Pow2(c.api, maxLogSize, 8), frontend.Variable(1))
 	maxQueryU32 := c.uapi.ValueOf(maxQuery)
 	// TODO: this fails with probability ~1/2^32. The prover should hint how many and which queries are duplicates.
 	//       This information should be provided through circuitData.

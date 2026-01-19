@@ -181,7 +181,7 @@ func (c *CircleChip) AddPointIndex(a, b CirclePointIndex) CirclePointIndex {
 // SubgroupGenerator generates the subgroup generator for a given log size.
 func SubgroupGenerator(circleChip *CircleChip, logSize frontend.Variable) CirclePointIndex {
 	expNative := circleChip.api.Sub(frontend.Variable(CircleLogOrder), logSize)
-	twoPowExp := utils.Pow(circleChip.api, circleChip.comparator, frontend.Variable(2), expNative)
+	twoPowExp := utils.Pow2(circleChip.api, expNative, 8)
 	pointIndexU32 := circleChip.uapi.ValueOf(twoPowExp)
 	return newPointIndex(circleChip, pointIndexU32)
 }

@@ -1,6 +1,9 @@
 package fri
 
 import (
+	"fmt"
+
+	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components"
@@ -9,19 +12,21 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/conversion"
-	"github.com/consensys/gnark/std/lookup/logderivlookup"
 	"github.com/consensys/gnark/std/math/bits"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
 // FriVerifier is a circuit gadget for verifying a FRI proof
 type FriVerifier struct {
-	api        frontend.API
-	uapi       *uints.BinaryField[uints.U32]
-	m31Chip    *m31.M31Chip
-	qm31Chip   *m31.QM31Chip
-	circleChip *circle.CircleChip
+	api         frontend.API
+	uapi        *uints.BinaryField[uints.U32]
+	bapi        *uints.Bytes
+	m31Chip     *m31.M31Chip
+	qm31Chip    *m31.QM31Chip
+	circleChip  *circle.CircleChip
+	blake2sChip *blake2s.Blake2sChip
+	cmpU32      *cmp.BoundedComparator
 
 	friConfig           variables.FriConfig
 	FirstLayerVerifier  FriFirstLayerVerifier
@@ -29,10 +34,12 @@ type FriVerifier struct {
 	LastLayerPoly       circle.LinePoly
 
 	circuitData variables.CircuitData
+
+	bitDecompCache map[string][]frontend.Variable
 }
 
 // NewFriVerifier initializes a new FriVerifier
-func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig variables.FriConfig, friProof variables.FriProof, bounds []frontend.Variable, circuitData variables.CircuitData) *FriVerifier {
+func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], bapi *uints.Bytes, blake2sChip *blake2s.Blake2sChip, cmpU32 *cmp.BoundedComparator, channelChip *channel.Channel, qm31Chip *m31.QM31Chip, circleChip *circle.CircleChip, friConfig variables.FriConfig, friProof variables.FriProof, bounds []frontend.Variable, circuitData variables.CircuitData) *FriVerifier {
 	// First layer commitment
 	channelChip.MixRootBytes(friProof.FirstLayerProof.Commitment[:])
 
@@ -74,19 +81,23 @@ func NewFriVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], channe
 	return &FriVerifier{
 		api:                 api,
 		uapi:                uapi,
+		bapi:                bapi,
 		m31Chip:             qm31Chip.M31Chip(),
 		qm31Chip:            qm31Chip,
 		circleChip:          circleChip,
+		blake2sChip:         blake2sChip,
+		cmpU32:              cmpU32,
 		friConfig:           friConfig,
 		FirstLayerVerifier:  firstLayerVerifier,
 		InnerLayerVerifiers: innerLayerVerifiers,
 		LastLayerPoly:       friProof.LastLayerPoly,
 		circuitData:         circuitData,
+		bitDecompCache:      make(map[string][]frontend.Variable),
 	}
 }
 
 // Verify verifies the FRI proof for the given queries and evaluations
-func (f *FriVerifier) Verify(queries []logderivlookup.Table, evaluations []logderivlookup.Table) {
+func (f *FriVerifier) Verify(queries [][]frontend.Variable, evaluations [][]frontend.Variable) {
 	firstLayerEvaluations := f.verifyFirstLayer(queries, evaluations)
 	lastEvaluations := f.verifyInnerLayers(queries, firstLayerEvaluations)
 	f.verifyLastLayer(lastEvaluations)
@@ -122,7 +133,7 @@ func (f *FriVerifier) FriQuotientEvaluations(
 	maxNColumns := 0
 	for i := 0; i < 32; i++ {
 		nColumns := 0
-		for treeIndex := range cairo_components.N_TREES {
+		for treeIndex := 0; treeIndex < cairo_components.N_TREES; treeIndex++ {
 			nColumns += f.circuitData.NColumnsPerLogSize[treeIndex][i]
 		}
 		if nColumns > maxNColumns {
@@ -178,11 +189,11 @@ func (f *FriVerifier) FriQuotientEvaluations(
 		circleDomain := circle.NewCanonicCoset(f.circleChip, frontend.Variable(logSize)).CircleDomain()
 		layerQuotientEvaluations := make([]m31.QM31, 0)
 		for _, queryPosition := range queries[logSize] {
-			bitReversedQueryPosition := reverseBitIndex(f.api, f.uapi, queryPosition, logSize)
+			bitReversedQueryPosition := f.reverseBitIndex(queryPosition, logSize)
 			domainPoint := circleDomain.At(bitReversedQueryPosition)
 			// get flattened (over trees) queried values at query position
 			valuesAtQueryPosition := make([]m31.M31, 0)
-			for treeIndex := range cairo_components.N_TREES {
+			for treeIndex := 0; treeIndex < cairo_components.N_TREES; treeIndex++ {
 				nColumns := f.circuitData.NColumnsPerLogSize[treeIndex][logSize-1]
 				valuesAtQueryPosition = append(valuesAtQueryPosition, queriedValues[treeIndex][queriedValuesPointer[treeIndex]:queriedValuesPointer[treeIndex]+nColumns]...)
 				queriedValuesPointer[treeIndex] += nColumns
@@ -270,9 +281,9 @@ type SparseEvaluations struct {
 	evals         [][2]m31.QM31
 }
 
-func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluations []logderivlookup.Table) []SparseEvaluations {
+func (f *FriVerifier) verifyFirstLayer(queries [][]frontend.Variable, evaluations [][]frontend.Variable) []SparseEvaluations {
 	// compute the decommitment positions (queries and their siblings dedupped) and build the matching decommitments values
-	decommitmentPositions := make([]logderivlookup.Table, 32)
+	decommitmentPositions := make([][]frontend.Variable, 32)
 	sparseEvaluationsFlattened := make([]m31.M31, 0)
 	sparseEvaluations := make([]SparseEvaluations, 0)
 	previousFriWitnessIndex := 0
@@ -301,8 +312,7 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 			previousFriWitnessIndex = friWitnessIndex
 
 			// dummy values to simulate the unused children queries of the last query (if it is on the right) of a layer
-			layerDecommitmentPositions.Insert(frontend.Variable(1 << 32))
-			layerDecommitmentPositions.Insert(frontend.Variable(1 << 32))
+			layerDecommitmentPositions = append(layerDecommitmentPositions, frontend.Variable(1<<32), frontend.Variable(1<<32))
 
 			// update global data
 			decommitmentPositions[logSize] = layerDecommitmentPositions
@@ -314,7 +324,7 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 			columnBoundsIndex++
 		} else {
 			// if there are no FRI answers, we just fold the previous layer queries
-			// convert the lookup table to a slice of frontend.Variable
+			// use the previous layer query slice
 			previousLayerQueriesLookup := decommitmentPositions[logSize+1]
 			previousLayerQueries := make([]frontend.Variable, 0)
 			nQueriesPreviousLayer := 0
@@ -325,25 +335,20 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 				nQueriesPreviousLayer = f.circuitData.DedupedQueriesShape[logSize+1]
 			}
 			for i := 0; i < nQueriesPreviousLayer; i++ {
-				previousLayerQueries = append(previousLayerQueries, previousLayerQueriesLookup.Lookup(frontend.Variable(i))[0])
+				previousLayerQueries = append(previousLayerQueries, previousLayerQueriesLookup[i])
 			}
 
 			// fold the previous layer queries
-			layerQueries := utils.FoldQueries(f.api, previousLayerQueries, f.circuitData.DedupedQueriesShape[logSize])
+			layerQueries := utils.FoldQueries(f.api, f.uapi, f.cmpU32, previousLayerQueries, f.circuitData.DedupedQueriesShape[logSize])
 
-			// convert the slice of frontend.Variable to a lookup table
-			layerQueriesLookup := logderivlookup.New(f.api)
-			for _, query := range layerQueries {
-				layerQueriesLookup.Insert(query)
-			}
-			layerQueriesLookup.Insert(frontend.Variable(1 << 32))
-			layerQueriesLookup.Insert(frontend.Variable(1 << 32))
+			layerQueries = append(layerQueries, frontend.Variable(1<<32), frontend.Variable(1<<32))
 
 			queriesShape[logSize] = f.circuitData.DedupedQueriesShape[logSize]
-			decommitmentPositions[logSize] = layerQueriesLookup
+			decommitmentPositions[logSize] = layerQueries
 		}
-		// all lookup tables need at least one query, this makes sure they all get one (root doesn't otherwise)
-		_ = decommitmentPositions[logSize].Lookup(0)
+		if len(decommitmentPositions[logSize]) == 0 {
+			decommitmentPositions[logSize] = []frontend.Variable{frontend.Variable(1 << 32)}
+		}
 
 	}
 
@@ -362,7 +367,7 @@ func (f *FriVerifier) verifyFirstLayer(queries []logderivlookup.Table, evaluatio
 	}
 
 	// verify the merkle decommitment
-	merkleVerifier := NewMerkleVerifier(f.api, f.uapi, f.FirstLayerVerifier.proof.Commitment, columnLogSizes, nColumnsPerLogSize)
+	merkleVerifier := NewMerkleVerifierWithChips(f.api, f.uapi, f.bapi, f.m31Chip, f.blake2sChip, f.FirstLayerVerifier.proof.Commitment, columnLogSizes, nColumnsPerLogSize)
 	firstLayerBranching := f.circuitData.FriFirstLayerBranching
 	if len(firstLayerBranching) == 0 {
 		panic("missing FRI first layer branching data")
@@ -386,7 +391,7 @@ type FriInnerLayerVerifier struct {
 }
 
 // VerifyInnerLayers verifies the inner layers of a FRI proof
-func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLayerEvaluations []SparseEvaluations) []m31.QM31 {
+func (f *FriVerifier) verifyInnerLayers(queries [][]frontend.Variable, firstLayerEvaluations []SparseEvaluations) []m31.QM31 {
 	columnBoundsIndex := 0
 	previousAlpha := f.FirstLayerVerifier.foldingAlpha
 	maxLogSize := f.circuitData.ColumnBounds[0] - 2
@@ -432,12 +437,12 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 			}
 		}
 
-		// encode the g_i(x_j) into a lookup table of frontend.Variables
-		encodedCurrentLayerEvalsLookup := logderivlookup.New(f.api)
+		// encode the g_i(x_j) into a slice of frontend.Variables with a dummy tail
+		encodedCurrentLayerEvals := make([]frontend.Variable, 0, len(currentLayerEvals)+1)
 		for _, eval := range currentLayerEvals {
-			encodedCurrentLayerEvalsLookup.Insert(f.qm31Chip.EncodeNative(eval))
+			encodedCurrentLayerEvals = append(encodedCurrentLayerEvals, f.qm31Chip.EncodeNative(eval))
 		}
-		encodedCurrentLayerEvalsLookup.Insert(frontend.Variable(1 << 32))
+		encodedCurrentLayerEvals = append(encodedCurrentLayerEvals, frontend.Variable(1<<32))
 
 		// build the column log sizes (1 flattened QM31 column yields 4 M31 columns)
 		columnLogSizes := []frontend.Variable{logSize, logSize, logSize, logSize}
@@ -445,7 +450,7 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 		// verify g_i(x_j) decommitments
 		layerDecommitmentPositions, sparseEvaluationsFlattened, sparseEvaluation, _ := f.computeDecommitmentPositionsAndRebuildEvals(
 			queries[logSize+1],
-			encodedCurrentLayerEvalsLookup,
+			encodedCurrentLayerEvals,
 			f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.FriWitness,
 			0,
 			f.circuitData.DedupedQueriesShape[logSize],
@@ -460,7 +465,7 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 		queryShape := make([]int, 32)
 
 		// first layer is layerDecommitmentPositions
-		decommitmentPositions := make([]logderivlookup.Table, 32)
+		decommitmentPositions := make([][]frontend.Variable, 32)
 		decommitmentPositions[logSize+1] = layerDecommitmentPositions
 		queryShape[logSize+1] = 2 * f.circuitData.DedupedQueriesShape[logSize]
 
@@ -468,16 +473,11 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 		previousLayerQueriesLookup := layerDecommitmentPositions
 		previousLayerQueries := make([]frontend.Variable, 0)
 		for i := 0; i < 2*f.circuitData.DedupedQueriesShape[logSize]; i++ {
-			previousLayerQueries = append(previousLayerQueries, previousLayerQueriesLookup.Lookup(frontend.Variable(i))[0])
+			previousLayerQueries = append(previousLayerQueries, previousLayerQueriesLookup[i])
 		}
-		layerQueries := utils.FoldQueries(f.api, previousLayerQueries, f.circuitData.DedupedQueriesShape[logSize])
-		layerQueriesLookup := logderivlookup.New(f.api)
-		for _, query := range layerQueries {
-			layerQueriesLookup.Insert(query)
-		}
-		layerQueriesLookup.Insert(frontend.Variable(1 << 32))
-		layerQueriesLookup.Insert(frontend.Variable(1 << 32))
-		decommitmentPositions[logSize] = layerQueriesLookup
+		layerQueries := utils.FoldQueries(f.api, f.uapi, f.cmpU32, previousLayerQueries, f.circuitData.DedupedQueriesShape[logSize])
+		layerQueries = append(layerQueries, frontend.Variable(1<<32), frontend.Variable(1<<32))
+		decommitmentPositions[logSize] = layerQueries
 		queryShape[logSize] = f.circuitData.DedupedQueriesShape[logSize]
 
 		// the rest of the decommitment positions are the regular queries (no pairs)
@@ -489,7 +489,7 @@ func (f *FriVerifier) verifyInnerLayers(queries []logderivlookup.Table, firstLay
 		nColumnsPerLogSize := make([]int, 32)
 		nColumnsPerLogSize[logSize+1] = 4
 
-		merkleVerifier := NewMerkleVerifier(f.api, f.uapi, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Commitment, columnLogSizes, nColumnsPerLogSize)
+		merkleVerifier := NewMerkleVerifierWithChips(f.api, f.uapi, f.bapi, f.m31Chip, f.blake2sChip, f.InnerLayerVerifiers[innerLayerVerifier.layerIndex].proof.Commitment, columnLogSizes, nColumnsPerLogSize)
 		if innerLayerVerifier.layerIndex >= len(f.circuitData.FriInnerLayerBranching) {
 			panic("missing FRI inner layer branching data")
 		}
@@ -539,14 +539,14 @@ func (f *FriVerifier) verifyLastLayer(lastEvaluations []m31.QM31) {
 // ╚══════════════════════════════════╝
 
 func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
-	layerQueries logderivlookup.Table,
-	evalAtQueries logderivlookup.Table,
+	layerQueries []frontend.Variable,
+	evalAtQueries []frontend.Variable,
 	witnessEvals []m31.QM31,
 	previousFriWitnessIndex int,
 	layerQueriesShape int,
 	logSize int,
-) (logderivlookup.Table, []m31.M31, SparseEvaluations, int) {
-	layerDecommitmentPositions := logderivlookup.New(f.api)
+) ([]frontend.Variable, []m31.M31, SparseEvaluations, int) {
+	layerDecommitmentPositions := make([]frontend.Variable, 0)
 	pairedEvalsFlattened := make([]m31.M31, 0)
 	pairedEvals := make([][2]m31.QM31, 0)
 	queryInitials := make([]uints.U32, 0)
@@ -567,9 +567,9 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 		base := offset + i
 
 		// get the query initial (query >> 1)
-		leftQuery := layerQueries.Lookup(frontend.Variable(base))[0]
-		rightQuery := layerQueries.Lookup(frontend.Variable(base + 1))[0]
-		_ = rightQuery // keep lookup constraints even though branching is static
+		leftQuery := layerQueries[base]
+		rightQuery := layerQueries[base+1]
+		_ = rightQuery // keep access pattern parity even though branching is static
 		queryU32 := f.uapi.ValueOf(leftQuery)
 		queryInitialU32 := f.uapi.Rshift(queryU32, 1)
 		queryInitial := f.uapi.ToValue(queryInitialU32)
@@ -577,8 +577,7 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 		// compute and insert the query pair
 		leftCandidate := f.api.Mul(queryInitial, frontend.Variable(2))
 		rightCandidate := f.api.Add(leftCandidate, frontend.Variable(1))
-		layerDecommitmentPositions.Insert(leftCandidate)
-		layerDecommitmentPositions.Insert(rightCandidate)
+		layerDecommitmentPositions = append(layerDecommitmentPositions, leftCandidate, rightCandidate)
 
 		branchCode := branching[i]
 		leftPresent := branchCode&1 == 1
@@ -590,9 +589,9 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 			witnessIndex++
 		}
 
-		eval0Native := evalAtQueries.Lookup(base)[0]
+		eval0Native := evalAtQueries[base]
 		eval0 := f.qm31Chip.DecodeNative(eval0Native)
-		eval1Native := evalAtQueries.Lookup(frontend.Variable(base + 1))[0]
+		eval1Native := evalAtQueries[base+1]
 		eval1 := f.qm31Chip.DecodeNative(eval1Native)
 
 		var leftEval m31.QM31
@@ -624,7 +623,7 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 		pairedEvals = append(pairedEvals, [2]m31.QM31{leftEval, rightEval})
 
 		// build the sparse evaluations for the inner layer verifier
-		queryInitials = append(queryInitials, reverseBitIndex(f.api, f.uapi, leftCandidate, logSize))
+		queryInitials = append(queryInitials, f.reverseBitIndex(leftCandidate, logSize))
 	}
 
 	sparseEvaluation := SparseEvaluations{
@@ -635,19 +634,20 @@ func (f *FriVerifier) computeDecommitmentPositionsAndRebuildEvals(
 	return layerDecommitmentPositions, pairedEvalsFlattened, sparseEvaluation, witnessIndex
 }
 
-func reverseBitIndex(api frontend.API, uapi *uints.BinaryField[uints.U32], n frontend.Variable, logSize int) uints.U32 {
-	nBits := bits.ToBinary(api, n, bits.WithNbDigits(32))
+func (f *FriVerifier) reverseBitIndex(n frontend.Variable, logSize int) uints.U32 {
+	key := fmt.Sprintf("%v", n)
+	nBits, ok := f.bitDecompCache[key]
+	if !ok {
+		nBits = bits.ToBinary(f.api, n, bits.WithNbDigits(32))
+		f.bitDecompCache[key] = nBits
+	}
 	reversedBits := make([]frontend.Variable, 32)
 	for i := 0; i < 32; i++ {
 		reversedBits[i] = nBits[32-(i+1)]
 	}
-	nReversedNative := bits.FromBinary(api, reversedBits)
-	nReversedBytes, err := conversion.NativeToBytes(api, nReversedNative)
-	if err != nil {
-		panic(err)
-	}
+	nReversedNative := bits.FromBinary(f.api, reversedBits)
 	// no need to reduce since reversed bits has 32 bits by construction
-	nReversed := uints.U32{nReversedBytes[len(nReversedBytes)-1], nReversedBytes[len(nReversedBytes)-2], nReversedBytes[len(nReversedBytes)-3], nReversedBytes[len(nReversedBytes)-4]}
-	result := uapi.Rshift(nReversed, 32-logSize)
+	nReversed := f.uapi.ValueOf(nReversedNative)
+	result := f.uapi.Rshift(nReversed, 32-logSize)
 	return uints.U32{result[3], result[2], result[1], result[0]}
 }

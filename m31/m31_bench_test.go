@@ -71,6 +71,7 @@ func compileConstraintCount(b *testing.B, circuit frontend.Circuit) uint64 {
 	if err != nil {
 		b.Fatalf("compile circuit: %v", err)
 	}
+	//nolint:gosec // constraints count is non-negative and fits into uint64 for this benchmark.
 	return uint64(cs.GetNbConstraints())
 }
 
@@ -80,6 +81,7 @@ func BenchmarkAccumulatorConstraintCounts(b *testing.B) {
 	var mulBInputs [benchMulAddCount]frontend.Variable
 
 	for i := 0; i < benchMulAddCount; i++ {
+		//nolint:gosec // benchmark input range is bounded by loop index.
 		mulAInputs[i] = frontend.Variable(Prime - uint32(2*i+3))
 		mulBInputs[i] = frontend.Variable(i + 2)
 	}

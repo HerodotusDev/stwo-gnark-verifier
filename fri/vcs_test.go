@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 	"github.com/consensys/gnark/test"
 )
@@ -51,14 +53,15 @@ func (c *merkleDecommitCircuit) Define(api frontend.API) error {
 	verifier := NewMerkleVerifier(api, uapi, data.Root, data.ColumnLogSizes, data.NColumnsPerLogSize)
 
 	// Generate queries
-	queries := utils.GenerateQueries(api, data.BaseLayerQueries, 10, data.QueriesShape, data.MaxLogSize)
-	queriesLookup := utils.ToLookupTable(api, queries)
+	comparator := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+	queries := utils.GenerateQueries(api, uapi, comparator, data.BaseLayerQueries, 10, data.QueriesShape, data.MaxLogSize)
+	queriesWithDummy := utils.AppendDummy(queries, frontend.Variable(1<<32))
 
 	decommitment := variables.MerkleDecommitment{
 		HashWitness: data.HashWitness,
 	}
 
-	verifier.Verify(queriesLookup, data.Values, decommitment, data.QueriesShape, data.QueriesBranching)
+	verifier.Verify(queriesWithDummy, data.Values, decommitment, data.QueriesShape, data.QueriesBranching)
 	return nil
 }
 
@@ -210,6 +213,7 @@ func mustLoadMerkleTestVector() merkleTestVector {
 		NColumnsPerLogSize: nColumnsPerLogSize,
 		QueriesShape:       queriesShape,
 		QueriesBranching:   queriesBranching,
-		MaxLogSize:         uint8(maxLogSize),
+		//nolint:gosec // test vector values are bounded in fixture data.
+		MaxLogSize: uint8(maxLogSize),
 	}
 }
