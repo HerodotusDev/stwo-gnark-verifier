@@ -18,7 +18,6 @@ import (
 	"github.com/consensys/gnark/backend/solidity"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
-	"github.com/consensys/gnark/std/math/uints"
 )
 
 type VerifierCircuit struct {
@@ -31,32 +30,14 @@ func (c *VerifierCircuit) Define(api frontend.API) error {
 	verifierChip.Verify(c.Proof, variables.DefaultPcsConfig(), c.CircuitData)
 
 	// Flatten [][32]uints.U8 -> []frontend.Variable for Commit
-	// Commitment binds all proof commitments; keep this stable and intentional.
-	// See: https://www.zellic.io/blog/gnark-bug-groth16-commitments
-	flattenedVars := make([]frontend.Variable, 0)
-	if os.Getenv("GNARK_COMMIT_DIGEST") != "" {
-		totalBytes := 0
-		for _, digest := range c.Proof.StarkProof.Commitments {
-			totalBytes += len(digest)
-		}
-		msg := make([]uints.U8, 0, totalBytes)
-		for _, digest := range c.Proof.StarkProof.Commitments {
-			msg = append(msg, digest[:]...)
-		}
-		digest := verifierChip.Blake2sChip().Digest(msg)
+	totalBytes := 0
+	for _, digest := range c.Proof.StarkProof.Commitments {
+		totalBytes += len(digest)
+	}
+	flattenedVars := make([]frontend.Variable, 0, totalBytes)
+	for _, digest := range c.Proof.StarkProof.Commitments {
 		for _, u8 := range digest {
 			flattenedVars = append(flattenedVars, u8.Val)
-		}
-	} else {
-		totalBytes := 0
-		for _, digest := range c.Proof.StarkProof.Commitments {
-			totalBytes += len(digest)
-		}
-		flattenedVars = make([]frontend.Variable, 0, totalBytes)
-		for _, digest := range c.Proof.StarkProof.Commitments {
-			for _, u8 := range digest {
-				flattenedVars = append(flattenedVars, u8.Val)
-			}
 		}
 	}
 
