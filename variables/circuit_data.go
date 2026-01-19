@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"sort"
 
@@ -191,6 +192,10 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(columnBounds)))
 
+	if maxObservedLogSize > math.MaxUint8-1 {
+		panic("max log size exceeds uint8")
+	}
+
 	return CircuitData{
 		ComponentConfig:        componentConfig,
 		PreprocessedConfig:     preprocessedConfig,
@@ -202,6 +207,7 @@ func buildCircuitDataFromShape(shape CircuitShapeRaw) CircuitData {
 		QueriesBranching:       queriesBranching,
 		FriFirstLayerBranching: friFirstLayerBranching,
 		FriInnerLayerBranching: friInnerLayerBranching,
-		MaxLogSize:             uint8(maxObservedLogSize + 1),
+		//nolint:gosec // guarded by max log size check above.
+		MaxLogSize: uint8(maxObservedLogSize + 1),
 	}
 }

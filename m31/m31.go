@@ -304,6 +304,11 @@ func (p *M31Chip) RangeCheck(x M31) {
 
 	p.rangeChecker.Check(lo, 16)
 	p.rangeChecker.Check(p.api.Mul(hi, 2), 16)
+
+	// Ensure canonical M31 encoding: we already constrain x < 2^31 via limb checks above,
+	// so the only invalid representative in that range is x == Prime.
+	// This must be a circuit constraint (not only a hint check) for soundness.
+	p.api.AssertIsEqual(p.api.IsZero(p.api.Sub(x.Limb, frontend.Variable(Prime))), frontend.Variable(0))
 }
 
 // SplitLimbsHint is used to split an M31 element into 2 16-bit limbs.
@@ -365,6 +370,10 @@ func (p *M31Chip) ReduceWithMaxBits(x M31, maxNbBits uint64) M31 {
 		p.api.AssertIsEqual(quotient, frontend.Variable(0))
 	} else {
 		aligned := nextMultipleOf16(maxNbBits)
+		if aligned/16 > uint64(math.MaxInt) {
+			panic("nbLimbs overflows int")
+		}
+		//nolint:gosec // guarded by max int check above; aligned is derived from bounded maxNbBits.
 		nbLimbs := int(aligned / 16)
 
 		limbs, err := p.api.Compiler().NewHint(
@@ -601,5 +610,8 @@ func productBitCost(factors int) uint64 {
 	if factors <= 1 {
 		return quotientBitsPerAdd
 	}
-	return validateBudget(uint64(factors-1)*31 + quotientBitsPerAdd)
+	if factors < 0 {
+		panic("negative factors")
+	}
+	return validateBudget((uint64(factors)-1)*31 + quotientBitsPerAdd)
 }
