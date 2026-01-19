@@ -298,16 +298,15 @@ func BuildClaim(claimRaw *ClaimRaw) CairoClaim {
 // ║              Mixing              ║
 // ╚══════════════════════════════════╝
 
-// MixInto absorbs the Cairo claim into the transcript channel.
-// This is highly order dependent, so the components need to be correctly ordered
-func (claim CairoClaim) MixInto(ch *channel.Channel, api frontend.API, circuitData CircuitData) {
-	uapi32, err := uints.New[uints.U32](api)
-	if err != nil {
-		panic(err)
+func (claim CairoClaim) MixIntoWithUAPI(ch *channel.Channel, api frontend.API, uapi32 *uints.BinaryField[uints.U32], uapi64 *uints.BinaryField[uints.U64], circuitData CircuitData) {
+	if ch == nil {
+		panic("channel must not be nil")
 	}
-	uapi64, err := uints.New[uints.U64](api)
-	if err != nil {
-		panic(err)
+	if api == nil {
+		panic("api must not be nil")
+	}
+	if uapi32 == nil || uapi64 == nil {
+		panic("uapi must not be nil")
 	}
 
 	// Mix public data

@@ -1,6 +1,8 @@
 package verifier
 
 import (
+	"math/big"
+
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/circle"
@@ -11,6 +13,7 @@ import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -18,12 +21,21 @@ import (
 type VerifierChip struct {
 	api     frontend.API `gnark:"-"`
 	uapi    *uints.BinaryField[uints.U32]
+	uapi64  *uints.BinaryField[uints.U64]
 	bapi    *uints.Bytes
 	blake2s *blake2s.Blake2sChip
 	channel *channel.Channel
 	m31     *m31.M31Chip
 	qm31    *m31.QM31Chip
 	circle  *circle.CircleChip
+	cmpU32  *cmp.BoundedComparator `gnark:"-"`
+	cmpU8   *cmp.BoundedComparator `gnark:"-"`
+}
+
+// Blake2sChip returns the Blake2s chip instance owned by this verifier.
+// Exposed to allow higher-level circuits to reuse the same gadget instead of re-initializing it.
+func (c *VerifierChip) Blake2sChip() *blake2s.Blake2sChip {
+	return c.blake2s
 }
 
 // NewVerifierChip initializes a new VerifierChip
@@ -32,24 +44,36 @@ func NewVerifierChip(api frontend.API) *VerifierChip {
 	if err != nil {
 		panic(err)
 	}
+	uapi64, err := uints.New[uints.U64](api)
+	if err != nil {
+		panic(err)
+	}
 	bapi, err := uints.NewBytes(api)
 	if err != nil {
 		panic(err)
 	}
-	blake2sChip := blake2s.NewBlake2sChip(api)
+
+	// Shared comparators (reused across sub-chips).
+	cmpU32 := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+	cmpU8 := cmp.NewBoundedComparator(api, big.NewInt(1<<8), false)
+
+	blake2sChip := blake2s.NewBlake2sChipWithUAPI(api, uapi, cmpU32)
 	m31Chip := m31.NewM31Chip(api)
 	qm31Chip := m31.NewQM31Chip(m31Chip)
-	circleChip := circle.NewCircleChip(api, m31Chip, qm31Chip)
-	channelChip := channel.NewChannel(api)
+	circleChip := circle.NewCircleChipWithUAPI(api, uapi, cmpU32, m31Chip, qm31Chip)
+	channelChip := channel.NewChannelWithChips(api, blake2sChip, m31Chip, uapi, cmpU32)
 	return &VerifierChip{
 		api:     api,
 		uapi:    uapi,
+		uapi64:  uapi64,
 		bapi:    bapi,
 		blake2s: blake2sChip,
 		channel: channelChip,
 		m31:     m31Chip,
 		qm31:    qm31Chip,
 		circle:  circleChip,
+		cmpU32:  cmpU32,
+		cmpU8:   cmpU8,
 	}
 }
 
@@ -66,12 +90,12 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	// ╚══════════════════════════════════╝
 
 	// Initialize commitment verifier
-	commitmentVerifier := fri.NewCommitmentSchemeVerifier(c.api, c.uapi, pcsConfig, circuitData)
+	commitmentVerifier := fri.NewCommitmentSchemeVerifierWithChips(c.api, c.uapi, c.bapi, c.m31, c.blake2s, c.cmpU32, pcsConfig, circuitData)
 	logSizes := components.LogSizes(proof.Claim, circuitData)
 
 	// We assume that all components have `max_constraint_log_degree_bound()` returning `log_size() + 1`.
 	// This should not include the preprocessed trace (hence calling MAX before adding preprocessed trace log sizes)
-	compositionLogDegreeBound := components.MaxLogSize(c.api, logSizes)
+	compositionLogDegreeBound := components.MaxLogSize(c.api, c.cmpU8, logSizes)
 
 	// Verify preprocessed trace commitment
 	logSizes[cairo_components.PREPROCESSED_IDX] = components.PreprocessedLogSizes()
@@ -79,7 +103,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	commitmentVerifier.Commit(cairo_components.PREPROCESSED_IDX, proof.StarkProof.Commitments[0], preprocessedLogSizes, c.channel)
 
 	// Mix claim into channel
-	proof.Claim.MixInto(c.channel, c.api, circuitData)
+	proof.Claim.MixIntoWithUAPI(c.channel, c.api, c.uapi, c.uapi64, circuitData)
 
 	// Verify main trace commitment
 	commitmentVerifier.Commit(cairo_components.MAIN_IDX, proof.StarkProof.Commitments[1], logSizes[cairo_components.MAIN_IDX], c.channel)
@@ -153,7 +177,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	bounds := commitmentVerifier.Bounds()
 
 	// Verification of commitment stage of FRI
-	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.StarkProof.FriProof, bounds, circuitData)
+	friVerifier := fri.NewFriVerifier(c.api, c.uapi, c.bapi, c.blake2s, c.cmpU32, c.channel, c.qm31, c.circle, commitmentVerifier.PcsConfig.FriConfig, proof.StarkProof.FriProof, bounds, circuitData)
 
 	// Proof of work
 	c.channel.MixAndCheckPowNonce(proof.StarkProof.ProofOfWork, int(commitmentVerifier.PcsConfig.PowBits))
@@ -165,8 +189,8 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	// Generate base layer queries and verify they match the hinted queries
 	maxLogSize := bounds[0]
 	baseLayerQueries := c.channel.GenerateBaseLayerQueries(maxLogSize, commitmentVerifier.PcsConfig.FriConfig.NQueries)
-	queries := utils.GenerateQueries(c.api, baseLayerQueries, commitmentVerifier.PcsConfig.FriConfig.NQueries, circuitData.DedupedQueriesShape, circuitData.MaxLogSize)
-	queriesLookup := utils.ToLookupTable(c.api, queries)
+	queries := utils.GenerateQueries(c.api, c.uapi, c.cmpU32, baseLayerQueries, commitmentVerifier.PcsConfig.FriConfig.NQueries, circuitData.DedupedQueriesShape, circuitData.MaxLogSize)
+	queriesWithDummy := utils.AppendDummy(queries, frontend.Variable(1<<32))
 
 	// ╔══════════════════════════════════╗
 	// ║        Trace decommitments       ║
@@ -174,7 +198,7 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 
 	// Verify merkle decommitments
 	for treeIndex, tree := range commitmentVerifier.Trees {
-		tree.Verify(queriesLookup, proof.StarkProof.QueriedValues[treeIndex], proof.StarkProof.Decommitments[treeIndex], circuitData.DedupedQueriesShape, circuitData.QueriesBranching)
+		tree.Verify(queriesWithDummy, proof.StarkProof.QueriedValues[treeIndex], proof.StarkProof.Decommitments[treeIndex], circuitData.DedupedQueriesShape, circuitData.QueriesBranching)
 	}
 
 	// ╔══════════════════════════════════╗
@@ -187,6 +211,6 @@ func (c *VerifierChip) Verify(proof variables.Proof, pcsConfig variables.PcsConf
 	// Verify FRI quotients
 	friAnswers := friVerifier.FriQuotientEvaluations(proof.StarkProof.SampledValues, maskPoints, queries, proof.StarkProof.QueriedValues, randomCoeff)
 	friAnswersEncoded := fri.EncodeFriAnswers(c.qm31, friAnswers)
-	friAnswersLookup := utils.ToLookupTable(c.api, friAnswersEncoded)
-	friVerifier.Verify(queriesLookup, friAnswersLookup)
+	friAnswersWithDummy := utils.AppendDummy(friAnswersEncoded, frontend.Variable(1<<32))
+	friVerifier.Verify(queriesWithDummy, friAnswersWithDummy)
 }

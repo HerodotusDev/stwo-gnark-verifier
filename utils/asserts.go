@@ -1,25 +1,25 @@
 package utils
 
 import (
-	"math/big"
-
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/math/cmp"
 )
 
-// AssertAscendingOrder verifies that `l` is in ascending order (elements need to be less than 1<<32)
-func AssertAscendingOrder(api frontend.API, l []frontend.Variable) {
-	cmp := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+func AssertAscendingOrder(comparator *cmp.BoundedComparator, l []frontend.Variable) {
+	if comparator == nil {
+		panic("comparator must not be nil")
+	}
 	for i := 1; i < len(l); i++ {
-		cmp.AssertIsLessEq(l[i-1], l[i])
+		comparator.AssertIsLessEq(l[i-1], l[i])
 	}
 }
 
-// AssertDescendingOrder verifies that `l` is in descending order (elements need to be greater than 1<<32)
-func AssertDescendingOrder(api frontend.API, l []frontend.Variable) {
-	cmp := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+func AssertDescendingOrder(comparator *cmp.BoundedComparator, l []frontend.Variable) {
+	if comparator == nil {
+		panic("comparator must not be nil")
+	}
 	for i := 1; i < len(l); i++ {
-		cmp.AssertIsLessEq(l[i], l[i-1])
+		comparator.AssertIsLessEq(l[i], l[i-1])
 	}
 }
 
@@ -27,6 +27,13 @@ func AssertDescendingOrder(api frontend.API, l []frontend.Variable) {
 func AssertPermutation(api frontend.API, permuted []frontend.Variable, original []frontend.Variable) {
 	AssertPartialDeduplication(api, permuted, original)
 	AssertPartialDeduplication(api, original, permuted)
+}
+
+// AssertDeduplicationSoundness verifies that `deduped` contains exactly the set of
+// unique elements from `original` (no missing elements and no extras).
+func AssertDeduplicationSoundness(api frontend.API, deduped []frontend.Variable, original []frontend.Variable) {
+	AssertPartialDeduplication(api, deduped, original)
+	AssertPartialDeduplication(api, original, deduped)
 }
 
 // AssertPartialDeduplication verifies that `partiallyDeduplicated` contains all elements of `original` but

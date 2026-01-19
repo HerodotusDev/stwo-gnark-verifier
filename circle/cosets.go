@@ -56,7 +56,7 @@ func (c Coset) LogSize() frontend.Variable {
 
 // Size returns the size of the coset.
 func (c Coset) Size() frontend.Variable {
-	return utils.Pow(c.circleChip.api, c.circleChip.comparator, frontend.Variable(2), c.logSize)
+	return utils.Pow2(c.circleChip.api, c.logSize, 8)
 }
 
 // Step returns the step of the coset.

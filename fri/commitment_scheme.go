@@ -1,11 +1,16 @@
 package fri
 
 import (
+	"math/big"
+
+	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/channel"
 	"github.com/HerodotusDev/stwo-gnark-verifier/components/cairo_components"
+	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
 	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/cmp"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -13,6 +18,10 @@ import (
 type CommitmentSchemeVerifier struct {
 	api         frontend.API
 	uapi        *uints.BinaryField[uints.U32]
+	bapi        *uints.Bytes
+	m31Chip     *m31.M31Chip
+	blake2sChip *blake2s.Blake2sChip
+	cmpU32      *cmp.BoundedComparator
 	PcsConfig   variables.PcsConfig
 	Trees       [cairo_components.N_TREES]*MerkleVerifier
 	circuitData variables.CircuitData
@@ -20,9 +29,27 @@ type CommitmentSchemeVerifier struct {
 
 // NewCommitmentSchemeVerifier initializes the commitment scheme verifier.
 func NewCommitmentSchemeVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], pcsConfig variables.PcsConfig, circuitData variables.CircuitData) *CommitmentSchemeVerifier {
+	// Backward-compatible constructor: create per-instance chips.
+	bapi, err := uints.NewBytes(api)
+	if err != nil {
+		panic(err)
+	}
+	m31Chip := m31.NewM31Chip(api)
+	blake2sChip := blake2s.NewBlake2sChip(api)
+	cmpU32 := cmp.NewBoundedComparator(api, big.NewInt(1<<32), false)
+
+	return NewCommitmentSchemeVerifierWithChips(api, uapi, bapi, m31Chip, blake2sChip, cmpU32, pcsConfig, circuitData)
+}
+
+// NewCommitmentSchemeVerifierWithChips initializes the commitment scheme verifier using shared chip instances.
+func NewCommitmentSchemeVerifierWithChips(api frontend.API, uapi *uints.BinaryField[uints.U32], bapi *uints.Bytes, m31Chip *m31.M31Chip, blake2sChip *blake2s.Blake2sChip, cmpU32 *cmp.BoundedComparator, pcsConfig variables.PcsConfig, circuitData variables.CircuitData) *CommitmentSchemeVerifier {
 	return &CommitmentSchemeVerifier{
 		api:         api,
 		uapi:        uapi,
+		bapi:        bapi,
+		m31Chip:     m31Chip,
+		blake2sChip: blake2sChip,
+		cmpU32:      cmpU32,
 		PcsConfig:   pcsConfig,
 		circuitData: circuitData,
 	}
@@ -45,7 +72,7 @@ func (v *CommitmentSchemeVerifier) Commit(treeIndex int, root [32]uints.U8, logS
 	for i, nColumns := range nColumnsPerLogSize {
 		nDomainPerLogSize[i+1] = nColumns
 	}
-	v.Trees[treeIndex] = NewMerkleVerifier(v.api, v.uapi, root, columnLogSizes, nDomainPerLogSize)
+	v.Trees[treeIndex] = NewMerkleVerifierWithChips(v.api, v.uapi, v.bapi, v.m31Chip, v.blake2sChip, root, columnLogSizes, nDomainPerLogSize)
 }
 
 // ColumnLogSizes returns the column log sizes for the given tree (and optionally blew up)
@@ -77,7 +104,7 @@ func (v *CommitmentSchemeVerifier) Bounds() []frontend.Variable {
 	if err != nil {
 		panic(err)
 	}
-	utils.AssertDescendingOrder(v.api, dedupedOrderedLogSizes)
-	utils.AssertPartialDeduplication(v.api, dedupedOrderedLogSizes, columnLogSizesFlattened)
+	utils.AssertDescendingOrder(v.cmpU32, dedupedOrderedLogSizes)
+	utils.AssertDeduplicationSoundness(v.api, dedupedOrderedLogSizes, columnLogSizesFlattened)
 	return dedupedOrderedLogSizes
 }

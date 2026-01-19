@@ -1,6 +1,8 @@
 package fri
 
 import (
+	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
@@ -33,6 +35,10 @@ func WitnessHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	isRightAlsoQueried := inputs[1].Uint64()
 	isJustRightQueried := inputs[2].Uint64()
 	// witness index points to the next unused hash witness entry (as a list of [32]uints.U8)
+	if inputs[3].Uint64() > uint64(math.MaxInt) {
+		return fmt.Errorf("witness index overflows int")
+	}
+	//nolint:gosec // guarded by max int check above.
 	witnessIndex := int(inputs[3].Uint64())
 	// hashWitness is passed as a flat []*big.Int (so a singe witness entry is 32 consecutive big.Ints)
 	hashWitness := inputs[4:]
@@ -78,6 +84,10 @@ func friWitnessHint(_ *big.Int, inputs []*big.Int, results []*big.Int) error {
 	isLeftQueried := inputs[0].Uint64()
 	isRightQueried := inputs[1].Uint64()
 	// witness index points to the next unused hash witness entry (as a list of QM31s)
+	if inputs[2].Uint64() > uint64(math.MaxInt) {
+		return fmt.Errorf("witness index overflows int")
+	}
+	//nolint:gosec // guarded by max int check above.
 	witnessIndex := int(inputs[2].Uint64())
 	// witness is passed as a flat []*big.Int (so a singe witness entry is 4 consecutive big.Ints)
 	witness := inputs[3:]

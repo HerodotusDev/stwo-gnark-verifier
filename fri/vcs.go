@@ -3,10 +3,8 @@ package fri
 import (
 	"github.com/HerodotusDev/stwo-gnark-verifier/blake2s"
 	"github.com/HerodotusDev/stwo-gnark-verifier/m31"
-	"github.com/HerodotusDev/stwo-gnark-verifier/utils"
 	"github.com/HerodotusDev/stwo-gnark-verifier/variables"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/lookup/logderivlookup"
 	"github.com/consensys/gnark/std/math/uints"
 )
 
@@ -31,6 +29,17 @@ func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], roo
 	bapi, err := uints.NewBytes(api)
 	if err != nil {
 		panic(err)
+	}
+	return NewMerkleVerifierWithChips(api, uapi, bapi, m31Chip, blake2sChip, root, columnLogSizes, nColumnsPerLogSize)
+}
+
+// NewMerkleVerifierWithChips initializes a Merkle verifier using shared chip instances.
+func NewMerkleVerifierWithChips(api frontend.API, uapi *uints.BinaryField[uints.U32], bapi *uints.Bytes, m31Chip *m31.M31Chip, blake2sChip *blake2s.Blake2sChip, root [32]uints.U8, columnLogSizes []frontend.Variable, nColumnsPerLogSize []int) *MerkleVerifier {
+	if api == nil {
+		panic("api must not be nil")
+	}
+	if uapi == nil || bapi == nil || m31Chip == nil || blake2sChip == nil {
+		panic("merkle verifier dependencies must not be nil")
 	}
 
 	maxLogSize := 0
@@ -59,7 +68,7 @@ func NewMerkleVerifier(api frontend.API, uapi *uints.BinaryField[uints.U32], roo
 //   - queriesShape[l] = len(queries[l]) - 1 (-1 for the dummy query)
 //   - queriesBranching[l][i] encodes which children are present for queries[l][i]:
 //     bit 0 for left, bit 1 for right
-func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []m31.M31, decommitment variables.MerkleDecommitment, queriesShape []int, queriesBranching [][]uint8) {
+func (v *MerkleVerifier) Verify(queries [][]frontend.Variable, queriedValues []m31.M31, decommitment variables.MerkleDecommitment, queriesShape []int, queriesBranching [][]uint8) {
 	remainingValues := queriedValues
 	witnessIndex := 0
 	zeroHash := [32]uints.U8{}
@@ -68,11 +77,11 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 	}
 
 	// storage for the hashes per layer, keyed by log size
-	layerHashes := make([]logderivlookup.Table, v.maxLogSize+1)
+	layerHashes := make([][][32]uints.U8, v.maxLogSize+1)
 	// decommit layer by layer, doing all queries at once
 	for layerLog := v.maxLogSize; ; layerLog-- {
 		// initialize the layer hashes
-		layerHashes[layerLog] = logderivlookup.New(v.api)
+		layerHashes[layerLog] = make([][32]uints.U8, 0)
 		// get the number of columns in the layer
 		nColumnsInLayer := v.nColumnsPerLogSize[layerLog]
 		// j is a pointer to the previous layer query.
@@ -80,8 +89,8 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 
 		// go through all query positions of the current layer
 		for queryIndex := 0; queryIndex < queriesShape[layerLog]; queryIndex++ {
-			query := queries[layerLog].Lookup(queryIndex)[0]
-			_ = query // keep lookup constraints even though branching is static
+			query := queries[layerLog][queryIndex]
+			_ = query // keep access for parity with prior behavior
 			// pop the front of the queried values if any
 			var columnValues []m31.M31
 			if nColumnsInLayer > 0 {
@@ -92,9 +101,7 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 			// for the largest layer, there are no children to hash, just hash the column values
 			if layerLog == v.maxLogSize {
 				hash := v.blake2sChip.HashNode(nil, nil, columnValues)
-				lo, hi := utils.SplitHash(v.api, hash)
-				layerHashes[layerLog].Insert(lo)
-				layerHashes[layerLog].Insert(hi)
+				layerHashes[layerLog] = append(layerHashes[layerLog], hash)
 			} else {
 				if layerLog >= len(queriesBranching) {
 					panic("queries branching missing layer data")
@@ -110,13 +117,8 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 				var rightHash [32]uints.U8
 
 				// rebuild the children hashes candidates from the previous layer
-				twoJ := 2 * j
-				h0Lo := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ))[0]
-				h0Hi := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ + 1))[0]
-				h1Lo := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ + 2))[0]
-				h1Hi := layerHashes[layerLog+1].Lookup(frontend.Variable(twoJ + 3))[0]
-				h0 := utils.RebuildHash(v.api, h0Lo, h0Hi)
-				h1 := utils.RebuildHash(v.api, h1Lo, h1Hi)
+				h0 := layerHashes[layerLog+1][j]
+				h1 := layerHashes[layerLog+1][j+1]
 
 				var w0 [32]uints.U8
 				var w1 [32]uints.U8
@@ -154,16 +156,11 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 
 				// update the current layer hashes
 				hash := v.blake2sChip.HashNode(leftHash[:], rightHash[:], columnValues)
-				lo, hi := utils.SplitHash(v.api, hash)
-				layerHashes[layerLog].Insert(lo)
-				layerHashes[layerLog].Insert(hi)
+				layerHashes[layerLog] = append(layerHashes[layerLog], hash)
 			}
 		}
-		// append a dummy hash to the end of the layer, will never be used for hashing
-		layerHashes[layerLog].Insert(frontend.Variable(0))
-		layerHashes[layerLog].Insert(frontend.Variable(0))
-		layerHashes[layerLog].Insert(frontend.Variable(0))
-		layerHashes[layerLog].Insert(frontend.Variable(0))
+		// append dummy hashes to the end of the layer, will never be used for hashing
+		layerHashes[layerLog] = append(layerHashes[layerLog], zeroHash, zeroHash)
 
 		if layerLog == 0 {
 			break
@@ -171,9 +168,10 @@ func (v *MerkleVerifier) Verify(queries []logderivlookup.Table, queriedValues []
 	}
 
 	// assert root match for all queries
-	rootLo := layerHashes[0].Lookup(0)[0]
-	rootHi := layerHashes[0].Lookup(1)[0]
-	computedRoot := utils.RebuildHash(v.api, rootLo, rootHi)
+	if len(layerHashes[0]) == 0 {
+		panic("empty root layer")
+	}
+	computedRoot := layerHashes[0][0]
 	for i := 0; i < 32; i++ {
 		v.uapi.AssertIsEqual(computedRoot[i], v.root[i])
 	}
